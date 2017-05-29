@@ -1,4 +1,4 @@
-plot.missingdata <- function(mySegments,covarList){
+plot.missingdata <- function(mySegments,covarList,fNamePrefix){
   # Generates set of histograms showing data gaps by year
   # RETURNS:
   #  percFilled<- A table of % data available by year for each covariate in covarList
@@ -31,7 +31,7 @@ plot.missingdata <- function(mySegments,covarList){
   # and plot as we go
   nRows = round(sqrt(nCovars))
   nCols = ceiling(nCovars/nRows)
-  png('missingData.png', width = 1600, height = 1000)
+  png(paste0(fNamePrefix,'_missingData.png'), width = 1600, height = 1000)
   par(mfrow=c(nRows,nCols)) # does the subplots
   
   for (cI in covarList){

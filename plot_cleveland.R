@@ -1,5 +1,5 @@
 # plot covariates to look for skew
-plot.cleveland <- function(mySegments,covarList,isTrans){
+plot.cleveland <- function(mySegments,covarList,isTrans,fNamePrefix){
   # isTrans is a boolean flag to name the file appropriately
   
   nCovars <- length(covarList)
@@ -8,9 +8,9 @@ plot.cleveland <- function(mySegments,covarList,isTrans){
   
 
   if (!isTrans){
-    png("clevelandDots_noTransform.png")
+    png(paste0(fNamePrefix,"_clevelandDots_noTransform.png"), width = 1000, height =1000)
   }else{
-    png("clevelandDots_withTransform.png")
+    png(paste0(fNamePrefix,"_clevelandDots_withTransform.png"), width = 1000, height =1000)
     
   }
   

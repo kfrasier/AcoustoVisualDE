@@ -5,15 +5,16 @@ library(lubridate)
 library(magic)
 library(mgcv)
 setwd("E:\\NASData")
-source('E:/NASData/AcoustoVisualDE/plot_missingdata.R')
-source('E:/NASData/AcoustoVisualDE/plot_cleveland.R')
-source('E:/NASData/AcoustoVisualDE/transform_covars.R')
-source('E:/NASData/AcoustoVisualDE/plot_covarDensity.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_missingdata.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_cleveland.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/transform_covars.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_covarDensity.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/GetModelMetadata.R')
 
 #### Parameters needed:  ####
 outDir <- "E:/NASData/ModelData/" 
 ## Detection files
-acousticSegFile <- "E:/NASData/Acoustic_Segments.csv" # acoustic input file
+acousticSegFile <- "E:/NASData/Acoustic_Segments_Ssp_only.csv" # acoustic input file
 
 visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
 visSegmentsFile <- "E:/NASData/Visual_Segments.csv" # visual segments
@@ -24,13 +25,18 @@ surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
 
 ## Species/Platform/model info
 # Species Category (used for file naming)
-SP <- "Zc"
+SP <- "Ssp" # "Zc"
 
 # Species names
 # Visual Codes
-SPC_vis <- c("Cuvier's beaked whale", "unid. Ziphiid")# "Gervais' beaked whale", "Beaked Whale","unid. Mesoplodont"
+# SPC_vis <- c("Cuvier's beaked whale", "unid. Ziphiid")# "Gervais' beaked whale", "Beaked Whale","unid. Mesoplodont"
+SPC_vis <- c("Atlantic spotted dolphin", "Striped dolphin","Pantropical spotted dolphin",
+             "Spinner dolphin","Stenella sp.","Clymene dolphin")
+
+
 # Acoustic Codes
-SPC_ac <- c("Cuvier's beaked whale")
+# SPC_ac <- c("Cuvier's beaked whale")
+SPC_ac <- c("Ssp")
 
 # Platform Codes (visual only)
 PLC <- c("GU","OR")
@@ -38,16 +44,16 @@ PLC <- c("GU","OR")
 # Use cue or group-based density estimates?
 acModel <- "cue"  # can be 'cue' or 'group'
 
-# Calculate detection functions? This is slow, so if it's alreasy done, you can load trunc dists from file
-runDetFuns <- FALSE # can be true or false
+# Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
+runDetFuns <- TRUE # can be true or false
 
 # The name of the visual detection function file. 
-detFunFile <- "Vis_TruncDist_allBW.Rdata" # <- With spares data, you could produce a visual detection function using all beaked whales, 
+detFunFile <- "Vis_TruncDist_Ssp_only.Rdata" #Vis_TruncDist_allBW.Rdata" # <- With spares data, you could produce a visual detection function using all beaked whales, 
                                         # then  use that here, to only estimate habitat model for Ziphiid, for instance.
 # If runDetFuns = TRUE, detFunFile is used to name the R output from the detection function calculation process.
 # If runDetFuns = FALSE, detFunFile is used to retrieve the previously caclualated detection functions.
 
-visG0 <- .27 # from palka 2006 table 5, 2004 survey
+visG0 <- mean(c(.42,.37))#Beaked whale:.27 # from palka 2006 table 5, 2004 survey
 
 
 
@@ -59,10 +65,10 @@ closeAllConnections()
 ## Load & Prune Acoustic data
 cat("Loading acoustic data \n")
 
-# Note: I don't think there need to be both "Sightings" and "Segments" equivalents for acoustic
+# Note: I don't think there need to make both "Sightings" and "Segments" equivalents for acoustic
 # data, because there is a 1-t0-1 relationship between the two in this case. There is a data point
 # for each week, regardless of whether beaked whales were detected.
-acSegmentsAll <- read.csv(acousticSegFile, header = TRUE,na.strings=c(""," ","NA","-99999"))
+acSegmentsAll <- read.csv(acousticSegFile, header = TRUE,na.strings=c(""," ","NA","-99999","NaN"))
 
 
 # Exclude partial weeks, and extract the right density estimate type (cue or group)
@@ -81,7 +87,7 @@ acSegmentsPruned <- acSegmentsFull[deIDx,]
 # Find all of the rows that match the species of interest (can be multiple species names)
 acSpIdx <- NULL;
 for (spname in SPC_ac){
-  acSpIdx <- c(acSpIdx,which(grepl(spname, acSegmentsPruned$Species)))
+  acSpIdx <- c(acSpIdx,which(grepl(spname, acSegmentsPruned$commonname)))
 }
 acSegments <- acSegmentsPruned[acSpIdx,] # prune to retain only those rows
 
@@ -162,7 +168,7 @@ if (runDetFuns){
     
     # Compute truncation distance by removing highest 5% of distances
     tDist[nPlatform] <- quantile(ddfData$distance,.95,na.rm = TRUE)
-    cat(paste("Truncation distance for platform ", i, "=",  round(tDist[nPlatform],2), "km \n"))
+    cat(paste("Truncation distance for platform ", i, "=",  round(tDist[nPlatform],2), "m \n"))
     
     
     # Iterate over detection functions with various adjustments and orders, and identify AIC for each
@@ -333,13 +339,14 @@ prunedSightings <- visData[visData$Truncated==0,] # get all of the non-truncated
 for (iSight in 1:length(prunedSightings$date)){
   sightDate <- prunedSightings$date[iSight]
   onThisDay <- which(visSeg_OnEffort$date == sightDate)
-  minIdx <- which.min(abs(visSeg_OnEffort$transect[onThisDay]-prunedSightings$transect[iSight]))
-  prunedSightings$Segment[iSight] <-onThisDay[minIdx]
+  if (length(onThisDay)>0) {
+    minIdx <- which.min(abs(visSeg_OnEffort$transect[onThisDay]-prunedSightings$transect[iSight]))
+    prunedSightings$Segment[iSight] <-onThisDay[minIdx]
+  }else { # handle case where there is no match (why would this happen?)
+    cat(paste("Warning: Missing effort segment for sighting on", sightDate,"\n"))
+    prunedSightings$Segment[iSight] <- NaN
+  }
 }
-
-
-
-
 
 segTally <- as.data.frame(table(prunedSightings$Segment)) # this gives you a list of segments containing sightings
 
@@ -382,36 +389,37 @@ visSeg_OnEffort$EffectiveArea <- (2*visSeg_OnEffort$ESW/1000)*(visSeg_OnEffort$S
 
 cat("Merging Visual and Acoustic Segments\n")
 
-## Merge visual and acoustic segments into one big dataframe
+# Merge visual and acoustic segments into one big dataframe
 mergedSegments <- NULL
-mergedSegments$date <- c(as.Date(visSeg_OnEffort$date_Converted,"%m/%d/%Y")) #date
-mergedSegments$lat <- c(visSeg_OnEffort$Lat)
-mergedSegments$long <- c(visSeg_OnEffort$Long)
-mergedSegments$ESW <- c(visSeg_OnEffort$ESW)
-mergedSegments$SpPresent <- c(visSeg_OnEffort$sp_present)
-mergedSegments$SpEncounter <- c(visSeg_OnEffort$sp_count)
-mergedSegments$SpEncounter_g0adj <- c(visSeg_OnEffort$sp_count_g0adj)
-mergedSegments$EffectiveArea <- c(visSeg_OnEffort$EffectiveArea)
+mergedSegments$date <- c(as.Date(acSegmentsPruned$date_Converted,"%m/%d/%Y")) #date
+mergedSegments$lat <- c(acSegmentsPruned$Lat)
+mergedSegments$long <- c(acSegmentsPruned$Long)
+mergedSegments$ESW <- c(acSegmentsPruned$BW_ESW)
+mergedSegments$SpPresent <- c(acSegmentsPruned$BW_Present)
+mergedSegments$SpEncounter <- c(acSegmentsPruned$BW_Encounter)
+mergedSegments$SpEncounter_g0adj <- c(acSegmentsPruned$BW_Encounter)
+mergedSegments$EffectiveArea <- c(acSegmentsPruned$BW_ESW)
 
 
-mergedSegments$Bathymetry <- c(visSeg_OnEffort$Bathymetry)
-mergedSegments$SST_daily <- c(visSeg_OnEffort$SST_daily)
-mergedSegments$SSH_daily <- c(visSeg_OnEffort$SSH_daily)
-mergedSegments$CHL_daily_climate <- c(visSeg_OnEffort$CHL_daily_climate)
+mergedSegments$Bathymetry <- c(acSegmentsPruned$Bathymetry)
+mergedSegments$SST_daily <- c(acSegmentsPruned$SST_daily)
+mergedSegments$SSH_daily <- c(acSegmentsPruned$SSH_daily)
+mergedSegments$CHL_daily_climate <- c(acSegmentsPruned$CHL_daily_climate)
 
-mergedSegments$TKE_surfaceCurrent_5day <- c(visSeg_OnEffort$TKE_surfaceCurrent_5day)
-mergedSegments$HYCOM_mld_daily <- c(visSeg_OnEffort$HYCOM_mld_daily)
-mergedSegments$HYCOM_dir_daily <- c(visSeg_OnEffort$HYCOM_dir_daily)
-mergedSegments$HYCOM_northVel_daily <- c(visSeg_OnEffort$HYCOM_northVel_daily)
-mergedSegments$HYCOM_eastVel_daily <- c(visSeg_OnEffort$HYCOM_eastVel_daily)
-mergedSegments$HYCOM_wVel_daily <- c(visSeg_OnEffort$HYCOM_wVel_daily)
-mergedSegments$Month <- c(visSeg_OnEffort$Month)
-mergedSegments$SST_8day_climate <- c(visSeg_OnEffort$SST_8day_climate)
-mergedSegments$SSH_8day_climate <- c(visSeg_OnEffort$SSH_8day_climate)
-mergedSegments$SST_Monthly_climate <- c(visSeg_OnEffort$SST_Monthly_climate)
-mergedSegments$SSH_Monthly_climate <- c(visSeg_OnEffort$SSH_Monthly_climate)
-mergedSegments$EddyDist <- c(visSeg_OnEffort$EddyDist)
-mergedSegments$Dist_to_Front <- c(visSeg_OnEffort$Dist_to_front)
+mergedSegments$TKE_surfaceCurrent_5day <- c(acSegmentsPruned$TKE_surfaceCurrent_5day)
+mergedSegments$HYCOM_mld_daily <- c(acSegmentsPruned$HYCOM_mld_daily)
+mergedSegments$HYCOM_dir_daily <- c(acSegmentsPruned$HYCOM_dir_daily)
+mergedSegments$HYCOM_northVel_daily <- c(acSegmentsPruned$HYCOM_northVel_daily)
+mergedSegments$HYCOM_eastVel_daily <- c(acSegmentsPruned$HYCOM_eastVel_daily)
+mergedSegments$HYCOM_wVel_daily <- c(acSegmentsPruned$HYCOM_wVel_daily)
+mergedSegments$Month <- c(acSegmentsPruned$Month)
+mergedSegments$SST_8day_climate <- c(acSegmentsPruned$SST_8day_climate)
+mergedSegments$SSH_8day_climate <- c(acSegmentsPruned$SSH_8day_climate)
+mergedSegments$SST_Monthly_climate <- c(acSegmentsPruned$SST_Monthly_climate)
+mergedSegments$SSH_Monthly_climate <- c(acSegmentsPruned$SSH_Monthly_climate)
+mergedSegments$EddyDist <- c(acSegmentsPruned$EddyDist)
+mergedSegments$Dist_to_Front <- c(acSegmentsPruned$Dist_to_front)
+mergedSegments$Weights <- c(rep(1,times = length(acSegmentsPruned$Dist_to_front)))
 
 # mergedSegments <- NULL
 # mergedSegments$date <- c(as.Date(visSeg_OnEffort$date_Converted,"%m/%d/%Y"),
@@ -443,6 +451,8 @@ mergedSegments$Dist_to_Front <- c(visSeg_OnEffort$Dist_to_front)
 # mergedSegments$SSH_Monthly_climate <- c(visSeg_OnEffort$SSH_Monthly_climate,acSegmentsPruned$SSH_Monthly_climate)
 # mergedSegments$EddyDist <- c(visSeg_OnEffort$EddyDist,acSegmentsPruned$EddyDist)
 # mergedSegments$Dist_to_Front <- c(visSeg_OnEffort$Dist_to_front,acSegmentsPruned$Dist_to_front)
+# 
+# mergedSegments$Weights <- c(rep(.1,times = length(visSeg_OnEffort$Dist_to_front)),rep(1,times = length(acSegmentsPruned$Dist_to_front)))
 
 mergedSegments <- as.data.frame(mergedSegments)
 covarList<-colnames(mergedSegments[9:length(mergedSegments)])
@@ -462,6 +472,7 @@ keepDates.train <- which(yearListIdx != 2012 & yearListIdx >= 2003)
 keepDates.test <- which(yearListIdx == 2012)
 
 mergedTrain.set<- mergedSegments[keepDates.train,]
+
 mergedTest.set<- mergedSegments[keepDates.test,]
   
 
@@ -477,10 +488,10 @@ plot.cleveland(mergedTrain.set,covarList,FALSE)
 covarList2 <- c("SST_daily","SSH_daily", "CHL_daily_climate", "HYCOM_mld_daily", "HYCOM_dir_daily",
                 "HYCOM_northVel_daily","HYCOM_eastVel_daily", "HYCOM_wVel_daily", "Month",
                 "EddyDist","Dist_to_Front")
-transformList <- c("none","none","log10","log10","none","none","none","none","none","none","log10")
+transformList <- c("none","none","log10","log10","none","none","none","none","none","sqrt","log10")
 
 # restrict covariates again to limited set
-mergedTrain.set2<- [,covarList2]
+mergedTrain.set2<- mergedTrain.set[,covarList2]
 mergedTest.set2<- mergedTest.set[,covarList2]
 
 # Identify problematic outliers
@@ -510,30 +521,30 @@ cat("Exploratory plots done\n")
 ###########################
 # Run & evaluate models
 
-# Presence absence
-yBinomial <- mergedTrain.set$SpPresent
-
-cat("Run full GAM on presence absence data with shrinkage\n")
-
-presAbsGAMAll <- gam(yBinomial ~ s(SST_daily, bs="ts",k=5) + s(SSH_daily,bs="ts",k=5)
-                    +s(log10_CHL_daily_climate,bs="ts",k=5) + s(log10_HYCOM_mld_daily,bs="ts",k=5) 
-                    +s(HYCOM_northVel_daily,bs="ts",k=5) + s(HYCOM_eastVel_daily,bs="ts",k=5) 
-                    +s(HYCOM_wVel_daily,k=5) + s(EddyDist, bs ="ts",k=5)
-                    +s(log10_Dist_to_Front, bs="ts",k=5)+ s(HYCOM_dir_daily,bs="ts",k=5) ,
-                    method = "GCV.Cp", data = transformedCovars.train, family = binomial(),
-                    offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit)# 
-
-# Save summary to text file
-sink(paste(outDir,SP,'_GAM_presence_full.txt'))
-summary(presAbsGAMAll)
-gam.check(presAbsGAMAll)
-sink()
-
-# Calculate and save residuals to text file
-rsd <-residuals.gam(presAbsGAMAll)
-png(paste(outDir,SP,'_residuals_presence_full.png',sep=''), width = 1000, height = 800)
-plot(rsd)
-dev.off() 
+# # Presence absence
+# yBinomial <- mergedTrain.set$SpPresent
+# 
+# cat("Run full GAM on presence absence data with shrinkage\n")
+# 
+# presAbsGAMAll <- gam(yBinomial ~ s(SST_daily, bs="ts",k=5) + s(SSH_daily,bs="ts",k=5)
+#                     +s(log10_CHL_daily_climate,bs="ts",k=5) + s(log10_HYCOM_mld_daily,bs="ts",k=5) 
+#                     +s(HYCOM_northVel_daily,bs="ts",k=5) + s(HYCOM_eastVel_daily,bs="ts",k=5) 
+#                     +s(HYCOM_wVel_daily,k=5) + s(EddyDist, bs ="ts",k=5)
+#                     +s(log10_Dist_to_Front, bs="ts",k=5)+ s(HYCOM_dir_daily,bs="ts",k=5) ,
+#                     method = "GCV.Cp", data = transformedCovars.train, family = binomial(),
+#                     offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit)# 
+# 
+# # Save summary to text file
+# sink(paste(outDir,SP,'_GAM_presence_full.txt'))
+# summary(presAbsGAMAll)
+# gam.check(presAbsGAMAll)
+# sink()
+# 
+# # Calculate and save residuals to text file
+# rsd <-residuals.gam(presAbsGAMAll)
+# png(paste(outDir,SP,'_residuals_presence_full.png',sep=''), width = 1000, height = 800)
+# plot(rsd)
+# dev.off() 
 
 # Density
 y <- mergedTrain.set$SpEncounter_g0adj
@@ -542,11 +553,11 @@ cat("Run full GAM on density data with shrinkage\n")
 
 encounterAll <- gam(y ~ s(SST_daily, bs="ts",k=5) + s(SSH_daily,bs="ts",k=5)
          +s(log10_CHL_daily_climate,bs="ts",k=5) + s(log10_HYCOM_mld_daily,bs="ts",k=5) 
-         +s(HYCOM_northVel_daily,bs="ts",k=5) + s(HYCOM_eastVel_daily,bs="ts",k=5) 
-         +s(HYCOM_wVel_daily,k=5) + s(EddyDist, bs ="ts",k=5)
+         +s(HYCOM_northVel_daily,bs="ts",k=5)
+         +s(EddyDist, bs ="ts",k=5)+ s(Month,bs="ts",k=5)
          +s(log10_Dist_to_Front, bs="ts",k=5)+ s(HYCOM_dir_daily,bs="ts",k=5) ,
          method = "GCV.Cp", data = transformedCovars.train, family = tw(),
-         offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit)# 
+         offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit, weights = mergedTrain.set$Weights)# 
 
 # Output summary text to file
 sink(paste(outDir,SP,'_GAM_density_full.txt'))
@@ -565,10 +576,10 @@ cat("Run reduced GAM with without unused variables\n")
 # look at that output, some covariates have been shrunk down to nothing, so remove them
 ctl <- gam.control()
 ctl$keepData = TRUE
-encounterAll <- gam(y ~ s(SSH_daily,bs="ts",k=5)
-                    + s(log10_HYCOM_mld_daily, bs="ts", k=5) 
-                    + s(log10_Dist_to_Front, bs="ts", k=5)
-                    + s(HYCOM_wmergedTrain.setVel_daily,bs="ts",k=5) ,
+encounterAll <- gam(y ~ s(SSH_daily, bs="ts",k=5)
+                    + s(Month, bs="cc", k=5) 
+                    + s(SST_daily, bs="ts", k=5)
+                    + s(HYCOM_dir_daily, bs="cc",k=5) ,
                     control = list(keepData=TRUE),
                     method = "GCV.Cp", data = transformedCovars.train, family = tw(),
                     offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit)# 
@@ -597,6 +608,5 @@ save(model, modelMetadata, file = paste(outDir,SP,'_GAM_density_pruned.Rdata',se
 yTest <- mergedTest.set$SpEncounter_g0adj
 pred <- predict.gam(encounterAll,transformedCovars.test, type = 'response',na.action = na.omit)
 plot(yTest,pred)
-
 
 # Density 

@@ -18,6 +18,12 @@ transform.covars <- function(mySegments,covarList,transformList){
     }else if (thisTransform == "exp"){
       thisCovarTr <- exp(thisCovar)
       dataNames[tI] <- paste0('exp_',cI,sep = '')
+    }else if (thisTransform == "sqrt"){
+      thisCovarTr <- sqrt(thisCovar)
+      dataNames[tI] <- paste0('sqrt_',cI,sep = '')
+    }else if (thisTransform == "^2"){
+      thisCovarTr <- (thisCovar^2)
+      dataNames[tI] <- paste0('sq_',cI,sep = '')
     }else if (thisTransform == "none"){
       thisCovarTr <- thisCovar
       dataNames[tI] <- cI
