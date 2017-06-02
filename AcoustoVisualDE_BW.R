@@ -7,7 +7,7 @@ library(mgcv)
 library(openair)
 library(prodlim)
 
-setwd("E:\\NASData")
+setwd("E:/NASData")
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_cleveland.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/transform_covars.R')
@@ -20,7 +20,7 @@ outDir <- "E:/NASData/ModelData/"
 SP <- "Zc" # "Ssp"
 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/GC_DT_binsize000800_Group_density_Cuviers.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+acousticDensityFile <-"E:/NASData/MC_GC_DT_binsize000800_Group_density_Cuviers.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 
@@ -586,20 +586,28 @@ cat("Exploratory plots done\n")
 # yBinomial <- mergedTrain.set$SpPresent
 # 
 # cat("Run full GAM on presence absence data with shrinkage\n")
-# 
-# presAbsGAMAll <- gam(yBinomial ~ s(SST_daily, bs="ts",k=5) + s(SSH_daily,bs="ts",k=5)
-#                     +s(log10_CHL_daily_climate,bs="ts",k=5) + s(log10_HYCOM_mld_daily,bs="ts",k=5) 
-#                     +s(HYCOM_northVel_daily,bs="ts",k=5) + s(HYCOM_eastVel_daily,bs="ts",k=5) 
-#                     +s(HYCOM_wVel_daily,k=5) + s(EddyDist, bs ="ts",k=5)
-#                     +s(log10_Dist_to_Front, bs="ts",k=5)+ s(HYCOM_dir_daily,bs="ts",k=5) ,
-#                     method = "GCV.Cp", data = transformedCovars.train, family = binomial(),
-#                     offset = log(mergedTrain.set$EffectiveArea),na.action = na.omit)# 
-# 
-# # Save summary to text file
-# sink(paste(outDir,SP,'_GAM_presence_full.txt'))
-# summary(presAbsGAMAll)
-# gam.check(presAbsGAMAll)
-# sink()
+
+yAcOnly_TF <- as.logical(Train_AcOnly.set$Density>0)
+# myts_AcOnly = ts(Train_AcOnly.set$Density[which(Train_AcOnly.set$lat == 28.84625)],start = 1, frequency = 1)
+# tsdiag(arima(myts_AcOnly))
+
+cat("Run full binomial GAM on Acoustic only data with shrinkage\n")#random = list(fac1=~1),
+gam_full_AcOnly_TF <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
+                           + s(SSH, bs="ts", k=kVal)
+                           + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
+                           + s(Neg_EddyDist, bs="ts", k=kVal)
+                           + s(DayOfYear, bs="cp", k=kVal)
+                           + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
+                           + s(HYCOM_SALIN_100, bs="ts", k=kVal),
+                           data = transformedCovars_AcOnly.train,
+                           na.action = na.omit,family = quasibinomial(),
+                           correlation = corAR1(form=~1|fac1))#
+
+
+# Save summary to text file
+sink(paste(outDir,SP,'_GAMM_presence_full.txt'))
+summary(gam_full_AcOnly_TF$gam)
+sink()
 # 
 # # Calculate and save residuals to text file
 # rsd <-residuals.gam(presAbsGAMAll)
@@ -607,23 +615,23 @@ cat("Exploratory plots done\n")
 # plot(rsd)
 # dev.off() 
 
-# Density
-kVal = 8
-yAcOnly <- (Train_AcOnly.set$Density)
-# myts_AcOnly = ts(Train_AcOnly.set$Density[which(Train_AcOnly.set$lat == 28.84625)],start = 1, frequency = 1)
-# tsdiag(arima(myts_AcOnly))
-cat("Run full GAM on Acoustic only data with shrinkage\n")#correlation = corAR1(form=~1|mergedTrain.set$Category)
-gam_full_AcOnly <- gam(yAcOnly~ s(SST, bs="ts",k=kVal)+ s(SSH, bs="ts",k=kVal)+ s(log10_CHL, bs="ts",k=kVal)
-                    + s(log10_HYCOM_MLD, bs="ts",k=kVal)+ s(HYCOM_SALIN_0, bs="ts",k=kVal)
-                    + s(log10_HYCOM_MAG_0, bs="ts",k=kVal)+ s(HYCOM_UPVEL_50, bs="ts",k=kVal)
-                    + s(log10_FrontDist_Cayula, bs="ts",k=kVal)+ s(EddyDist, bs="ts",k=kVal),
-                    data = transformedCovars_AcOnly.train,  method = "GCV.Cp",
-                    na.action = na.omit,family=tw())#
-
-sink(paste(outDir,SP,'_GAM_full_AcOnly.txt'))
-summary(gam_full_AcOnly)
-gam.check(gam_full_AcOnly)
-sink()
+# # Density
+# kVal = 8
+# yAcOnly <- (Train_AcOnly.set$Density)
+# # myts_AcOnly = ts(Train_AcOnly.set$Density[which(Train_AcOnly.set$lat == 28.84625)],start = 1, frequency = 1)
+# # tsdiag(arima(myts_AcOnly))
+# cat("Run full GAM on Acoustic only data with shrinkage\n")#correlation = corAR1(form=~1|mergedTrain.set$Category)
+# gam_full_AcOnly <- gam(yAcOnly~ s(SST, bs="ts",k=kVal)+ s(SSH, bs="ts",k=kVal)+ s(log10_CHL, bs="ts",k=kVal)
+#                     + s(log10_HYCOM_MLD, bs="ts",k=kVal)+ s(HYCOM_SALIN_0, bs="ts",k=kVal)
+#                     + s(log10_HYCOM_MAG_0, bs="ts",k=kVal)+ s(HYCOM_UPVEL_50, bs="ts",k=kVal)
+#                     + s(log10_FrontDist_Cayula, bs="ts",k=kVal)+ s(EddyDist, bs="ts",k=kVal),
+#                     data = transformedCovars_AcOnly.train,  method = "GCV.Cp",
+#                     na.action = na.omit,family=tw())#
+# 
+# sink(paste(outDir,SP,'_GAM_full_AcOnly.txt'))
+# summary(gam_full_AcOnly)
+# gam.check(gam_full_AcOnly)
+# sink()
 
 # Calculate and save residuals to text file
 rsd <-residuals.gam(gam_full_AcOnly)

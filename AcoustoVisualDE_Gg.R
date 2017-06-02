@@ -7,55 +7,17 @@ library(openair)
 library(prodlim)
 library(psych)
 
-setwd("/Volumes/EXTHARD/NAS/")
-source('/Volumes/EXTHARD/NAS/AcoustoVisualDE/AcoustoVisualDE/plot_missingdata.R')
-source('/Volumes/EXTHARD/NAS/AcoustoVisualDE/AcoustoVisualDE/plot_cleveland.R')
-source('/Volumes/EXTHARD/NAS/AcoustoVisualDE/AcoustoVisualDE/transform_covars.R')
-source('/Volumes/EXTHARD/NAS/AcoustoVisualDE/AcoustoVisualDE/plot_covarDensity.R')
-source('/Volumes/EXTHARD/NAS/AcoustoVisualDE/AcoustoVisualDE/GetModelMetadata.R')
+setwd("E:/NASData/")
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_missingdata.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_cleveland.R')
+source('E:/AcoustoVisualDE/AcoustoVisualDE/transform_covars.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_covarDensity.R')
+source('E:/NASData//AcoustoVisualDE/AcoustoVisualDE/GetModelMetadata.R')
 #### Parameters needed:  ####
-outDir <- "/Volumes/EXTHARD/NAS/ModelData/" 
-## Detection files
-SP <- "Gg" # "Ssp"
+outDir <- "E:/NASData/ModelData/" 
 
-acousticSegFile <- "/Volumes/EXTHARD/NAS/ALLSITES_segments_daily.csv" # acoustic input file
-acousticDensityFile <-"/Volumes/EXTHARD/NAS/ALLSITES_binsize000800_Gg_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
-# The name of the acoustic density file with matched segments
-acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
-
-visDataFile <- "/Volumes/EXTHARD/NAS/Sightings_merged.Rdata" # visual sightings
-visSegmentsFile <- "/Volumes/EXTHARD/NAS/Visual_Segments_v2.csv" # visual segments
-
-# Mapping data
-surveyAreaFile <- "/Volumes/EXTHARD/NAS/AcoustoVisualDE/surveyAreaOutline.shp"
-# To load this, use: surveyArea <- readShapeSpatial(surveyAreaFile)
-
-## Species/Platform/model info
-# Species Category (used for file naming)
-
-# Species names
-# Visual Codes
-#SPC_vis <- c("Cuvier's beaked whale", "unid. Ziphiid")# "Gervais' beaked whale", "Beaked Whale","unid. Mesoplodont"
-# SPC_vis <- c("Atlantic spotted dolphin", "Striped dolphin","Pantropical spotted dolphin",
-#              "Spinner dolphin","Stenella sp.","Clymene dolphin")
-SPC_vis <- c("Risso's dolphin")
-
-# Platform Codes (visual only)
-PLC <- c("GU","OR")
-
-
-# Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
-runDetFuns <- FALSE # can be true or false
-
-# The name of the visual detection function file. 
-detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")# #Vis_TruncDist_allBW.Rdata" # <- With spares data, you could produce a visual detection function using all beaked whales, 
-# then  use that here, to only estimate habitat model for Ziphiid, for instance.
-# If runDetFuns = TRUE, detFunFile is used to name the R output from the detection function calculation process.
-# If runDetFuns = FALSE, detFunFile is used to retrieve the previously caclualated detection functions.
-
-matchACSegs <- FALSE  # set to true if you need to match density estimates with environmental parameters
-
-visG0 <- mean(c(.42,.37)) #= dolphin #Beaked whale=.27 # from palka 2006 table 5, 2004 survey
+## Read set up file
+load('setup_info_Gg.Rdata')
 
 ############### Begin Calculations ################
 graphics.off()
