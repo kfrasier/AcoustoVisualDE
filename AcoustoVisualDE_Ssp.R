@@ -416,7 +416,7 @@ cat("Merging Visual and Acoustic Segments\n")
 
 # Merge visual and acoustic segments into one big dataframe
 mergedSegments <- NULL
-mergedSegments$date <- c(as.Date(visSeg_OnEffort$date_Converted,"%m/%d/%Y"),as.Date(acDensityAll$xlsDate,"%m/%d/%Y")) #date
+mergedSegments$date <- c(as.Date(visSeg_OnEffort$date_Converted,"%m/%d/%Y", tz="GMT"),as.Date(acDensityAll$xlsDate,"%m/%d/%Y")) #date
 mergedSegments$lat <- c(visSeg_OnEffort$Lat,acDensityAll$Lat)
 mergedSegments$long <- c(visSeg_OnEffort$Long,acDensityAll$Long)
 mergedSegments$Category<- c(rep(1,length(visSeg_OnEffort$Long)),rep(2,length(acDensityAll$Long)))

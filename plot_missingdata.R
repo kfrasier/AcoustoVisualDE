@@ -4,7 +4,7 @@ plot.missingdata <- function(mySegments,covarList,fNamePrefix){
   #  percFilled<- A table of % data available by year for each covariate in covarList
   
   # Make vector of dates by year, so we can figure out what % of segments in yeach year are missing data.
-  tmpTimes <- as.Date(mySegments$date,"%Y-%m-%d")
+  tmpTimes <- as.Date(mySegments$date,"%Y-%m-%d", tz="GMT")
   yearMax <- max(tmpTimes)
   startYear <- floor_date(min(tmpTimes),unit="year")
   endYear <- ceiling_date(max(tmpTimes),unit="year")
