@@ -3,6 +3,9 @@
 # Species name
 SP <- "Zc" 
 
+# Site names included:
+siteList= c("MC","GC","DT")
+
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
 # if directory doen't exist, make it.

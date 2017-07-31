@@ -10,10 +10,12 @@ if (!file.exists(savePath)){
 }
 setwd(savePath)
 
+# Site names included:
+siteList= c("MC","GC","DT","DC","MP")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
+acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Gg_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 
@@ -40,5 +42,17 @@ matchACSegs <- TRUE  # set to true if you need to match density estimates with e
 
 visG0 <- mean(c(0.77,0.84)) # for Gg  from palka 2006 table 5, 2004 survey
               
-save(file = "setup_info_Gg.Rdata", SP,acDensityFile,visDataFile,visSegmentsFile,surveyAreaFile,SPC_vis,PLC,
-     acousticSegFile,acousticDensityFile,runDetFuns,detFunFile,matchACSegs,visG0)
+# Relative datatype weights
+weight_Vis <- 1 
+weight_Ac <- round(44*(12.6/100)) # in combined model, how should the acoustic data be weighted relative to visual? 
+# My logic: If ACOUSTIC estimates are daily bins, 
+# and VISUAL estimates are from 10km transect segments at 10 knot survey speed (~18.5km/hr) -> 10/18.5 = 0.54 hr
+# then 24/0.54 = 44 (i.e. each ACOUSTIC datapoint is equivalent to 44 VISUAL datapoints)
+# BUT, the trucation distance is smaller for acoustic -> surfaceAreaAC ~= 2*2*pi, vs surfaceAreaVis = 10*5*2
+# Alternative: If either weight is NULL the two datasets are given equal weights based on dataset size
+# ie Ac_weight = number_visSamples/number_acSamples
+
+
+save(file = "setup_info_Gg.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     runDetFuns,detFunFile,matchACSegs,visG0,weight_Ac,weight_Vis)
