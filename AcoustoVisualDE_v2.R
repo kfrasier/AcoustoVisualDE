@@ -634,12 +634,15 @@ png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2
 pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off() 
 cat("Exploratory plots done\n")
-# 
-#
-# save(gam_full_TF, best_Combined_model, transformedCovars.train,
-#      transformedCovars.test,mergedTest.set,mergedTrain.set,
-#      file = paste(outDir,SP,'AcousticAndVisual_binomial_GAMMs_ALL.Rdata',sep=''))
-# 
+
+
+save(transformedCovars.train,transformedCovars.test,
+     mergedTest.set,mergedTrain.set,
+     transformedCovars_VisOnly.train,transformedCovars_AcOnly.train,
+     transformedCovars_VisOnly.test,transformedCovars_VisOnly.test,
+     Train_AcOnly.set,Train_VisOnly.set,Test_AcOnly.set,Test_VisOnly.set,
+     file = paste(outDir,SP,'MergedPredictors.Rdata',sep=''))
+
 # ############################# Acoustic Only Model Fitting #############################
 # # Run & evaluate models
 # 

@@ -1,6 +1,15 @@
 # Gg models
 library(mgcv)
 library(MASS)
+library(rgdal)
+library(raster)
+library(ggplot2)
+library(rgeos)
+library(mapview)
+library(leaflet)
+library(broom)
+options(stringsAsFactors = FALSE)
+
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/GetModelMetadata.R')
 
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -303,6 +312,7 @@ compAcSet_DT <- which((Test_AcOnly.set$fac1)==15 |(Test_AcOnly.set$fac1)==16)
 compAcSet_DC <- which((Test_AcOnly.set$fac1)==21 |(Test_AcOnly.set$fac1)==22)
 compAcSet_MP <- which((Test_AcOnly.set$fac1)==26)
 
+# Predict in time
 dateTicks = as.POSIXct(c("2013-01-01 GMT","2013-04-01 GMT","2013-07-01 GMT","2013-10-01 GMT","2014-01-01 GMT"))
 dateLabels = c("Jan. 2013","Apr. 2013","Jul. 2013","Oct 2013","Jan. 2014")
 predAcOnly_MC <- predict.gam(ACOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_MC,],
@@ -340,6 +350,47 @@ twoord.plot(Test_AcOnly.set$date[compAcSet_MP],predAcOnly_MP,
 #axis(1,at=dateTicks, labels=dateLabels)
 dev.off()
 
+## Predict in space
+# crop and simplify world land masses
+#world_landmass <- readOGR("world_landmass/world_landmass.shp")
+#isobaths <- readOGR("isobaths/w98e78n31s18_isobath_selected_5-4000m.shp")
+#map_extent <- extent(isobaths)
+#gom_landmass <- crop(world_landmass,map_extent)
+#writeOGR(gom_landmass,"world_landmass", "GOM_landmass", driver="ESRI Shapefile")
+
+world_landmass <- readOGR("world_landmass/GOM_landmass.shp")
+gom_landmass_simp <- gSimplify(gom_landmass, 
+                             tol = .05, 
+                             topologyPreserve = TRUE)
+plot(gom_landmass_simp)
+predTemplate <-raster('E:/NASData/AcoustoVisualDE/Prediction_template/Predictiontemplate.tif')
+CHL_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_jan2009.tif'),predTemplate)
+CHL_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_july2009.tif'),predTemplate)
+SST_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SST/SST_jan_2009.tif'),predTemplate)
+SST_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SST/SST_july_2009.tif'),predTemplate)
+SSH_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SSH/SSH_jan2009.tif'),predTemplate)
+SSH_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SSH/SSH_july2009.tif'),predTemplate)
+log10_Cayula_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/Cayula/log10_CayulaFront_jan2009.tif'),predTemplate)
+log10_Cayula_j_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/Cayula/log10_CayulaFront_july2009.tif'),predTemplate)
+SAL_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/Salinity/sal0_jan2009.tif'),predTemplate)
+SAL_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/Salinity/sal0_july2009.tif'),predTemplate)
+Eddy_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/EddyDist_jan2009.tif'),predTemplate)
+Eddy_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/EddyDist_july2009.tif'),predTemplate)
+
+jan2009_rasters <- brick(CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,SAL_jan_2009,Eddy_jan_2009) 
+july2009_rasters <- brick(CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,SAL_july_2009,Eddy_july_2009)      
+
+names(jan2009_rasters)<-c('CHL','SST','SSH','log10_FrontDist_Cayula','HYCOM_SALIN_0','EddyDist')
+names(july2009_rasters)<-c('CHL','SST','SSH','log10_FrontDist_Cayula','HYCOM_SALIN_0','EddyDist')
+
+dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+
+jan2009_prediction <- raster::predict(jan2009_rasters,model,
+            type = 'response',na.action = na.pass)
+            
+july2009_prediction <- raster::predict(july2009_rasters,model,
+            type = 'response',na.action = na.pass)    
+            
 ############################# Visual Only Model Fitting #############################
 
 yVisOnly_TF <- as.logical(Train_VisOnly.set$Density>0)
