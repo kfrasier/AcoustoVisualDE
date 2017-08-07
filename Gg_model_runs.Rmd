@@ -19,6 +19,9 @@ library(mapview)
 library(leaflet)
 library(broom)
 library(plotrix)
+library(magrittr)
+library(colorRamps)
+
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
@@ -433,7 +436,7 @@ gom_landmass_simp <- gSimplify(gom_landmass,
 ```
 
 Load in rasters for prediction periods (2009 winter and summer)
-```{r Load rasters}
+```{r Load rasters, eval = FALSE}
 predTemplate <-raster('E:/NASData/AcoustoVisualDE/Prediction_template/Predictiontemplate.tif')
 CHL_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_jan2009.tif'),predTemplate)
 CHL_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_july2009.tif'),predTemplate)
@@ -452,10 +455,12 @@ Eddy_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/EddyDist_
 Neg_Eddy_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/DistNegMSLA_eddy_polarities_2009015.img'),
                               predTemplate)
 Neg_Eddy_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/Neg_EddyDist_july2009.tif'),predTemplate)
+
+
 ```
 
 Combine rasters into a single unit and evaluate the model for summer and winter
-```{r brick rasters}
+```{r brick rasters, eval = FALSE}
 jan2009_rasters <- brick(CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
                          SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009) 
 july2009_rasters <- brick(CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
@@ -464,8 +469,19 @@ july2009_rasters <- brick(CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula
 names(jan2009_rasters)<-c('CHL','SST','SSH','log10_FrontDist_Cayula'
                           ,'HYCOM_SALIN_0','Eddy_Dist','Neg_EddyDist')
 names(july2009_rasters)<-c('CHL','SST','SSH','log10_FrontDist_Cayula',
-                           'HYCOM_SALIN_0','Eddy_Dist','Neg_EddyDist')
+                         'HYCOM_SALIN_0','Eddy_Dist','Neg_EddyDist')
 
+save(jan2009_rasters,july2009_rasters,
+     file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')  
+
+```
+
+```{r load raster bricks}
+load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
+
+```
+
+```{r Predict test}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
 jan2009_prediction <- raster::predict(jan2009_rasters,model,
@@ -475,9 +491,34 @@ july2009_prediction <- raster::predict(july2009_rasters,model,
             type = 'response',na.action = na.pass)    
 ```
 
-Summer map
-```{r}
+Winter map
+```{r Winter Map}
+predict_template <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
+map_proj <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
-plot(jan2009_prediction)
-  
+jan2009_prediction_proj <- projectRaster(jan2009_prediction, crs=map_proj)
+july2009_prediction_proj <- projectRaster(july2009_prediction, crs=map_proj)
+
+predict_template_proj <- spTransform(predict_template, CRSobj = map_proj)
+
+jan2009_prediction_crop <- mask(jan2009_prediction_proj,predict_template_proj)
+july2009_prediction_crop <- mask(july2009_prediction_proj,predict_template_proj)
+
+pal <- colorNumeric(palette = matlab.like2(5), unique(c(values(jan2009_prediction_crop),values(july2009_prediction_crop))),
+  na.color = 'transparent')
+```
+
+```{r Acoustic leaflet}
+map <- leaflet() %>% addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(jan2009_prediction_crop, colors = pal, opacity = 0.8, group = 'January 2009') %>%
+  addRasterImage(july2009_prediction_crop, colors = pal, opacity = 0.8, group = 'July 2009') %>%
+  addLegend(pal = pal, values = values(jan2009_prediction_crop),
+    title = 'Probability of encounter') %>%
+  addLayersControl(
+    baseGroups = c("January 2009", "July 2009"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+
+
 ```
