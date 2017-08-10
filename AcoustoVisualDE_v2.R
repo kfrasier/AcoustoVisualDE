@@ -260,18 +260,20 @@ prunedSightings <- visData[which(visData$Truncated==0),] # get all of the non-tr
 # Assign segment to each sighting
 for (iSight in 1:length(prunedSightings$date)){
   sightDate <- as.POSIXct(strptime(prunedSightings$date[iSight],"%Y-%m-%d"),tz="GMT")
+  cat(paste0('Original date = ', prunedSightings$date[iSight],'\n'))
+  cat(paste0('POSIXct date = ', sightDate,'\n'))
   onThisDay <- which(visSeg_OnEffort$date == sightDate)
+  cat(paste0('matching day = ', onThisDay,'\n'))
   if (length(onThisDay)>0) {
-    minIdx <- which.min(rowSums((visSeg_OnEffort[onThisDay,c(35,36)]-
-              matrix(as.numeric(rep(prunedSightings[iSight,c(13,14)],each=length(onThisDay)),ncol=2)))^2))
+    minIdx <- which.min(rowSums((visSeg_OnEffort[onThisDay,c('Lat','Long')]-
+              matrix(as.numeric(rep(prunedSightings[iSight,c('boatlat','boatlon')],each=length(onThisDay)),ncol=2)))^2))
     prunedSightings$Segment[iSight] <- onThisDay[minIdx]
+    
   }else { # handle case where there is no match (why would this happen?)
     cat(paste("Warning: Missing effort segment for sighting on", sightDate,"\n"))
     prunedSightings$Segment[iSight] <- NaN
   }
 }
-
-segTally <- as.data.frame(table(prunedSightings$Segment)) # this gives you a list of segments containing sightings
 
 #adjust encounters for G0
 # for (i in PLC){
@@ -286,18 +288,16 @@ visSeg_OnEffort$sp_count <- 0  # will hold number of animals
 visSeg_OnEffort$sp_present <- 0 # will hold 1/0 for presence absence
 
 # for each segment that had a sighting
-for (iSeg in segTally[,1]){
+for (iSeg in 1:length(prunedSightings$Segment)){
   
-  # determine the row number of all sighting rows matching this segment number
-  segIdx <- which(prunedSightings$Segment == iSeg)
-  SegObjID_Idx <- which(visSeg_OnEffort$OBJECTID == iSeg)
-  
-  if (length(SegObjID_Idx)>0){
-    visSeg_OnEffort$sp_count[SegObjID_Idx] <- sum(prunedSightings$size[segIdx])
-    if (visSeg_OnEffort$sp_count[SegObjID_Idx] >0) {# this should always be true...
-      visSeg_OnEffort$sp_present[SegObjID_Idx] <- 1
-    }
-  }
+  # Add the number of animals observed, 
+  # this is cumulative in case multiple sightings occured on one transect
+  visSeg_OnEffort$sp_count[prunedSightings$Segment[iSeg]] <- 
+    visSeg_OnEffort$sp_count[prunedSightings$Segment[iSeg]] + 
+    prunedSightings$size[iSeg]
+
+  # also set presence equal to 1
+  visSeg_OnEffort$sp_present[prunedSightings$Segment[iSeg]] <- 1
 }
 
 # account for G0 in encounters
@@ -499,7 +499,7 @@ for (iSite in 1:length(siteList)){
       ylab = expression(atop(Estimated ~ Density,(animals/1000 ~ km^{2}))),
       xlab = xlabStr, 
       xlim = c(min(AcOnlySegments$date,na.rm = TRUE),max(AcOnlySegments$date,na.rm = TRUE)))
-  rect()
+  # rect()
   text(x=max(AcOnlySegments$date,na.rm = TRUE),
        y = max(AcOnlySegments$Density[AcOnlySegments$siteNum==iSite]*.95,na.rm = TRUE,
                cex=1.2, adj = c(0,0)), labels = siteList[iSite])
@@ -638,8 +638,8 @@ cat("Exploratory plots done\n")
 
 save(transformedCovars.train,transformedCovars.test,
      mergedTest.set,mergedTrain.set,
-     transformedCovars_VisOnly.train,transformedCovars_AcOnly.train,
-     transformedCovars_VisOnly.test,transformedCovars_VisOnly.test,
+     transformedCovars_AcOnly.train,transformedCovars_AcOnly.test,
+     transformedCovars_VisOnly.train,transformedCovars_VisOnly.test,
      Train_AcOnly.set,Train_VisOnly.set,Test_AcOnly.set,Test_VisOnly.set,
      file = paste(outDir,SP,'MergedPredictors.Rdata',sep=''))
 

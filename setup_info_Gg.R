@@ -11,7 +11,7 @@ if (!file.exists(savePath)){
 setwd(savePath)
 
 # Site names included:
-siteList= c("MC","GC","DT","DC","MP")
+siteList <-c("MC","GC","DT","DC","MP")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily.csv" # acoustic input file
@@ -54,5 +54,5 @@ weight_Ac <- round(44*(12.6/100)) # in combined model, how should the acoustic d
 
 
 save(file = "setup_info_Gg.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,siteList,
      runDetFuns,detFunFile,matchACSegs,visG0,weight_Ac,weight_Vis)
