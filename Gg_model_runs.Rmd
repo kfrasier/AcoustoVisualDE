@@ -43,6 +43,7 @@ outDir <- file.path('E:/NASData/ModelData',SP,'/')
 ## Data Inputs
 
 <br>
+
 The visual data goes back to 1992, but many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses.
 
 ```{r Missing data}
@@ -82,6 +83,7 @@ Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
 ```
 
 <br>
+
 ### Preliminary Mapping
 
 The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Note that no Risso's dolphin sightings were reported during the 2014 survey. Blue markers indicate HARP locations.
@@ -153,6 +155,7 @@ VisOnlySegments$Density[outlierList] <- NaN
 ```
 
 <br>
+
 ### Check Covariate Distributions
 
 Covariates have different distributions across the observations. 
@@ -302,6 +305,7 @@ gamm_full_VisOnly_TF<-NULL
 gamm_full_TF<-NULL
 ```
 <br>
+
 Calculate weights to use in combined visual/acoustic model.
 
 ```{r Calculate weights}
