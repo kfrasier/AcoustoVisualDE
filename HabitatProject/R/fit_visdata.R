@@ -1,11 +1,13 @@
-# fit_visdata
+#' This functino processes visual data to determine detection probabilities and strip widths for each platform
+#' Saves model output to files, and makes plots for evaluating model fit.
+#' Returns: 
+#' tDist <- Truncation distances fit_visdata
+#' @export
+#' @examples
+#' fit.visdata()
+
 fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
 
-  # Processes Visual data to determine detection probabilities and strip widths for each platform
-  # Saves model output to files, and makes plots for evaluating model fit.
-  # Returns: 
-  # tDist <- Truncation distances
-   
   # for each visual platform
   nPlatform <- 1  # Initialize to start with first platform
   
@@ -35,7 +37,7 @@ fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
     # Compute untruncated detection function
     cat("Calculating basic fit with non-truncated data and half-normal key, no covariates.\n")
     
-    detFun_noTrunc <-ddf(method='ds',dsmodel=~mcds(key='hn', formula = ~ 1),
+    detFun_noTrunc <-mrds::ddf(method='ds',dsmodel=~mcds(key='hn', formula = ~ 1),
                          data=as.data.frame(ddfData), meta.data=list(binned=F, left=0))
     
     
@@ -43,13 +45,13 @@ fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
     noquote("Saving plots")
     png(paste(SP,'sightnoTrunc_',i,'.png',sep=''), width = 800, height = 500)
     par(mfrow=c(1,2))
-    plot(detFun_noTrunc)
-    qqplot.ddf(detFun_noTrunc,plot=TRUE)
+    graphics::plot(detFun_noTrunc)
+    mrds::qqplot.ddf(detFun_noTrunc,plot=TRUE)
     dev.off()
     
     
     # Compute truncation distance by removing highest 5% of distances
-    tDist[nPlatform] <- quantile(ddfData$distance,.95,na.rm = TRUE)
+    tDist[nPlatform] <- stats::quantile(ddfData$distance,.95,na.rm = TRUE)
     cat(paste("Truncation distance for platform ", i, "=",  round(tDist[nPlatform],2), "km \n"))
     
     
@@ -68,11 +70,11 @@ fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
       if (grepl('none',adjList1[[i1]])){
         
       
-        detFun1[[i1]] <-ddf(method ='ds', dsmodel =~ mcds(key = as.character(keyList1[i1]), formula = ~ 1),
+        detFun1[[i1]] <-mrds::ddf(method ='ds', dsmodel =~ mcds(key = as.character(keyList1[i1]), formula = ~ 1),
                             data = as.data.frame(ddfData), meta.data = list(binned=F, width=tDist[nPlatform], left=0))
         
       } else {
-        detFun1[[i1]]<-ddf(method ='ds', dsmodel =~ mcds(key = as.character(keyList1[i1]), formula = ~ 1,
+        detFun1[[i1]]<-mrds::ddf(method ='ds', dsmodel =~ mcds(key = as.character(keyList1[i1]), formula = ~ 1,
                            adj.series = as.character(adjList1[i1]), adj.order = adjOrder[i1]), data = as.data.frame(ddfData),
                            meta.data = list(binned=F, width=tDist[nPlatform],left=0))
       }
@@ -107,7 +109,7 @@ fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
           
           # sometimes models do not converge, use try() to avoid crash if a model fails
           dF <- NULL
-          try(dF <- ddf(method='ds',dsmodel=~mcds(key=iKey,  formula = cSetStr[CI]),
+          try(dF <- mrds::ddf(method='ds',dsmodel=~mcds(key=iKey,  formula = cSetStr[CI]),
                         data = as.data.frame(ddfData),
                         meta.data = list(binned=F, width=tDist[nPlatform],left=0)))
           
@@ -151,7 +153,7 @@ fit.visdata<- function(visData,spIdxON2,PLC,keyList1,adjList1){
     png(paste(SP,'sightwTrunc_',i,'.png',sep=''), width = 800, height = 500)
     par(mfrow=c(1,2))
     plot(detFun[[bestModelIdx]], main = paste('model = ',bestModel[[nPlatform]], '; key = ', bestKey[[nPlatform]]))
-    qqplot.ddf(detFun[[bestModelIdx]],plot=TRUE)
+    mrds::qqplot.ddf(detFun[[bestModelIdx]],plot=TRUE)
     dev.off()
     
     # Output summary text to txt file

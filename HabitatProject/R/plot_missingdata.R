@@ -1,13 +1,17 @@
+#' Function generates set of histograms showing data gaps by year.  
+#' RETURNS:
+#'   percFilled<- A table of percentage data available by year for each covariate in covarList 
+#' @export 
+#' @examples 
+#' plot.missingdata() 
+
 plot.missingdata <- function(mySegments,covarList,fNamePrefix){
-  # Generates set of histograms showing data gaps by year
-  # RETURNS:
-  #  percFilled<- A table of % data available by year for each covariate in covarList
   
   # Make vector of dates by year, so we can figure out what % of segments in yeach year are missing data.
   tmpTimes <- as.Date(mySegments$date,"%Y-%m-%d", tz="GMT")
   yearMax <- max(tmpTimes)
-  startYear <- floor_date(min(tmpTimes),unit="year")
-  endYear <- ceiling_date(max(tmpTimes),unit="year")
+  startYear <- lubridate::floor_date(min(tmpTimes),unit="year")
+  endYear <- lubridate::ceiling_date(max(tmpTimes),unit="year")
   yearVector <- seq(startYear, endYear, by = "years")
   
   
@@ -23,7 +27,7 @@ plot.missingdata <- function(mySegments,covarList,fNamePrefix){
   b <- array(0,dim=c(nCovars,0))
   dimnames(b) <- list(covariate = covarList,year = c())
   
-  percFilled <- adiag(a,b)
+  percFilled <- magic::adiag(a,b)
   
   
   # for each covariate and year, calculate the percentage of points that have a non-zero value
@@ -48,7 +52,7 @@ plot.missingdata <- function(mySegments,covarList,fNamePrefix){
       n1 <- n1 + 1
       
     }
-    barplot(percFilled[m1,]*100, main = cI,  xlab = "",
+    graphics::barplot(percFilled[m1,]*100, main = cI,  xlab = "",
             ylab = "% of data available", las=2, cex.main=1.5,cex.axis = 1.5,cex.names = 1.5,
             ylim=c(0,100))
     

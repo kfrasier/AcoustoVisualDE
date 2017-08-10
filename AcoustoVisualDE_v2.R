@@ -8,12 +8,7 @@ library(prodlim)
 library(psych)
 library(pracma)
 library(plotrix)
-
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_missingdata.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_cleveland.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/transform_covars.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/plot_covarDensity.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/GetModelMetadata.R')
+library(HabitatProject)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run setup_info_[your species here].R before running this
@@ -336,7 +331,7 @@ AcOnlySegments$Category<- rep(2,length(acDensityAll$Long))
 AcOnlySegments$SST <- acDensityAll$SST_DAILY_CMC.L4
 AcOnlySegments$SSH <- acDensityAll$SSH_DAILY_AVISO
 AcOnlySegments$CHL <- acDensityAll$CHL_8DAY_NASA
-AcOnlySegments$HYCOM_QTOT <- acDensityAll$HYCOM_QTOT
+#AcOnlySegments$HYCOM_QTOT <- acDensityAll$HYCOM_QTOT
 AcOnlySegments$HYCOM_MLD <- acDensityAll$HYCOM_MLD
 AcOnlySegments$HYCOM_EMP <- acDensityAll$HYCOM_EMP
 AcOnlySegments$HYCOM_DIR_0 <- acDensityAll$HYCOM_DIR_0
@@ -387,7 +382,7 @@ VisOnlySegments$Density <- visSeg_OnEffort$Density#/
 VisOnlySegments$SST <- visSeg_OnEffort$SST_daily_CMC_L4_GLOB
 VisOnlySegments$SSH <- visSeg_OnEffort$SSH_daily_aviso_double
 VisOnlySegments$CHL <- visSeg_OnEffort$CHl_8Day_NASA
-VisOnlySegments$HYCOM_QTOT <- visSeg_OnEffort$HYCOM_qTot
+# VisOnlySegments$HYCOM_QTOT <- visSeg_OnEffort$HYCOM_qTot
 VisOnlySegments$HYCOM_MLD <- visSeg_OnEffort$HYCOM_mld
 VisOnlySegments$HYCOM_EMP <- visSeg_OnEffort$HYCOM_emp
 VisOnlySegments$HYCOM_DIR_0 <- visSeg_OnEffort$HYCOM_dir_0
@@ -426,7 +421,7 @@ mergedSegments$Density <- c(VisOnlySegments$Density,
 mergedSegments$SST <- c(visSeg_OnEffort$SST_daily_CMC_L4_GLOB,acDensityAll$SST_DAILY_CMC.L4)
 mergedSegments$SSH <- c(visSeg_OnEffort$SSH_daily_aviso_double,acDensityAll$SSH_DAILY_AVISO)
 mergedSegments$CHL <- c(visSeg_OnEffort$CHl_8Day_NASA, acDensityAll$CHL_8DAY_NASA)
-mergedSegments$HYCOM_QTOT <- c(visSeg_OnEffort$HYCOM_qTot, acDensityAll$HYCOM_QTOT)
+# mergedSegments$HYCOM_QTOT <- c(visSeg_OnEffort$HYCOM_qTot, acDensityAll$HYCOM_QTOT)
 mergedSegments$HYCOM_MLD <- c(visSeg_OnEffort$HYCOM_mld, acDensityAll$HYCOM_MLD)
 mergedSegments$HYCOM_EMP <- c(visSeg_OnEffort$HYCOM_emp, acDensityAll$HYCOM_EMP)
 mergedSegments$HYCOM_DIR_0 <- c(visSeg_OnEffort$HYCOM_dir_0,acDensityAll$HYCOM_DIR_0)
@@ -445,7 +440,9 @@ mergedSegments$DayOfYear <- as.numeric(strftime(mergedSegments$date,"%j")) # day
 mergedSegments <- as.data.frame(mergedSegments)
 
 
-############ Calculate a covarance factor based on deployment (Acoustic) or Year (Visual) #############
+
+
+############ Calculate a covariance factor based on deployment (Acoustic) or Year (Visual) #############
 
 myLatLon <- data.frame(AcOnlySegments$lat,AcOnlySegments$long)
 uLatLon <- unique(myLatLon)
@@ -470,97 +467,69 @@ for (uR in 1:length(uYear)){
 
 mergedSegments$fac1 <- as.numeric(c(VisOnlySegments$fac1,AcOnlySegments$fac1))
 
-covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
-# covarList<- c("Bathymetry","SST_daily","CHl_8Day","HYCOM_dir_daily","HYCOM_mag_daily","HYCOM_wVel_daily",
-#              "SSH_daily","CHL_daily","TKE_surfaceCurrent_5day","HYCOM_mld_daily")
 
-
+save(mergedSegments,VisOnlySegments,AcOnlySegments,
+     file = paste(outDir,SP,'MergedData.Rdata',sep=''))
 ##################### Data Exploration, Transformation and Plotting #####################
 
 # Explore the data, graphical output
-cat("Begin exploratory plot generation\n")  
-
-for (iSite in 1:length(siteList)){
-  
-  if (iSite == length(siteList)){
-    png(paste(outDir,SP,'_Timeseries_Site_',siteList[iSite],'.png',sep=''), width = 480, height = 130+30)
-    
-    op <- par(mar=c(3, 6, 0, 1) + 0.1,mgp = c(2,1,0))
-    xlabStr <- "Date"
-  }else{
-    png(paste(outDir,SP,'_Timeseries_Site_',siteList[iSite],'.png',sep=''), width = 480, height = 130)
-    
-    op <- par(mar=c(1, 6, 0, 1) + 0.1,mgp = c(2,1,0))
-    xlabStr <- ""
-  }
-  
-  plot(AcOnlySegments$date[AcOnlySegments$siteNum==iSite],
-      AcOnlySegments$Density[AcOnlySegments$siteNum==iSite],
-      ylab = expression(atop(Estimated ~ Density,(animals/1000 ~ km^{2}))),
-      xlab = xlabStr, 
-      xlim = c(min(AcOnlySegments$date,na.rm = TRUE),max(AcOnlySegments$date,na.rm = TRUE)))
-  # rect()
-  text(x=max(AcOnlySegments$date,na.rm = TRUE),
-       y = max(AcOnlySegments$Density[AcOnlySegments$siteNum==iSite]*.95,na.rm = TRUE,
-               cex=1.2, adj = c(0,0)), labels = siteList[iSite])
-  dev.off()
-}
-
-
-# histograms of missing data
-percFilled <- plot.missingdata(mergedSegments,covarList,paste0('AcousticAndVisual_',SP)) 
-percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0('AcousticOnly_',SP)) 
-percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0('VisualOnly_',SP)) 
-
+# cat("Begin exploratory plot generation\n")  
+# plot.timeseries(siteList,outDir,AcOnlySegments)
+# 
+# # histograms of missing data
+# percFilled <- plot.missingdata(mergedSegments,covarList,paste0('AcousticAndVisual_',SP)) 
+# percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0('AcousticOnly_',SP)) 
+# percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0('VisualOnly_',SP)) 
+# 
 # Identify and clear problematic outliers
-outlierList <-which(mergedSegments$CHL< -10)
-mergedSegments$CHL[outlierList] <- NaN 
-outlierList <-which(mergedSegments$FrontDist_Cayula>800000)
-mergedSegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(mergedSegments$Density>10000)
-mergedSegments$Density[outlierList] <- NaN 
-
-outlierList <-which(AcOnlySegments$CHL< -10)
-AcOnlySegments$CHL[outlierList] <- NaN 
-outlierList <-which(AcOnlySegments$FrontDist_Cayula>800000)
-AcOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(AcOnlySegments$Density>10000)
-AcOnlySegments$Density[outlierList] <- NaN 
-
-outlierList <-which(VisOnlySegments$CHL<  -10)
-VisOnlySegments$CHL[outlierList] <- NaN 
-outlierList <-which(VisOnlySegments$FrontDist_Cayula>800000)
-VisOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(VisOnlySegments$Density>10000)
-VisOnlySegments$Density[outlierList] <- NaN 
+# outlierList <-which(mergedSegments$CHL< -10)
+# mergedSegments$CHL[outlierList] <- NaN 
+# outlierList <-which(mergedSegments$FrontDist_Cayula>800000)
+# mergedSegments$FrontDist_Cayula[outlierList] <- NaN 
+# outlierList <-which(mergedSegments$Density>10000)
+# mergedSegments$Density[outlierList] <- NaN 
+# 
+# outlierList <-which(AcOnlySegments$CHL< -10)
+# AcOnlySegments$CHL[outlierList] <- NaN 
+# outlierList <-which(AcOnlySegments$FrontDist_Cayula>800000)
+# AcOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
+# outlierList <-which(AcOnlySegments$Density>10000)
+# AcOnlySegments$Density[outlierList] <- NaN 
+# 
+# outlierList <-which(VisOnlySegments$CHL<  -10)
+# VisOnlySegments$CHL[outlierList] <- NaN 
+# outlierList <-which(VisOnlySegments$FrontDist_Cayula>800000)
+# VisOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
+# outlierList <-which(VisOnlySegments$Density>10000)
+# VisOnlySegments$Density[outlierList] <- NaN 
 
 # If you decide from the missing data plots that you want to restrict years going forward:
-yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
-yearListIdx_AcOnly = as.numeric(format(AcOnlySegments$date,"%Y"))
-yearListIdx_VisOnly = as.numeric(format(VisOnlySegments$date,"%Y"))
-
-keepDates.train <- which(yearListIdx != 2009 & yearListIdx >= 2003 & yearListIdx <= 2012)
-keepDates.test <- which(yearListIdx == 2009 | yearListIdx == 2013)
-keepDates_AcOnly.train <- which(yearListIdx_AcOnly != 2009 & yearListIdx_AcOnly >= 2003 & yearListIdx_AcOnly <= 2012)
-keepDates_AcOnly.test <- which(yearListIdx_AcOnly == 2009 | yearListIdx_AcOnly == 2013)
-keepDatesVisOnly.train <- which(yearListIdx_VisOnly != 2009 & yearListIdx_VisOnly >= 2003 & yearListIdx_VisOnly <= 2012)
-keepDatesVisOnly.test <- which(yearListIdx_VisOnly == 2009 | yearListIdx_VisOnly == 2013)
-
-mergedTrain.set<- mergedSegments[keepDates.train,]
-Train_AcOnly.set <- AcOnlySegments[keepDates_AcOnly.train,]
-Train_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.train,]
-
-mergedTest.set<- mergedSegments[keepDates.test,]
-Test_AcOnly.set<- AcOnlySegments[keepDates_AcOnly.test,]
-Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
-
+# yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
+# yearListIdx_AcOnly = as.numeric(format(AcOnlySegments$date,"%Y"))
+# yearListIdx_VisOnly = as.numeric(format(VisOnlySegments$date,"%Y"))
+# 
+# keepDates.train <- which(yearListIdx != 2009 & yearListIdx >= 2003 & yearListIdx <= 2012)
+# keepDates.test <- which(yearListIdx == 2009 | yearListIdx == 2013)
+# keepDates_AcOnly.train <- which(yearListIdx_AcOnly != 2009 & yearListIdx_AcOnly >= 2003 & yearListIdx_AcOnly <= 2012)
+# keepDates_AcOnly.test <- which(yearListIdx_AcOnly == 2009 | yearListIdx_AcOnly == 2013)
+# keepDatesVisOnly.train <- which(yearListIdx_VisOnly != 2009 & yearListIdx_VisOnly >= 2003 & yearListIdx_VisOnly <= 2012)
+# keepDatesVisOnly.test <- which(yearListIdx_VisOnly == 2009 | yearListIdx_VisOnly == 2013)
+# 
+# mergedTrain.set<- mergedSegments[keepDates.train,]
+# Train_AcOnly.set <- AcOnlySegments[keepDates_AcOnly.train,]
+# Train_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.train,]
+# 
+# mergedTest.set<- mergedSegments[keepDates.test,]
+# Test_AcOnly.set<- AcOnlySegments[keepDates_AcOnly.test,]
+# Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
+# 
 
 # Cleveland dot plots:
 # no transforms
-plot.cleveland(mergedTrain.set,covarList,FALSE,paste0('AcousticAndVisual_',SP))
-plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0('AcousticOnly_',SP))
-plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
-
+# plot.cleveland(mergedTrain.set,covarList,FALSE,paste0('AcousticAndVisual_',SP))
+# plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0('AcousticOnly_',SP))
+# plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
+# 
 
 # with transformations
 # decided to exclude CHL8day (bad distribution), TKE surface current(outliers, plus redundant),
@@ -569,671 +538,80 @@ plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
 # covarList2 <- c("Density","SST","SSH")
 
 # transformList <- c("none","none","none")
-covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
-                "HYCOM_SALIN_0","HYCOM_DIR_0",
-                "HYCOM_MAG_0",
-                "HYCOM_UPVEL_50","FrontDist_Cayula",
-                "EddyDist","Neg_EddyDist","DayOfYear",
-                "fac1")
+# covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
+#                 "HYCOM_SALIN_0","HYCOM_DIR_0",
+#                 "HYCOM_MAG_0",
+#                 "HYCOM_UPVEL_50","FrontDist_Cayula",
+#                 "EddyDist","Neg_EddyDist","DayOfYear",
+#                 "fac1")
+# 
+# transformList <- c("none","none","log10","log10",
+#                    "none","none",
+#                    "log10",
+#                    "none","log10","none",
+#                    "none","none",
+#                    "none")
+# 
+# 
+# # restrict covariates again to limited set
+# mergedTrain.set2<- mergedTrain.set[,covarList2]
+# mergedTest.set2<- mergedTest.set[,covarList2]
+# Train_AcOnly.set2<- Train_AcOnly.set[,covarList2]
+# Test_AcOnly.set2<- Test_AcOnly.set[,covarList2]
+# Train_VisOnly.set2<- Train_VisOnly.set[,covarList2]
+# Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
+# 
+# 
+# transformedCovars.train <- transform.covars(mergedTrain.set2,covarList2,transformList)
+# transformedCovars.test <- transform.covars(mergedTest.set2,covarList2,transformList)
+# 
+# transformedCovars_AcOnly.train <- transform.covars(Train_AcOnly.set2,covarList2,transformList)
+# transformedCovars_AcOnly.test <- transform.covars(Test_AcOnly.set2,covarList2,transformList)
+# transformedCovars_VisOnly.train <- transform.covars(Train_VisOnly.set2,covarList2,transformList)
+# transformedCovars_VisOnly.test <- transform.covars(Test_VisOnly.set2,covarList2,transformList)
+# 
+# plotCols = colnames(transformedCovars.train)[1:length(covarList2)-1]
+# plot.cleveland(transformedCovars.train,plotCols,TRUE,paste0('AcousticAndVisual_',SP))
+# plot.cleveland(transformedCovars_AcOnly.train,plotCols,TRUE,paste0('AcousticOnly_',SP))
+# plot.cleveland(transformedCovars_VisOnly.train,plotCols,TRUE,paste0('VisualOnly_',SP))
+# 
+# # presence absence histograms
+# plot.covarDensity(transformedCovars.train,plotCols,mergedTrain.set$Density,paste0('AcousticAndVisual_',SP))
+# plot.covarDensity(transformedCovars_AcOnly.train,plotCols,Train_AcOnly.set$Density,paste0('AcousticOnly_',SP))
+# plot.covarDensity(transformedCovars_VisOnly.train,plotCols,Train_VisOnly.set$Density,paste0('VisualOnly_',SP))
+# 
+# # correlation
+# # without transform
+# png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off()
+# png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off()
+# png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off()
+# 
+# # with transform
+# png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off() 
+# png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off() 
+# png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+# pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+# dev.off() 
+# cat("Exploratory plots done\n")
+# 
+# 
+# save(transformedCovars.train,transformedCovars.test,
+#      mergedTest.set,mergedTrain.set,
+#      transformedCovars_AcOnly.train,transformedCovars_AcOnly.test,
+#      transformedCovars_VisOnly.train,transformedCovars_VisOnly.test,
+#      Train_AcOnly.set,Train_VisOnly.set,Test_AcOnly.set,Test_VisOnly.set,
+#      file = paste(outDir,SP,'TrainAndTestSets.Rdata',sep=''))
 
-transformList <- c("none","none","log10","log10",
-                   "none","none",
-                   "log10",
-                   "none","log10","none",
-                   "none","none",
-                   "none")
-
-
-# restrict covariates again to limited set
-mergedTrain.set2<- mergedTrain.set[,covarList2]
-mergedTest.set2<- mergedTest.set[,covarList2]
-Train_AcOnly.set2<- Train_AcOnly.set[,covarList2]
-Test_AcOnly.set2<- Test_AcOnly.set[,covarList2]
-Train_VisOnly.set2<- Train_VisOnly.set[,covarList2]
-Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
-
-
-transformedCovars.train <- transform.covars(mergedTrain.set2,covarList2,transformList)
-transformedCovars.test <- transform.covars(mergedTest.set2,covarList2,transformList)
-
-transformedCovars_AcOnly.train <- transform.covars(Train_AcOnly.set2,covarList2,transformList)
-transformedCovars_AcOnly.test <- transform.covars(Test_AcOnly.set2,covarList2,transformList)
-transformedCovars_VisOnly.train <- transform.covars(Train_VisOnly.set2,covarList2,transformList)
-transformedCovars_VisOnly.test <- transform.covars(Test_VisOnly.set2,covarList2,transformList)
-
-plotCols = colnames(transformedCovars.train)[1:length(covarList2)-1]
-plot.cleveland(transformedCovars.train,plotCols,TRUE,paste0('AcousticAndVisual_',SP))
-plot.cleveland(transformedCovars_AcOnly.train,plotCols,TRUE,paste0('AcousticOnly_',SP))
-plot.cleveland(transformedCovars_VisOnly.train,plotCols,TRUE,paste0('VisualOnly_',SP))
-
-# presence absence histograms
-plot.covarDensity(transformedCovars.train,plotCols,mergedTrain.set$Density,paste0('AcousticAndVisual_',SP))
-plot.covarDensity(transformedCovars_AcOnly.train,plotCols,Train_AcOnly.set$Density,paste0('AcousticOnly_',SP))
-plot.covarDensity(transformedCovars_VisOnly.train,plotCols,Train_VisOnly.set$Density,paste0('VisualOnly_',SP))
-
-# correlation
-# without transform
-png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-
-# with transform
-png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-cat("Exploratory plots done\n")
-
-
-save(transformedCovars.train,transformedCovars.test,
-     mergedTest.set,mergedTrain.set,
-     transformedCovars_AcOnly.train,transformedCovars_AcOnly.test,
-     transformedCovars_VisOnly.train,transformedCovars_VisOnly.test,
-     Train_AcOnly.set,Train_VisOnly.set,Test_AcOnly.set,Test_VisOnly.set,
-     file = paste(outDir,SP,'MergedPredictors.Rdata',sep=''))
-
-# ############################# Acoustic Only Model Fitting #############################
-# # Run & evaluate models
-# 
-# kVal <- 8
-# cat("\n Run acoustic only models \n")
-# 
-# yAcOnly_TF <- as.logical(Train_AcOnly.set$Density >0)
-# 
-# cat("Run full binomial GAMs on Acoustic only data with shrinkage\n")#random = list(fac1=~1),
-# gam_full_AcOnly_TF<-NULL
-# gam_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                            + s(SSH, bs="ts", k=kVal)
-#                            + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                            + s(Neg_EddyDist, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                            + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                            data = transformedCovars_AcOnly.train,
-#                            na.action = na.omit,family = nb(),
-#                            control = list(opt='optim'),
-#                            correlation = corAR1(form=~1|fac1)) # Numeric_date-min(Numeric_date)
-# cat("done with model 1: neg binom, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                            + s(SSH, bs="ts", k=kVal)
-#                            + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                            + s(Neg_EddyDist, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                            + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                            data = transformedCovars_AcOnly.train,
-#                            na.action = na.omit,family = binomial(),
-#                            control = list(opt='optim'),
-#                            correlation = corAR1(form=~1|fac1))#
-# cat("done with model 2: binomial, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# 
-# gam_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                            + s(SSH, bs="ts", k=kVal)
-#                            + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                            + s(EddyDist, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                            + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                            data = transformedCovars_AcOnly.train,
-#                            na.action = na.omit,family = nb(),
-#                            control = list(opt='optim'),
-#                            correlation = corAR1(form=~1|fac1))#
-# cat("done with model 3: neg binom, corAR1, EddyDist, ts spline\n")
-# 
-# gam_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                            + s(SSH, bs="ts", k=kVal)
-#                            + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                            + s(EddyDist, bs="ts", k=kVal)
-#                            + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                            + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                            + s(HYCOM_MLD, bs="ts", k=kVal),
-#                            data = transformedCovars_AcOnly.train,
-#                            na.action = na.omit,family = binomial(),
-#                            control = list(opt='optim'),
-#                            correlation = corAR1(form=~1|fac1))#
-# cat("done with model 4: binomial, corAR1, EddyDist, ts spline \n")
-# 
-# ## try with random effects structure
-# cat("Try adding a random effects structure \n")
-# 
-# gam_full_AcOnly_TF$v05 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                              + s(SSH, bs="ts", k=kVal)
-#                              + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                              + s(Neg_EddyDist, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                              + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                              data = transformedCovars_AcOnly.train,
-#                              na.action = na.omit,family = nb(),
-#                              control = list(opt='optim'),
-#                              correlation = corAR1(form=~1|fac1))#
-# cat("done with model 5: neg binom, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_AcOnly_TF$v06 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                              + s(SSH, bs="ts", k=kVal)
-#                              + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                              + s(Neg_EddyDist, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                              + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                              data = transformedCovars_AcOnly.train,
-#                              na.action = na.omit,family = binomial(),
-#                              control = list(opt='optim'),
-#                              correlation = corAR1(form=~1|fac1), random=list(fac1=~1))#
-# cat("done with model 6: binomial, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_AcOnly_TF$v07 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                              + s(SSH, bs="ts", k=kVal)
-#                              + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                              + s(EddyDist, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                              + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                              data = transformedCovars_AcOnly.train,
-#                              na.action = na.omit,family = nb(),
-#                              control = list(opt='optim'),
-#                              correlation = corAR1(form=~1|fac1), random=list(fac1=~1))#
-# cat("done with model 7: neg binom, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# gam_full_AcOnly_TF$v08 <- gamm(yAcOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                              + s(SSH, bs="ts", k=kVal)
-#                              + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                              + s(EddyDist, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                              + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                              + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                              data = transformedCovars_AcOnly.train,
-#                              na.action = na.omit,family = binomial(),
-#                              control = list(opt='optim'),
-#                              correlation = corAR1(form=~1|fac1),random=list(fac1=~1))#
-# cat("done with model 8: binomial, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# 
-# ## try with random effects smooths
-# cat("Try random effects smooths instead of thin plate \n")
-# 
-# gam_full_AcOnly_TF$v09 <- gamm(yAcOnly_TF~ s(SST, bs="re", k=kVal) 
-#                               + s(SSH, bs="re", k=kVal)
-#                               + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                               + s(Neg_EddyDist, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                               + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                               data = transformedCovars_AcOnly.train,
-#                               na.action = na.omit,family = nb(),
-#                               control = list(opt='optim'),
-#                               correlation = corAR1(form=~1|fac1))#
-# cat("done with model 9: neg binom, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# gam_full_AcOnly_TF$v10 <- gamm(yAcOnly_TF~ s(SST, bs="re", k=kVal) 
-#                               + s(SSH, bs="re", k=kVal)
-#                               + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                               + s(Neg_EddyDist, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                               + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                               data = transformedCovars_AcOnly.train,
-#                               na.action = na.omit,family = binomial(),
-#                               control = list(opt='optim'),
-#                               correlation = corAR1(form=~1|fac1))#
-# cat("done with model 10: binomial, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# 
-# gam_full_AcOnly_TF$v11 <- gamm(yAcOnly_TF~ s(SST, bs="re", k=kVal) 
-#                               + s(SSH, bs="re", k=kVal)
-#                               + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                               + s(EddyDist, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                               + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                               data = transformedCovars_AcOnly.train,
-#                               na.action = na.omit,family = nb(),
-#                               control = list(opt='optim'),
-#                               correlation = corAR1(form=~1|fac1))#
-# cat("done with model 11: neg binom, corAR1, EddyDist, 're' spline \n")
-# 
-# gam_full_AcOnly_TF$v12 <- gamm(yAcOnly_TF~ s(SST, bs="re", k=kVal) 
-#                               + s(SSH, bs="re", k=kVal)
-#                               + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                               + s(EddyDist, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                               + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                               + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                               data = transformedCovars_AcOnly.train,
-#                               na.action = na.omit,family = binomial(),
-#                               control = list(opt='optim'),
-#                               correlation = corAR1(form=~1|fac1))#
-# cat("done with model 12: binomial, corAR1, EddyDist, 're' spline \n")
-# 
-# model_AIC <- NULL
-# for (iMod in 1:length(gam_full_AcOnly_TF)){
-#   model_AIC[iMod] = AIC(gam_full_AcOnly_TF[[iMod]]$lme)
-#  cat('Model ', names(gam_full_AcOnly_TF[iMod]), ' AIC = ', model_AIC[iMod], '\n')
-# }
-# 
-# best_AcOnly_model <- names(gam_full_AcOnly_TF[which.min(model_AIC)])
-# 
-# 
-# cat("\n BEST AC ONLY MODEL IS # ", best_AcOnly_model," \n")
-# cat("Saving all models to file \n")
-# 
-# save(gam_full_AcOnly_TF, best_AcOnly_model, transformedCovars_AcOnly.train,
-#      transformedCovars_AcOnly.test,Test_AcOnly.set,Train_AcOnly.set,
-#      file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-# 
-# # Predict on test data at MC, for comparison...
-# # compAcSet <- which((Test_AcOnly.set$fac1)==5)
-# # pred <- predict.gam(gam_full_AcOnly_TF$v11$gam,transformedCovars_AcOnly.test[compAcSet,],
-# #                     type = 'response',na.action = na.omit)
-# # twoord.plot(Test_AcOnly.set$date[compAcSet],pred,
-# #        Test_AcOnly.set$date[compAcSet],(Test_AcOnly.set$Density[compAcSet]),xlab="Date",type=c("l","b"),
-# #        main="Test Data vs. Model Prediction", ylab = "Model Probability of Occurrence",rylab = "Density From Data")
-# 
-# 
-# ############################# Visual Only Model Fitting #############################
-# 
-# yVisOnly_TF <- as.logical(Train_VisOnly.set$Density>0)
-# 
-# cat("Run full binomial GAMs on Visual only data with shrinkage\n") # random = list(fac1=~1),
-# gam_full_VisOnly_TF <- NULL
-# gam_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1)) # Numeric_date-min(Numeric_date)
-# cat("done with model 1: neg binom, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 2: binomial, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# 
-# gam_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 3: neg binom, corAR1, EddyDist, ts spline\n")
-# 
-# gam_full_VisOnly_TF$v04 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)                               
-#                                + s(HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 4: binomial, corAR1, EddyDist, ts spline \n")
-# 
-# ## try with random effects structure
-# cat("Try adding a random effects structure \n")
-# 
-# gam_full_VisOnly_TF$v05 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 5: neg binom, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_VisOnly_TF$v06 <- gamm(yVisOnly_TF~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1), random=list(fac1=~1))#
-# cat("done with model 6: binomial, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_VisOnly_TF$v07 <- gamm(yVisOnly_TF ~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1), random=list(fac1=~1))#
-# cat("done with model 7: neg binom, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# gam_full_VisOnly_TF$v08 <- gamm(yVisOnly_TF ~ s(SST, bs="ts", k=kVal) 
-#                                + s(SSH, bs="ts", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                + s(EddyDist, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="ts", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="ts", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1),random=list(fac1=~1))#
-# cat("done with model 8: binomial, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# 
-# ## try with random effects smooths
-# cat("Try random effects smooths instead of thin plate \n")
-# 
-# gam_full_VisOnly_TF$v09 <- gamm(yVisOnly_TF~ s(SST, bs="re", k=kVal) 
-#                                + s(SSH, bs="re", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                + s(Neg_EddyDist, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 9: neg binom, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# gam_full_VisOnly_TF$v10 <- gamm(yVisOnly_TF~ s(SST, bs="re", k=kVal) 
-#                                + s(SSH, bs="re", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                + s(Neg_EddyDist, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 10: binomial, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# 
-# gam_full_VisOnly_TF$v11 <- gamm(yVisOnly_TF~ s(SST, bs="re", k=kVal) 
-#                                + s(SSH, bs="re", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                + s(EddyDist, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = nb(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 11: neg binom, corAR1, EddyDist, 're' spline \n")
-# 
-# gam_full_VisOnly_TF$v12 <- gamm(yVisOnly_TF~ s(SST, bs="re", k=kVal) 
-#                                + s(SSH, bs="re", k=kVal)
-#                                + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                + s(EddyDist, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                + s(HYCOM_SALIN_100, bs="re", k=kVal)
-#                                + s(log10_HYCOM_MLD, bs="re", k=kVal),
-#                                data = transformedCovars_VisOnly.train,
-#                                na.action = na.omit,family = binomial(),
-#                                control = list(opt='optim'),
-#                                correlation = corAR1(form=~1|fac1))#
-# cat("done with model 12: binomial, corAR1, EddyDist, 're' spline \n")
-# 
-# model_AIC <- NULL
-# for (iMod in 1:length(gam_full_VisOnly_TF)){
-#   model_AIC[iMod] = AIC(gam_full_VisOnly_TF[[iMod]]$lme)
-#   cat('Model ', names(gam_full_VisOnly_TF[[iMod]]), ' AIC = ', model_AIC[iMod], '\n')
-# }
-# 
-# best_VisOnly_model <- names(gam_full_VisOnly_TF[which.min(model_AIC)])
-# 
-# cat("\n BEST VIS ONLY MODEL IS # ", best_VisOnly_model," \n")
-# cat("Saving all models to file \n \n")
-# 
-# save(gam_full_VisOnly_TF, best_VisOnly_model, transformedCovars_VisOnly.train,
-#      transformedCovars_VisOnly.test,Test_VisOnly.set,Train_VisOnly.set,
-#      file = paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-# 
-# 
-# ########################### Combined Visual and AcousticModel Fitting ##########################
-# 
-# cat("Run full TF GAMM on combined Visual and Acoustic Data\n")
-# 
-# # Compute weights
-# myCat <- as.factor(mergedTrain.set$Category)
-# myWeights <- rep(0,times = length(myCat))
-# AcTrainSize <- length(which(myCat==2))
-# VisTrainSize <- length(which(myCat==1))
-# if (is.null(weight_Ac)|is.null(weight_Vis)){
-#   # give equal weight to the two datasets
-#   if (AcTrainSize>=VisTrainSize){
-#     weight_Vis = round(AcTrainSize/VisTrainSize)
-#     weight_Ac = 1
-#   } else {
-#     weight_Vis = 1
-#     weight_Ac = round(VisTrainSize/AcTrainSize)
-#   }
-# }
-# myWeights[which(myCat==1)] <- weight_Vis
-# myWeights[which(myCat==2)] <- weight_Ac
-# 
-# y_TF <- as.logical(mergedTrain.set$Density>0)
-# 
-# cat("Run full binomial GAMs on Visual only data with shrinkage\n")
-# gam_full_TF <- NULL
-# gam_full_TF$v01 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train, weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20) # Numeric_date-min(Numeric_date)
-# cat("done with model 1: neg binom, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_TF$v02 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train, weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100, msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 30)#
-# cat("done with model 2: binomial, corAR1, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_TF$v03 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)#
-# cat("done with model 3: neg binom, corAR1, EddyDist, ts spline\n")
-# 
-# gam_full_TF$v04 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)#
-# cat("done with model 4: binomial, corAR1, EddyDist, ts spline \n")
-# 
-# ## try with random effects structure
-# cat("Try adding a random effects structure \n")
-# 
-# gam_full_TF$v05 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)#
-# cat("done with model 5: neg binom, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_TF$v06 <- gamm(y_TF~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(Neg_EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),
-#                                 random=list(fac1=~1),niterPQL = 50)
-# cat("done with model 6: binomial, corAR1, random effects, Neg_EddyDist, ts spline \n")
-# 
-# gam_full_TF$v07 <- gamm(y_TF ~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),
-#                                 random=list(fac1=~1),niterPQL = 20)
-# cat("done with model 7: neg binom, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# gam_full_TF$v08 <- gamm(y_TF ~ s(SST, bs="ts", k=kVal) 
-#                                 + s(SSH, bs="ts", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="ts", k=kVal)
-#                                 + s(EddyDist, bs="ts", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="ts", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="ts", k=kVal),
-#                                 data = transformedCovars.train,
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),
-#                                 random=list(fac1=~1),niterPQL = 20)
-# cat("done with model 8: binomial, corAR1, random effects, EddyDist, ts spline \n")
-# 
-# 
-# ## try with random effects smooths
-# cat("Try random effects smooths instead of thin plate \n")
-# 
-# gam_full_TF$v09 <- gamm(y_TF~ s(SST, bs="re", k=kVal) 
-#                                 + s(SSH, bs="re", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                 + s(Neg_EddyDist, bs="re", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="re", k=kVal),
-#                                 data = transformedCovars.train, 
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)
-# cat("done with model 9: neg binom, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# gam_full_TF$v10 <- gamm(y_TF~ s(SST, bs="re", k=kVal) 
-#                                 + s(SSH, bs="re", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                 + s(Neg_EddyDist, bs="re", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="re", k=kVal),
-#                                 data = transformedCovars.train, 
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100, msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)
-# cat("done with model 10: binomial, corAR1, Neg_EddyDist, 're' spline \n")
-# 
-# gam_full_TF$v11 <- gamm(y_TF~ s(SST, bs="re", k=kVal) 
-#                                 + s(SSH, bs="re", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                 + s(EddyDist, bs="re", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="re", k=kVal),
-#                                 data = transformedCovars.train,
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = nb(),
-#                                 control = list(opt='optim',maxIter = 100, msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)
-# cat("done with model 11: neg binom, corAR1, EddyDist, 're' spline \n")
-# 
-# gam_full_TF$v12 <- gamm(y_TF~ s(SST, bs="re", k=kVal) 
-#                                 + s(SSH, bs="re", k=kVal)
-#                                 + s(log10_FrontDist_Cayula, bs="re", k=kVal)
-#                                 + s(EddyDist, bs="re", k=kVal)
-#                                 + s(log10_HYCOM_MAG_100,bs="re", k=kVal)
-#                                 + s(HYCOM_SALIN_100, bs="re", k=kVal),
-#                                 data = transformedCovars.train,
-#                                 weights = myWeights,
-#                                 na.action = na.omit,family = binomial(),
-#                                 control = list(opt='optim',maxIter = 100,msMaxIter=100),
-#                                 correlation = corAR1(form=~1|fac1),niterPQL = 20)
-# cat("done with model 12: binomial, corAR1, EddyDist, 're' spline \n")
-# 
-# model_AIC <- NULL
-# for (iMod in 1:length(gam_full_TF)){
-#   model_AIC[iMod] = AIC(gam_full_TF[[iMod]]$lme)
-#   cat('Model ', names(gam_full_TF[iMod]), ' AIC = ', model_AIC[iMod], '\n')
-# }
-# 
-# best_Combined_model <- names(gam_full_TF[which.min(model_AIC)])
-# 
-# cat("\n BEST COMBINED MODEL IS # ", best_Combined_model," \n")
-# cat("Saving all models to file \n \n")
-# 
-# save(gam_full_TF, best_Combined_model, transformedCovars.train,
-#      transformedCovars.test,mergedTest.set,mergedTrain.set,
-#      file = paste(outDir,SP,'AcousticAndVisual_binomial_GAMMs_ALL.Rdata',sep=''))
-# 
-# 
-# 
-#  
 # ############# Other Recipes #########
 # 
 # # - To keep data needed for map predictions, add the following cotrol item to gamm call

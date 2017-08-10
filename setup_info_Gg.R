@@ -30,7 +30,7 @@ SPC_vis <- c("Risso's dolphin")
 PLC <- c("GU","OR")
 
 # Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
-runDetFuns <- TRUE # can be true or false
+runDetFuns <- FALSE # can be true or false
 
 # The name of the visual detection function file. 
 detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")# #Vis_TruncDist_allBW.Rdata" # <- With spares data, you could produce a visual detection function using all beaked whales, 
@@ -45,6 +45,7 @@ visG0 <- mean(c(0.77,0.84)) # for Gg  from palka 2006 table 5, 2004 survey
 # Relative datatype weights
 weight_Vis <- 1 
 weight_Ac <- round(44*(12.6/100)) # in combined model, how should the acoustic data be weighted relative to visual? 
+
 # My logic: If ACOUSTIC estimates are daily bins, 
 # and VISUAL estimates are from 10km transect segments at 10 knot survey speed (~18.5km/hr) -> 10/18.5 = 0.54 hr
 # then 24/0.54 = 44 (i.e. each ACOUSTIC datapoint is equivalent to 44 VISUAL datapoints)

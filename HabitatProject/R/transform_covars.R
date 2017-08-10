@@ -1,4 +1,8 @@
-# plot covariates to look for skew
+#' Function applies transformations to data based on string. 
+#' @export 
+#' @examples 
+#' transform.covars() 
+
 transform.covars <- function(mySegments,covarList,transformList){
   # Transform list must be the same length as the covariate list!
   dataNames <- NULL

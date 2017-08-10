@@ -6,6 +6,7 @@ output:
     toc_depth: 4
     toc_float: true
     theme: spacelab
+    fig_caption: true 
 
 ---
 
@@ -13,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load packages, include = FALSE, message = FALSE, warning = FALSE}
+```{r load packages, include = TRUE, message = FALSE, warning = FALSE}
 library(mgcv)
 library(MASS)
 library(rgdal)
@@ -22,16 +23,18 @@ library(ggplot2)
 library(rgeos)
 library(mapview)
 library(leaflet)
+library(psych)
 library(broom)
 library(plotrix)
 library(magrittr)
 library(colorRamps)
 library(lubridate)
+library(HabitatProject)
 
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Gg/GgMergedPredictors.Rdata')
+load('E:/NASData/ModelData/Gg/GgMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 ```
@@ -41,11 +44,49 @@ outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 <br>
 The visual data goes back to 1992, but many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses.
-![VisDataAvail](E:/NASData/ModelData/Gg/VisualOnly_Gg_missingData.png)
+
+```{r Missing data}
+covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
+
+percFilled <- plot.missingdata(mergedSegments,covarList,paste0('AcousticAndVisual_',SP)) 
+percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0('AcousticOnly_',SP)) 
+percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0('VisualOnly_',SP)) 
+```
+
+![](E:/NASData/ModelData/Gg/VisualOnly_Gg_missingData.png)
 <br>
+
+### Testing and Training Sets
+
+Split datasets into training and test sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
+```{r test train split}
+# If you decide from the missing data plots that you want to restrict years going forward:
+yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
+yearListIdx_AcOnly = as.numeric(format(AcOnlySegments$date,"%Y"))
+yearListIdx_VisOnly = as.numeric(format(VisOnlySegments$date,"%Y"))
+
+keepDates.train <- which(yearListIdx != 2009 & yearListIdx >= 2003 & yearListIdx <= 2012)
+keepDates.test <- which(yearListIdx == 2009 | yearListIdx == 2013)
+keepDates_AcOnly.train <- which(yearListIdx_AcOnly != 2009 & yearListIdx_AcOnly >= 2003 & yearListIdx_AcOnly <= 2012)
+keepDates_AcOnly.test <- which(yearListIdx_AcOnly == 2009 | yearListIdx_AcOnly == 2013)
+keepDatesVisOnly.train <- which(yearListIdx_VisOnly != 2009 & yearListIdx_VisOnly >= 2003 & yearListIdx_VisOnly <= 2012)
+keepDatesVisOnly.test <- which(yearListIdx_VisOnly == 2009 | yearListIdx_VisOnly == 2013)
+
+mergedTrain.set<- mergedSegments[keepDates.train,]
+Train_AcOnly.set <- AcOnlySegments[keepDates_AcOnly.train,]
+Train_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.train,]
+
+mergedTest.set<- mergedSegments[keepDates.test,]
+Test_AcOnly.set<- AcOnlySegments[keepDates_AcOnly.test,]
+Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
+```
+
+<br>
+### Preliminary Mapping
+
 The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Note that no Risso's dolphin sightings were reported during the 2014 survey. Blue markers indicate HARP locations.
 
-```{r}
+```{r map inputs}
 #Get test visual sightings
 sightingsTrain <- Train_VisOnly.set[Train_VisOnly.set$Density>0,c('lat','long','date')]
 
@@ -66,46 +107,175 @@ map1 <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
 map1
 ```
 <br>
+
 The following acoustic data are used, with data from 2011 and 2012 used for training, and 2013 data held back for testing.
+```{r plot timeseries, message = FALSE}
+plot.timeseries(siteList,outDir,AcOnlySegments)
+```
 
-![Gg_MC](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MC.png)
-![Gg_GC](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_GC.png)
-![Gg_DT](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DT.png)
-![Gg_DC](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DC.png)
-![Gg_MP](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MP.png)
 
-<br>
+
+![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MC.png)
+![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_GC.png)
+![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DT.png)
+![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DC.png)
+![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MP.png)
+
+<br> 
 
 ## Examine Covariates
 
+### Identify Outliers
+
+Replace extreme outliers (bad data) with NaNs.
+```{r remove outliers, message = FALSE}
+# Identify and clear problematic outliers
+outlierList <-which(mergedSegments$CHL< -10)
+mergedSegments$CHL[outlierList] <- NaN 
+outlierList <-which(mergedSegments$FrontDist_Cayula>800000)
+mergedSegments$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(mergedSegments$Density>10000)
+mergedSegments$Density[outlierList] <- NaN 
+
+outlierList <-which(AcOnlySegments$CHL< -10)
+AcOnlySegments$CHL[outlierList] <- NaN 
+outlierList <-which(AcOnlySegments$FrontDist_Cayula>800000)
+AcOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(AcOnlySegments$Density>10000)
+AcOnlySegments$Density[outlierList] <- NaN 
+
+outlierList <-which(VisOnlySegments$CHL<  -10)
+VisOnlySegments$CHL[outlierList] <- NaN 
+outlierList <-which(VisOnlySegments$FrontDist_Cayula>800000)
+VisOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(VisOnlySegments$Density>10000)
+VisOnlySegments$Density[outlierList] <- NaN 
+```
+
+<br>
+### Check Covariate Distributions
+
 Covariates have different distributions across the observations. 
 Here are the distributions of covariates from the acoustic observations:
-![AcDataDots](E:/NASData/ModelData/Gg/AcousticOnly_Gg_clevelandDots_noTransform.png)
+```{r dot plots, eval = FALSE}
+plot.cleveland(mergedTrain.set,covarList,FALSE,paste0('AcousticAndVisual_',SP))
+plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0('AcousticOnly_',SP))
+plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
+```
+
+![](E:/NASData/ModelData/Gg/AcousticOnly_Gg_clevelandDots_noTransform.png)
 
 
 
 Here are the distributions of covariates from the visual observations:
-![VisDataDots](E:/NASData/ModelData/Gg/VisualOnly_Gg_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Gg/VisualOnly_Gg_clevelandDots_noTransform.png)
 
-Some of these covariates are more or less interrelated. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model. 
-![corrNoTransform](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
+<br>
 
+Some of these covariates are more or less interrelated. HYCOM estimates of salinity at the surface (HYCOM_SALIN_0) and at 100m (HYCOM_SALIN_100) are very similar, so I selected surface salinity for simplicity. HYCOM current and upwelling estimates at 100m were also removed (HYCOM_MAG_100,HYCOM_UPVEL_100). HYCOM current direction is site specific in the acoustic data, so it was excluded for now. 
+
+
+Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model.
+![](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
+
+<br>
+
+### Transform Predictor Variables
 
 Some variables, including chlorophyll and distance to fronts are highly skewed and can be log-transformed.
-Below, the two sets of covariates have been combined and transformed.
-![BothDataDots](E:/NASData/ModelData/Gg/AcousticAndVisual_Gg_clevelandDots_withTransform.png)
+
+```{r transform covars}
+covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
+                "HYCOM_SALIN_0","HYCOM_DIR_0",
+                "HYCOM_MAG_0",
+                "HYCOM_UPVEL_50","FrontDist_Cayula",
+                "EddyDist","Neg_EddyDist","DayOfYear",
+                "fac1")
+
+transformList <- c("none","none","log10","log10",
+                   "none","none",
+                   "log10",
+                   "none","log10","none",
+                   "none","none",
+                   "none")
 
 
+# restrict covariates again to limited set
+mergedTrain.set2<- mergedTrain.set[,covarList2]
+mergedTest.set2<- mergedTest.set[,covarList2]
+Train_AcOnly.set2<- Train_AcOnly.set[,covarList2]
+Test_AcOnly.set2<- Test_AcOnly.set[,covarList2]
+Train_VisOnly.set2<- Train_VisOnly.set[,covarList2]
+Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
+
+
+transformedCovars.train <- transform.covars(mergedTrain.set2,
+                                            covarList2,transformList)
+transformedCovars.test <- transform.covars(mergedTest.set2,
+                                           covarList2,transformList)
+
+transformedCovars_AcOnly.train <-
+  transform.covars(Train_AcOnly.set2,covarList2,transformList)
+transformedCovars_AcOnly.test <-
+  transform.covars(Test_AcOnly.set2,covarList2,transformList)
+transformedCovars_VisOnly.train <-
+  transform.covars(Train_VisOnly.set2,covarList2,transformList)
+transformedCovars_VisOnly.test <-
+  transform.covars(Test_VisOnly.set2,covarList2,transformList)
+
+```
+```{r transformed dot plots, eval = FALSE, message = FALSE}
+plotCols = colnames(transformedCovars.train)[1:length(covarList2)-1]
+plot.cleveland(transformedCovars.train,plotCols,
+               paste0('AcousticAndVisual_',SP))
+plot.cleveland(transformedCovars_AcOnly.train,
+               plotCols,TRUE,paste0('AcousticOnly_',SP))
+plot.cleveland(transformedCovars_VisOnly.train,
+               plotCols,TRUE,paste0('VisualOnly_',SP))
+
+```
+<br>
+
+Below, the two sets of covariates have been combined and transformed. 
+![](E:/NASData/ModelData/Gg/AcousticAndVisual_Gg_clevelandDots_withTransform.png)
+
+<br>
+
+### Check Predictors
 
 To get an idea of the basic predictive power of these covariates, we can look at presence/absence relative to each variable. This also provides an opportunity to look at the range of values observed for each covariate in the visual and acoustic datasets. In the plots below dotted lines indicate the distribution of each covariate when animals were present, and solid lines indicate the distribution when animals were absent. Note that these plots do not account for effort.
 
-Acoustic data
-![AcDataDensity](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
+```{r pres abs plots, message = FALSE}
+# without transform
+png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+
+# with transform
+png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+```
 
 
-Visual data
-![VisDataDensity](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
+![Acoustic kernel densities](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
 
+
+![](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
+
+<br>
 
 # II. Model Fitting
 
@@ -153,6 +323,8 @@ if (is.null(weight_Ac)|is.null(weight_Vis)){
 myWeights[which(myCat==1)] <- weight_Vis
 myWeights[which(myCat==2)] <- weight_Ac
 
+cat(paste0('Visual data point weight: ', weight_Vis, 
+           '/n  data point weight: ', weight_Ac))
 ```
 
 <br> 
@@ -214,6 +386,7 @@ gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 ```
 <br>  
+
 ### Model 2
 
 Substitute regular binomial distribution: 
@@ -265,6 +438,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 ```
 <br>  
+
 ### Model 3
 
 Try a quasibinomial distribution:
@@ -311,6 +485,7 @@ gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
 <br>  
+
 ### Model 4
 
 Repeat the above models, but substitute negative eddy distances instead of looking at all eddies:

@@ -1002,7 +1002,7 @@ save(gamm_full_TF, best_Combined_model, transformedCovars.train,
 gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs="ts", k=kVal)
                         + s(SSH, bs="ts", k=kVal)
                         + s(Neg_EddyDist, bs="ts", k=kVal)
-                        + s(log10_HYCOM_MAG_0,bs="ts", k=kVal)
+                        # + s(log10_HYCOM_MAG_0,bs="ts", k=kVal)
                         + s(HYCOM_SALIN_0, bs="ts", k=kVal)
                         + s(log10_FrontDist_Cayula,bs="ts", k=kVal),
                         data = transformedCovars.train,

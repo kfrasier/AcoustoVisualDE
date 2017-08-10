@@ -1,4 +1,8 @@
-# plot covariates to look for skew
+#' Function plots covariates to look for skew 
+#' @export 
+#' @examples 
+#' plot.cleveland() 
+
 plot.cleveland <- function(mySegments,covarList,isTrans,fNamePrefix){
   # isTrans is a boolean flag to name the file appropriately
   

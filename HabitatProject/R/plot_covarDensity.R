@@ -1,3 +1,8 @@
+#' Function plots presence absence as a function of predictor variables. 
+#' @export 
+#' @examples 
+#' plot.covarDensity() 
+
 plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix){
   
   # presAbs = a vector the same length as mySegments, 
@@ -19,14 +24,14 @@ plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix){
   
   i <- 1
   for (cI in covarList){
-    d0 <- density(mySegments[,cI][negRows],na.rm = TRUE) # density for negative segments
-    d1 <- density(mySegments[,cI][posRows],na.rm = TRUE) # density for positive segments
+    d0 <- stats::density(mySegments[,cI][negRows],na.rm = TRUE) # density for negative segments
+    d1 <- stats::density(mySegments[,cI][posRows],na.rm = TRUE) # density for positive segments
     
     x_range = range(c(d0$x,d1$x)) 
     
-    plot(d0, xlim = x_range, main = cI, cex.main = 1.5, cex.axis = 1.5)
+    graphics::plot(d0, xlim = x_range, main = cI, cex.main = 1.5, cex.axis = 1.5)
     par(new = TRUE)
-    plot(d1, xlim = x_range, lty=2,axes = FALSE, xlab = "", ylab = "", main = "")
+    graphics::plot(d1, xlim = x_range, lty=2,axes = FALSE, xlab = "", ylab = "", main = "")
     
     # Position and make legend
     legend("topright", c("0","1"), cex = 1.5,lty = 1:2,bty = "n");
