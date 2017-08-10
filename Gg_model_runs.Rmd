@@ -3,7 +3,7 @@ title: 'Risso''s dolphin habitat models'
 output: 
   html_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
     toc_float: true
     theme: spacelab
 
@@ -35,15 +35,16 @@ load('E:/NASData/ModelData/Gg/GgMergedPredictors.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 ```
-# Exploratory analysis
+# I. Exploratory analysis
 
 ## Data Inputs
 
-
-Visual data goes back to 1992, but many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses.
+<br>
+The visual data goes back to 1992, but many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses.
 ![VisDataAvail](E:/NASData/ModelData/Gg/VisualOnly_Gg_missingData.png)
-
+<br>
 The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Note that no Risso's dolphin sightings were reported during the 2014 survey. Blue markers indicate HARP locations.
+
 ```{r}
 #Get test visual sightings
 sightingsTrain <- Train_VisOnly.set[Train_VisOnly.set$Density>0,c('lat','long','date')]
@@ -64,7 +65,7 @@ map1 <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
 
 map1
 ```
-
+<br>
 The following acoustic data are used, with data from 2011 and 2012 used for training, and 2013 data held back for testing.
 
 ![Gg_MC](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MC.png)
@@ -72,6 +73,8 @@ The following acoustic data are used, with data from 2011 and 2012 used for trai
 ![Gg_DT](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DT.png)
 ![Gg_DC](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DC.png)
 ![Gg_MP](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MP.png)
+
+<br>
 
 ## Examine Covariates
 
@@ -104,13 +107,13 @@ Visual data
 ![VisDataDensity](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
 
 
-# Model Fitting
+# II. Model Fitting
 
 ```{r load starting data} 
 weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Gg_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
-
+<br>
 
 
 Initialize model parameters
@@ -128,7 +131,7 @@ gamm_full_AcOnly_TF<-NULL
 gamm_full_VisOnly_TF<-NULL
 gamm_full_TF<-NULL
 ```
-
+<br>
 Calculate weights to use in combined visual/acoustic model.
 
 ```{r Calculate weights}
@@ -152,10 +155,13 @@ myWeights[which(myCat==2)] <- weight_Ac
 
 ```
 
+<br> 
 
-## Run Full Models
+## Run Full Models 
 
-Run full binomial GAMs on Acoustic only, Visual only, and combined Acoustic/Visual datasets
+Run full binomial GAMs on Acoustic only, Visual only, and combined Acoustic/Visual datasets.
+
+<br> 
 
 ### Model 1
 
@@ -164,7 +170,7 @@ Run full binomial GAMs on Acoustic only, Visual only, and combined Acoustic/Visu
 - Include distance to both cyclonic and anticyclonic eddies, 
 - ts splines
 
-```{r AC model 1, eval = FALSE, echo=FALSE} 
+```{r AC model 1, eval=FALSE} 
 gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -207,12 +213,12 @@ gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 ```
-
+<br>  
 ### Model 2
 
 Substitute regular binomial distribution: 
 
-```{r AC model 2, eval = FALSE, echo = FALSE}
+```{r AC model 2, eval=FALSE}
 
 gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -258,11 +264,11 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 ```
-
+<br>  
 ### Model 3
 
 Try a quasibinomial distribution:
-```{r AC model 3, eval = FALSE, echo = FALSE}
+```{r AC model 3, eval=FALSE}
 gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                 + s(SSH, bs='ts', k=kVal)
                                 + s(log10_CHL, bs='ts', k=kVal)
@@ -304,12 +310,12 @@ gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
-
+<br>  
 ### Model 4
 
 Repeat the above models, but substitute negative eddy distances instead of looking at all eddies:
 
-```{r AC model 4, eval = FALSE, echo = FALSE}
+```{r AC model 4, eval=FALSE}
 gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -353,11 +359,13 @@ gamm_full_TF$v04 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 ```
+<br>
+
 ### Model 5
 
 Substitute both negative eddy distances AND binomial distribution:
 
-```{r AC model 5, eval = FALSE, echo = FALSE}
+```{r AC model 5, eval=FALSE}
 gamm_full_AcOnly_TF$v05 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -400,10 +408,13 @@ gamm_full_TF$v05 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),niterPQL = 20)
 
 ```
+
+<br>
+
 ### Model 6
 
 Substitute negative eddy distance with quasibinomial distribution.
-```{r AC model 6, eval = FALSE, echo = FALSE}
+```{r AC model 6, eval=FALSE}
 gamm_full_AcOnly_TF$v06 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                 + s(SSH, bs='ts', k=kVal)
                                 + s(log10_CHL, bs='ts', k=kVal)
@@ -442,15 +453,17 @@ gamm_full_TF$v06 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = quasibinomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
+<br>
 
 ### Model 7
 
 Try adding a random effects structure:
 
-```{r AC model 7, eval = FALSE, echo = FALSE}
+```{r AC model 7, eval=FALSE}
 gamm_full_AcOnly_TF$v07 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -462,7 +475,8 @@ gamm_full_AcOnly_TF$v07 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = negbin(10),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1),random=list(fac1=~1))#
+                               correlation = corAR1(form=~1|fac1),
+                               random=list(fac1=~1))#
 ```
 
 ```{r Other models 7, eval = FALSE, echo = FALSE, include = FALSE}
@@ -477,7 +491,8 @@ gamm_full_VisOnly_TF$v07 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = negbin(10),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1),random=list(fac1=~1))
+                               correlation = corAR1(form=~1|fac1),
+                               random=list(fac1=~1))
 
 gamm_full_TF$v07 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
@@ -489,17 +504,19 @@ gamm_full_TF$v07 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = negbin(10),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
 
+<br>
 
 ### Model 8 
 
 Again substituting binomial distribution, retaining random effects.
 
-```{r AC model 8, eval = FALSE, echo = FALSE}
+```{r AC model 8, eval=FALSE}
 gamm_full_AcOnly_TF$v08 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -539,16 +556,18 @@ gamm_full_TF$v08 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = binomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
+<br>
 
 ### Model 9 
 
 Now substituting quasibinomial distribution, retaining random effects.
 
-```{r AC model 9, eval = FALSE, echo = FALSE}
+```{r AC model 9, eval=FALSE}
 gamm_full_AcOnly_TF$v09 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -560,7 +579,8 @@ gamm_full_AcOnly_TF$v09 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = quasibinomial(),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1), random=list(fac1=~1))
+                               correlation = corAR1(form=~1|fac1), 
+                               random=list(fac1=~1))
 ```
 
 
@@ -588,17 +608,19 @@ gamm_full_TF$v09 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = quasibinomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
 
+<br>
 
 ### Model 10
 
 Try distances to negative eddies only, negative binomial, retaining random effects structure:
 
-```{r AC model 10, eval = FALSE, echo = FALSE}
+```{r AC model 10, eval=FALSE}
 gamm_full_AcOnly_TF$v10 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -610,7 +632,8 @@ gamm_full_AcOnly_TF$v10 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = negbin(10),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1),random=list(fac1=~1))#
+                               correlation = corAR1(form=~1|fac1),
+                               random=list(fac1=~1))#
 ```
 
 
@@ -626,7 +649,8 @@ gamm_full_VisOnly_TF$v10 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = negbin(10),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1),random=list(fac1=~1))
+                               correlation = corAR1(form=~1|fac1),
+                               random=list(fac1=~1))
 
 gamm_full_TF$v10 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
@@ -642,12 +666,13 @@ gamm_full_TF$v10 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
+<br>
 
 ### Model 11
 
 Try negative eddies with binomial distribution and random effects:
 
-```{r AC model 11, eval = FALSE, echo = FALSE}
+```{r AC model 11, eval=FALSE}
 gamm_full_AcOnly_TF$v11 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -659,7 +684,8 @@ gamm_full_AcOnly_TF$v11 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = binomial(),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1), random=list(fac1=~1))
+                               correlation = corAR1(form=~1|fac1), 
+                               random=list(fac1=~1))
 ```
 
 
@@ -687,16 +713,18 @@ gamm_full_TF$v11 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = binomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
+<br>
 
 ### Model 12
 
 Try negative eddies with quasibinomial distribution and random effects:
 
-```{r AC model 12, eval = FALSE, echo = FALSE}
+```{r AC model 12, eval=FALSE}
 gamm_full_AcOnly_TF$v12 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -708,7 +736,8 @@ gamm_full_AcOnly_TF$v12 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = quasibinomial(),
                                control = list(opt='optim', niterEM=0),
-                               correlation = corAR1(form=~1|fac1), random=list(fac1=~1))
+                               correlation = corAR1(form=~1|fac1), 
+                               random=list(fac1=~1))
 ```
 
 
@@ -736,16 +765,18 @@ gamm_full_TF$v12 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = quasibinomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),
                         random=list(fac1=~1),niterPQL = 50)
 ```
+<br>
 
 ### Model 13
 
 Try eddy distance and SSH as an interaction term instead of negative vs. positive eddies, with negative binomial distribution:
 
-```{r AC model 13, eval = FALSE, echo = FALSE}
+```{r AC model 13, eval=FALSE}
 gamm_full_AcOnly_TF$v13 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(EddyDist,SSH, bs='ts', k=kVal)
@@ -783,14 +814,16 @@ gamm_full_TF$v13 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = negbin(10),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
+<br>
 
 ### Model 14
 
 Try eddy distance and SSH as an interaction term with binomial distribution:
-```{r AC model 14, eval = FALSE, echo = FALSE}
+```{r AC model 14, eval = FALSE}
 gamm_full_AcOnly_TF$v14 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(EddyDist,SSH, bs='ts', k=kVal)
@@ -827,14 +860,16 @@ gamm_full_TF$v14 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = binomial(),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
+<br>
 
 ### Model 15
 
 Try eddy distance and SSH as an interaction term with quasibinomial distribution:
-```{r AC model 15, eval = FALSE, echo = FALSE}
+```{r AC model 15, eval = FALSE}
 gamm_full_AcOnly_TF$v15 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(EddyDist,SSH, bs='ts', k=kVal)
@@ -875,9 +910,9 @@ gamm_full_TF$v15 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 
 ```
-
+<br>
 Done trying different model configurations for now, time to compare the results.
-
+<br>
 ```{r save models, eval = FALSE, echo = FALSE, include = FALSE}
 # Save models if re-calculating everything
 save(gamm_full_AcOnly_TF,file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
@@ -892,7 +927,7 @@ load(paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
 load(paste(outDir,SP,'_binomial_GAMMs_ALL.Rdata',sep=''))
 ```
 
-# Model Comparisons
+# III. Model Comparisons
 
 Look at AIC to select best acoustic-only model:
 
@@ -909,8 +944,9 @@ best_AcOnly_model_index = which.min(AC_model_AIC)
 best_AcOnly_model <- gamm_full_AcOnly_TF[[best_AcOnly_model_index]]
 best_AcOnly_model_name <- names(gamm_full_AcOnly_TF[best_AcOnly_model_index])
 
-cat('\n Best acoustic only model is ', best_AcOnly_model_name,' \n')
+cat('Best acoustic only model is ', best_AcOnly_model_name,' \n')
 ```
+<br>
 
 Look at AIC to select best visual-only model:
 ```{r Vis AIC}
@@ -926,8 +962,9 @@ best_VisOnly_model_index = which.min(Vis_model_AIC)
 best_VisOnly_model <- gamm_full_VisOnly_TF[[best_VisOnly_model_index]]
 best_VisOnly_model_name <- names(gamm_full_VisOnly_TF[best_VisOnly_model_index])
 
-cat('\n Best visual only model is ', best_VisOnly_model_name,' \n')
+cat('Best visual only model is ', best_VisOnly_model_name,' \n')
 ```
+<br>
 
 Look at AIC to select best combined model:
 ```{r combined AIC}
@@ -937,14 +974,16 @@ for (iMod in 1:length(gamm_full_TF)){
   cat('Model ', names(gamm_full_TF[iMod]), ' AIC = ', model_AIC[iMod], '\n')
 }
 ```
+<br>
 
 ```{r combined model}
 best_model_index = which.min(model_AIC)
 best_model <- gamm_full_TF[[best_model_index]]
 best_model_name <- names(gamm_full_TF[best_model_index])
 
-cat('\n Best combined visual and acoustic model is ', best_model_name,' \n')
+cat('Best combined visual and acoustic model is ', best_model_name,' \n')
 ```
+<br>
 
 ## Best Acoustic Only Model
 
@@ -956,7 +995,7 @@ summary(best_AcOnly_model$gam)
 
 Re-run the best acoustic-only model with only the significant terms
 
-```{r best AC model, echo = FALSE}
+```{r best AC model, echo = FALSE, message=FALSE}
 AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                       + s(SSH, bs='ts', k=kVal)
                                       + s(Neg_EddyDist, bs='ts', k=kVal)
@@ -972,11 +1011,13 @@ AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 summary(AcOnly_gamm_pruned_TF_best$gam)
 plot(AcOnly_gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
 ```
+<br>
 
 ```{r AC best model residuals}
 plot(residuals.gam(AcOnly_gamm_pruned_TF_best$gam))
 # gam.check(AcOnly_gamm_pruned_TF_best$gam)
 ```
+<br>
 
 ## Best Visual Only Model
 
@@ -987,13 +1028,14 @@ summary(best_VisOnly_model$gam)
 
 No significant terms found in the visual only model. Try it with negative eddy distance which had the lowest p-value.
 
-```{r best Vis model, echo = FALSE}
+```{r best Vis model, echo = FALSE, message=FALSE}
 VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = negbin(10),
                                control = list(opt='optim', niterEM=0),
                                correlation = corAR1(form=~1|fac1))
 ```
+<br>
 
 ```{r Vis best model summary}
 summary(VisOnly_gamm_pruned_TF_best$gam)
@@ -1005,16 +1047,18 @@ plot(residuals.gam(VisOnly_gamm_pruned_TF_best$gam))
 # gam.check(VisOnly_gamm_pruned_TF_best$gam)
 ```
 
+<br>
 
 ## Best Combined Visual & Acoustic Model
 
 ```{r unpruned model summary}
 summary(best_model$gam)
 ```
+<br>
 
 Re-run the best combined model with only the significant terms
 
-```{r best model, echo = FALSE}
+```{r best model, echo = FALSE, message=FALSE}
 gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(EddyDist,SSH, bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
@@ -1022,24 +1066,29 @@ gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
                         + s(log10_FrontDist_Cayula,bs='ts', k=kVal),
                         data = transformedCovars.train, weights = myWeights,
                         na.action = na.omit,family = negbin(10),
-                        control = list(opt='optim',maxIter = 100,msMaxIter = 100,niterEM=0),
+                        control = list(opt='optim',maxIter = 100,
+                                       msMaxIter = 100,niterEM=0),
                         correlation = corAR1(form=~1|fac1),niterPQL = 50)
 ```
+<br>
 
 ```{r best model summary}
 summary(gamm_pruned_TF_best$gam)
 plot(gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
 ```
+<br>
 
 ```{r best model residuals}
 plot(residuals.gam(gamm_pruned_TF_best$gam))
 # gam.check(gamm_pruned_TF_best$gam)
 ```
 
+<br>
 
-# Predict on Test Data
+# IV. Predict on Test Data
 
 ## Temporal prediction
+<br>
 
 ### Acoustic Only Model
 
@@ -1049,56 +1098,77 @@ Predict on acoustic test data, and compare with actual observations
 # Predict on acoustic test data, using acoustic only model for comparison...
 compAcSet_MC <- which((Test_AcOnly.set$fac1)==5)
 compAcSet_GC <- which((Test_AcOnly.set$fac1)==10)
-compAcSet_DT <- which((Test_AcOnly.set$fac1)==15 |(Test_AcOnly.set$fac1)==16)
-compAcSet_DC <- which((Test_AcOnly.set$fac1)==21 |(Test_AcOnly.set$fac1)==22)
+compAcSet_DT <- which((Test_AcOnly.set$fac1)==15 |
+                        (Test_AcOnly.set$fac1)==16)
+compAcSet_DC <- which((Test_AcOnly.set$fac1)==21 |
+                        (Test_AcOnly.set$fac1)==22)
 compAcSet_MP <- which((Test_AcOnly.set$fac1)==26)
 
 # Predict in time
-dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT','2013-07-01 GMT','2013-10-01 GMT','2014-01-01 GMT'))
+dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
+                         '2013-07-01 GMT','2013-10-01 GMT',
+                         '2014-01-01 GMT'))
 dateLabels = c('Jan. 2013','Apr. 2013','Jul. 2013','Oct 2013','Jan. 2014')
-predAcOnly_MC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_MC,],
-                       type = 'response',na.action = na.pass)
-predAcOnly_GC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_GC,],
-                       type = 'response',na.action = na.pass)
-predAcOnly_DT <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_DT,],
-                       type = 'response',na.action = na.pass)
-predAcOnly_DC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_DC,],
-                       type = 'response',na.action = na.pass)
-predAcOnly_MP <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,transformedCovars_AcOnly.test[compAcSet_MP,],
-                       type = 'response',na.action = na.pass)
-occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' &as.POSIXct(pOccur[,1])<'2014-01-01')
+predAcOnly_MC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
+                             transformedCovars_AcOnly.test[compAcSet_MC,],
+                             type = 'response',na.action = na.pass)
+predAcOnly_GC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
+                             transformedCovars_AcOnly.test[compAcSet_GC,],
+                             type = 'response',na.action = na.pass)
+predAcOnly_DT <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
+                             transformedCovars_AcOnly.test[compAcSet_DT,],
+                            type = 'response',na.action = na.pass)
+predAcOnly_DC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
+                             transformedCovars_AcOnly.test[compAcSet_DC,],
+                             type = 'response',na.action = na.pass)
+predAcOnly_MP <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
+                             transformedCovars_AcOnly.test[compAcSet_MP,],
+                             type = 'response',na.action = na.pass)
+occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
 par(mfrow = c(5,1),oma=c(3,0,5,0))
 twoord.plot(Test_AcOnly.set$date[compAcSet_MC],predAcOnly_MC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,2],type=c('p','l'),mar = c(1, 5, 0, 5),
-            main='Test Data vs. Acoustic Only Model Prediction',xtickpos = dateTicks,
+            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,2],
+            type=c('p','l'),mar = c(1, 5, 0, 5),
+            main='Test Data vs. Acoustic Only Model Prediction',
+            xtickpos = dateTicks,
             xticklab = rep('',5),axislab.cex=.8,lytickpos = c(0,.1,.2,.3),
             rytickpos = c(0,.03,.06,.09), lylim= c(0,.4), rylim= c(0,.1))
 twoord.plot(Test_AcOnly.set$date[compAcSet_GC],predAcOnly_GC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,3],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5),lytickpos = c(0,.1,.2,.3),
+            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,3],
+            type=c('p','l'),axislab.cex=.8,
+            xtickpos =dateTicks,xticklab = rep('',5),
+            mar = c(1, 5, 0, 5),lytickpos = c(0,.1,.2,.3),
             rytickpos = c(0,.03,.06,.09), lylim= c(0,.4), rylim= c(0,.1))
 twoord.plot(Test_AcOnly.set$date[compAcSet_DT],predAcOnly_DT,
             as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,4],type=c('p','l'),
-            ylab = 'Model Probability of Occurrence',mar = c(1, 5, 0, 5),
-            rylab = 'Weekly Probability of Occurrence from Data',xtickpos = dateTicks,axislab.cex=.8,
+            ylab = 'Model Probability of Occurrence',
+            mar = c(1, 5, 0, 5),
+            rylab = 'Weekly Probability of Occurrence from Data',
+            xtickpos = dateTicks,axislab.cex=.8,
             xticklab = rep('',5),lytickpos = c(0,.2,.4,.6,.8,1),
             rytickpos = c(0,.1,.2,.3,.4), lylim= c(0,1), rylim= c(0,.5))
 twoord.plot(Test_AcOnly.set$date[compAcSet_DC],predAcOnly_DC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,5],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5))
+            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,5],
+            type=c('p','l'),axislab.cex=.8,
+            xtickpos =dateTicks,xticklab = rep('',5),
+            mar = c(1, 5, 0, 5))
 twoord.plot(Test_AcOnly.set$date[compAcSet_MP],predAcOnly_MP,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,6],type=c('p','l'),mar = c(1, 5, 0, 5),
-            xlab = 'Date',xtickpos = dateTicks, xticklab = dateLabels,axislab.cex=.8)
+            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,6],
+            type=c('p','l'),mar = c(1, 5, 0, 5),
+            xlab = 'Date',xtickpos = dateTicks, 
+            xticklab = dateLabels,axislab.cex=.8)
 
 ```
+<br>
 
 ### Visual Only Model
 
 
 ```{r Vis Temporal Predict}
-# Confusing, but acoustic only predictors are passed in to since we're predicting on the acoustic timeseries.
+# Confusing, but acoustic only predictors are passed in to since
+# we're predicting on the acoustic timeseries.
 predVisOnly_MC <- predict.gam(VisOnly_gamm_pruned_TF_best$gam,
                               transformedCovars_AcOnly.test[compAcSet_MC,],
                               type = 'response',na.action = na.pass)
@@ -1135,6 +1205,7 @@ twoord.plot(Test_AcOnly.set$date[compAcSet_MP],predVisOnly_MP,
             xlab = 'Date',xtickpos = dateTicks, xticklab = dateLabels,axislab.cex=.8)
 
 ```
+<br>
 
 ### Combined Model
 
@@ -1179,6 +1250,7 @@ twoord.plot(Test_AcOnly.set$date[compAcSet_MP],pred_MP,
 
 ```
 
+<br>
 
 ## Spatial Prediction
 
@@ -1233,7 +1305,6 @@ log10_HYCOM_MLD_july2009 <-
   predTemplate)
 ```
 
-
 ```{r brick rasters, eval = FALSE, include = FALSE}
 jan2009_rasters <- brick(CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
                          SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009,
@@ -1258,18 +1329,25 @@ save(jan2009_rasters,july2009_rasters,
 ```{r load raster bricks, echo = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
 ```
+<br>
+
 ### Acoustic Only 
+
 Evaluate the models for summer and winter
 ```{r Ac Spatial Predict}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,AcOnly_gamm_pruned_TF_best$gam,
-            type = 'response',na.action = na.pass)
+jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,
+                                             AcOnly_gamm_pruned_TF_best$gam,
+                                             type = 'response',na.action = na.pass)
             
-july2009_AcOnly_prediction <- raster::predict(july2009_rasters,AcOnly_gamm_pruned_TF_best$gam,
-            type = 'response',na.action = na.pass)    
+july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
+                                              AcOnly_gamm_pruned_TF_best$gam,
+                                              type = 'response',na.action = na.pass)    
 ```
-### Visual Only 
+<br>
+
+### Visual Only
 
 ```{r Vis Spatial Predict}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
@@ -1280,9 +1358,12 @@ jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,VisOnly_gamm_prune
 july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_gamm_pruned_TF_best$gam,
             type = 'response',na.action = na.pass)    
 ```
+
+<br>
+
 ### Combined Visual and Acoustic 
 
-```{r Combo Spatial Predict}
+```{r Combo Spatial Predict, message=FALSE}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
 jan2009_prediction <- raster::predict(jan2009_rasters,gamm_pruned_TF_best$gam,
@@ -1291,8 +1372,10 @@ jan2009_prediction <- raster::predict(jan2009_rasters,gamm_pruned_TF_best$gam,
 july2009_prediction <- raster::predict(july2009_rasters,gamm_pruned_TF_best$gam,
             type = 'response',na.action = na.pass)    
 ```
+<br>
 
 Wrangle projections for mapping:
+
 ```{r wrangle projections, echo = FALSE, message = FALSE, warning = FALSE}
 predict_template <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
 map_proj <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
@@ -1313,12 +1396,11 @@ jan2009_prediction_proj <- projectRaster(jan2009_prediction, crs=map_proj)
 july2009_prediction_proj <- projectRaster(july2009_prediction, crs=map_proj)
 jan2009_prediction_crop <- mask(jan2009_prediction_proj,predict_template_proj)
 july2009_prediction_crop <- mask(july2009_prediction_proj,predict_template_proj)
-
-
 ```
+<br>
 
+Display map:
 
-Display map
 ```{r leaflet, echo = FALSE, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
