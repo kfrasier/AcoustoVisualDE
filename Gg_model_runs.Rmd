@@ -30,7 +30,7 @@ library(magrittr)
 library(colorRamps)
 library(lubridate)
 library(HabitatProject)
-
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
@@ -44,7 +44,8 @@ outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 <br>
 
-The visual data goes back to 1992, but many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses.
+The visual data goes back to 1992, but as shown in the figure below, many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses. 
+Note: Future work could use monthly climatologies (averages) so that older sightings data could be used. Some dynamic drivers like eddy and front locations would not be able to be considered using that approach.
 
 ```{r Missing data}
 covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
@@ -59,7 +60,8 @@ percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0('VisualOnly_',SP
 
 ### Testing and Training Sets
 
-Split datasets into training and test sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
+The data are split into training and testing sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
+
 ```{r test train split}
 # If you decide from the missing data plots that you want to restrict years going forward:
 yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
@@ -110,7 +112,8 @@ map1
 ```
 <br>
 
-The following acoustic data are used, with data from 2011 and 2012 used for training, and 2013 data held back for testing.
+The timseries below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing.
+
 ```{r plot timeseries, message = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
 ```
@@ -160,7 +163,8 @@ VisOnlySegments$Density[outlierList] <- NaN
 
 Covariates have different distributions across the observations. 
 Here are the distributions of covariates from the acoustic observations:
-```{r dot plots, eval = FALSE}
+
+```{r dot plots, eval = FALSE, message = FALSE}
 plot.cleveland(mergedTrain.set,covarList,FALSE,paste0('AcousticAndVisual_',SP))
 plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0('AcousticOnly_',SP))
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
@@ -178,16 +182,40 @@ Here are the distributions of covariates from the visual observations:
 Some of these covariates are more or less interrelated. HYCOM estimates of salinity at the surface (HYCOM_SALIN_0) and at 100m (HYCOM_SALIN_100) are very similar, so I selected surface salinity for simplicity. HYCOM current and upwelling estimates at 100m were also removed (HYCOM_MAG_100,HYCOM_UPVEL_100). HYCOM current direction is site specific in the acoustic data, so it was excluded for now. 
 
 
-Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model.
+Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model. Day of year was excluded to avoid artifacts associated with the temporal differences of the datasets (Acoustic data are year-round, and Visual data are collected in spring/summer).
+
+```{r correlation plots, eval = FALSE, message = FALSE, warning = FALSE}
+# without transform
+png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+
+# with transform
+png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+```
 ![](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
 
 <br>
 
 ### Transform Predictor Variables
 
-Some variables, including chlorophyll and distance to fronts are highly skewed and can be log-transformed.
+Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and can be log-transformed.
 
-```{r transform covars}
+```{r transform covars, message = FALSE}
 covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
                 "HYCOM_SALIN_0","HYCOM_DIR_0",
                 "HYCOM_MAG_0",
@@ -227,6 +255,11 @@ transformedCovars_VisOnly.test <-
   transform.covars(Test_VisOnly.set2,covarList2,transformList)
 
 ```
+<br>
+
+Plotting the transformed variables: 
+
+
 ```{r transformed dot plots, eval = FALSE, message = FALSE}
 plotCols = colnames(transformedCovars.train)[1:length(covarList2)-1]
 plot.cleveland(transformedCovars.train,plotCols,
@@ -243,37 +276,30 @@ Below, the two sets of covariates have been combined and transformed.
 ![](E:/NASData/ModelData/Gg/AcousticAndVisual_Gg_clevelandDots_withTransform.png)
 
 <br>
+<br>
 
 ### Check Predictors
 
 To get an idea of the basic predictive power of these covariates, we can look at presence/absence relative to each variable. This also provides an opportunity to look at the range of values observed for each covariate in the visual and acoustic datasets. In the plots below dotted lines indicate the distribution of each covariate when animals were present, and solid lines indicate the distribution when animals were absent. Note that these plots do not account for effort.
 
-```{r pres abs plots, message = FALSE}
-# without transform
-png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
+```{r presence absence histograms, eval = FALSE, message = FALSE}
+plot.covarDensity(transformedCovars.train,
+                  colnames(transformedCovars.train),
+                  mergedTrain.set$SpPresent)
 
-# with transform
-png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
+plot.covarDensity(transformedCovars_AcOnly.train,
+                   colnames(transformedCovars_AcOnly.train),
+                  Train_AcOnly.set$Density,paste0('AcousticOnly_',SP))		
+
+plot.covarDensity(transformedCovars_VisOnly.train,
+                  colnames(transformedCovars_VisOnly.train),
+                  Train_VisOnly.set$Density,paste0('VisualOnly_',SP))
 ```
 
 
-![Acoustic kernel densities](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
+
+
+![Acoustic kernel densities](E:/NASData/ModelData/Gg/AcousticOnly_Gg_density_pres_abs.png)
 
 
 ![](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
@@ -282,14 +308,17 @@ dev.off()
 
 # II. Model Fitting
 
+Models were fit using gamm from the mgcv package in R. 
+
 ```{r load starting data} 
 weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Gg_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 <br>
 
+Initialize model parameters:
 
-Initialize model parameters
+
 ```{r model setup} 
 # Run & evaluate models
 kVal <- 5 # choose a low value to avoid overfitting
@@ -306,7 +335,7 @@ gamm_full_TF<-NULL
 ```
 <br>
 
-Calculate weights to use in combined visual/acoustic model.
+Calculate weights to use in combined visual/acoustic model:
 
 ```{r Calculate weights}
 # Compute weights
@@ -328,7 +357,7 @@ myWeights[which(myCat==1)] <- weight_Vis
 myWeights[which(myCat==2)] <- weight_Ac
 
 cat(paste0('Visual data point weight: ', weight_Vis, 
-           '/n  data point weight: ', weight_Ac))
+           '\nAcoustic data point weight: ', weight_Ac))
 ```
 
 <br> 
@@ -446,6 +475,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 ### Model 3
 
 Try a quasibinomial distribution:
+
 ```{r AC model 3, eval=FALSE}
 gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                 + s(SSH, bs='ts', k=kVal)
@@ -1090,8 +1120,11 @@ gamm_full_TF$v15 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 ```
 <br>
+
 Done trying different model configurations for now, time to compare the results.
+
 <br>
+
 ```{r save models, eval = FALSE, echo = FALSE, include = FALSE}
 # Save models if re-calculating everything
 save(gamm_full_AcOnly_TF,file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
@@ -1105,6 +1138,8 @@ load(paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
 load(paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
 load(paste(outDir,SP,'_binomial_GAMMs_ALL.Rdata',sep=''))
 ```
+
+<br>
 
 # III. Model Comparisons
 
@@ -1128,6 +1163,7 @@ cat('Best acoustic only model is ', best_AcOnly_model_name,' \n')
 <br>
 
 Look at AIC to select best visual-only model:
+
 ```{r Vis AIC}
 Vis_model_AIC <- NULL
 for (iMod in 1:length(gamm_full_VisOnly_TF)){
@@ -1205,7 +1241,7 @@ plot(residuals.gam(AcOnly_gamm_pruned_TF_best$gam))
 summary(best_VisOnly_model$gam)
 ```
 
-No significant terms found in the visual only model. Try it with negative eddy distance which had the lowest p-value.
+Re-run the best visual-only model with only the significant term(s).
 
 ```{r best Vis model, echo = FALSE, message=FALSE}
 VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -1271,9 +1307,14 @@ plot(residuals.gam(gamm_pruned_TF_best$gam))
 
 ### Acoustic Only Model
 
-Predict on acoustic test data, and compare with actual observations
+Predict on acoustic test data, and compare with actual observations for 2013. We are comparing the predicted probability of encountering animals with the actual weekly rate of occurrence of animals at a site. 
 
-```{r Ac Temporal Predict,fig.height = 10, fig.width = 7}
+CAVEAT: There are issues of magnitude differences between the predictions and observations. I think part of the problem is that I'm calculating observed probability of encounter as the fraction of 5-minute bins containing Risso's per week, which is heavily skewed toward 0. 
+It would probably be better to do # of days per week, although it will be a coarser estimate. Recalculation in progress. 
+
+Alternatively we could compare to weekly densities, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate...
+
+```{r Ac Temporal Predict}
 # Predict on acoustic test data, using acoustic only model for comparison...
 compAcSet_MC <- which((Test_AcOnly.set$fac1)==5)
 compAcSet_GC <- which((Test_AcOnly.set$fac1)==10)
@@ -1306,38 +1347,90 @@ predAcOnly_MP <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
 occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
-par(mfrow = c(5,1),oma=c(3,0,5,0))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MC],predAcOnly_MC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,2],
-            type=c('p','l'),mar = c(1, 5, 0, 5),
-            main='Test Data vs. Acoustic Only Model Prediction',
-            xtickpos = dateTicks,
-            xticklab = rep('',5),axislab.cex=.8,lytickpos = c(0,.1,.2,.3),
-            rytickpos = c(0,.03,.06,.09), lylim= c(0,.4), rylim= c(0,.1))
-twoord.plot(Test_AcOnly.set$date[compAcSet_GC],predAcOnly_GC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,3],
-            type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),
-            mar = c(1, 5, 0, 5),lytickpos = c(0,.1,.2,.3),
-            rytickpos = c(0,.03,.06,.09), lylim= c(0,.4), rylim= c(0,.1))
-twoord.plot(Test_AcOnly.set$date[compAcSet_DT],predAcOnly_DT,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,4],type=c('p','l'),
-            ylab = 'Model Probability of Occurrence',
-            mar = c(1, 5, 0, 5),
-            rylab = 'Weekly Probability of Occurrence from Data',
-            xtickpos = dateTicks,axislab.cex=.8,
-            xticklab = rep('',5),lytickpos = c(0,.2,.4,.6,.8,1),
-            rytickpos = c(0,.1,.2,.3,.4), lylim= c(0,1), rylim= c(0,.5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_DC],predAcOnly_DC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,5],
-            type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),
-            mar = c(1, 5, 0, 5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MP],predAcOnly_MP,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,6],
-            type=c('p','l'),mar = c(1, 5, 0, 5),
-            xlab = 'Date',xtickpos = dateTicks, 
-            xticklab = dateLabels,axislab.cex=.8)
+AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+colnames(AcOnly_predictionSet) <-"date"
+AcOnly_predictionSet$MC <- NA
+MC_times <- Test_AcOnly.set$date[compAcSet_MC]
+m1 <- match(MC_times,AcOnly_predictionSet$date)
+AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
+
+AcOnly_predictionSet$GC <- NA
+GC_times <- Test_AcOnly.set$date[compAcSet_GC]
+m2 <- match(GC_times,AcOnly_predictionSet$date)
+AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
+
+AcOnly_predictionSet$DT <- NA
+DT_times <- Test_AcOnly.set$date[compAcSet_DT]
+m3 <- match(DT_times,AcOnly_predictionSet$date)
+AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
+
+AcOnly_predictionSet$DC <- NA
+DC_times <- Test_AcOnly.set$date[compAcSet_DC]
+m4 <- match(DC_times,AcOnly_predictionSet$date)
+AcOnly_predictionSet$DC[m4] <-predAcOnly_DC
+
+AcOnly_predictionSet$MP <- NA
+MP_times <- Test_AcOnly.set$date[compAcSet_MP]
+m5 <- match(MP_times,AcOnly_predictionSet$date)
+AcOnly_predictionSet$MP[m5] <-predAcOnly_MP
+
+AcOnly_predictionSet$Legend <- "Predictions"
+
+pOccur$Legend <- "Observations"
+```
+
+
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+# par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
+p1_Ac <- ggplot() +
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=MC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
+  labs(y = "", x = "")+
+  scale_color_manual(values= c("#CC0000","#000099"), 
+                     guide = guide_legend(override.aes = 
+                        list(linetype = c("blank", "solid"),
+                             shape = c(16, NA))))+
+  theme(legend.position = c(0.9, 0.7))
+
+p2_Ac <- ggplot() +
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=GC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p3_Ac <- ggplot() +
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=DT, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "Encounter probability", x = "")+
+  theme(legend.position="none")
+
+p4_Ac <- ggplot() +
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=DC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p5_Ac <- ggplot() +
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=MP, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "Date")+
+  theme(legend.position="none")
+
+multiplot(p1_Ac, p2_Ac, p3_Ac, p4_Ac, p5_Ac, cols=1)
 
 ```
 <br>
@@ -1364,27 +1457,87 @@ predVisOnly_MP <- predict.gam(VisOnly_gamm_pruned_TF_best$gam,
                               transformedCovars_AcOnly.test[compAcSet_MP,],
                               type = 'response',na.action = na.pass)
 
-par(mfrow = c(5,1))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MC],predVisOnly_MC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,2],type=c('p','l'),mar = c(1, 5, 0, 5),
-            main='Test Data vs. Visual Only Model Prediction',xtickpos = dateTicks,xticklab = rep('',5),axislab.cex=.8)
-twoord.plot(Test_AcOnly.set$date[compAcSet_GC],predVisOnly_GC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,3],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_DT],predVisOnly_DT,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,4],type=c('p','l'),
-            ylab = 'Model Probability of Occurrence',mar = c(1, 5, 0, 5),
-            rylab = 'Weekly Probability of Occurrence from Data',xtickpos = dateTicks,axislab.cex=.8,
-            xticklab = rep('',5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_DC],predVisOnly_DC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,5],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MP],predVisOnly_MP,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,6],type=c('p','l'),mar = c(1, 5, 0, 5),
-            xlab = 'Date',xtickpos = dateTicks, xticklab = dateLabels,axislab.cex=.8)
+VisOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+colnames(VisOnly_predictionSet) <-"date"
+VisOnly_predictionSet$MC <- NA
+m1 <- match(MC_times,VisOnly_predictionSet$date)
+VisOnly_predictionSet$MC[m1] <-predVisOnly_MC
+
+VisOnly_predictionSet$GC <- NA
+m2 <- match(GC_times,VisOnly_predictionSet$date)
+VisOnly_predictionSet$GC[m2] <-predVisOnly_GC
+
+VisOnly_predictionSet$DT <- NA
+m3 <- match(DT_times,VisOnly_predictionSet$date)
+VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
+
+VisOnly_predictionSet$DC <- NA
+m4 <- match(DC_times,VisOnly_predictionSet$date)
+VisOnly_predictionSet$DC[m4] <-predVisOnly_DC
+
+VisOnly_predictionSet$MP <- NA
+m5 <- match(MP_times,VisOnly_predictionSet$date)
+VisOnly_predictionSet$MP[m5] <-predVisOnly_MP
+
+VisOnly_predictionSet$Legend <- "Predictions"
+```
+
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+# par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
+p1_Vis <- ggplot() +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=MC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
+  labs(y = "", x = "")+
+  scale_color_manual(values= c("#CC0000","#000099"), 
+                     guide = guide_legend(override.aes = 
+                        list(linetype = c("blank", "solid"),
+                             shape = c(16, NA))))+
+  theme(legend.position = c(0.9, 0.7))
+
+p2_Vis <- ggplot() +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=GC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p3_Vis <- ggplot() +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=DT, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "Encounter probability", x = "")+
+  theme(legend.position="none")
+
+p4_Vis <- ggplot() +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=DC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p5_Vis <- ggplot() +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=MP, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "Date")+
+  theme(legend.position="none")
+
+multiplot(p1_Vis, p2_Vis, p3_Vis, p4_Vis, p5_Vis, cols=1)
 
 ```
 <br>
+
+
 
 ### Combined Model
 
@@ -1407,33 +1560,90 @@ pred_MP <- predict.gam(gamm_pruned_TF_best$gam,
                               transformedCovars_AcOnly.test[compAcSet_MP,],
                               type = 'response',na.action = na.pass)
 
-par(mfrow = c(5,1),oma=c(2,0,2,0))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MC],pred_MC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,2],type=c('p','l'),mar = c(1, 5, 0, 5),
-            main='Test Data vs. Acoustic Only Model Prediction',xtickpos = dateTicks,
-            xticklab = rep('',5),axislab.cex=.8)
-twoord.plot(Test_AcOnly.set$date[compAcSet_GC],pred_GC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,3],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_DT],pred_DT,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,4],type=c('p','l'),
-            ylab = 'Model Probability of Occurrence',mar = c(1, 5, 0, 5),
-            rylab = 'Weekly Probability of Occurrence from Data',xtickpos = dateTicks,axislab.cex=.8,
-            xticklab = rep('',5),xlab = '')
-twoord.plot(Test_AcOnly.set$date[compAcSet_DC],pred_DC,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,5],type=c('p','l'),axislab.cex=.8,
-            xtickpos =dateTicks,xticklab = rep('',5),mar = c(1, 5, 0, 5))
-twoord.plot(Test_AcOnly.set$date[compAcSet_MP],pred_MP,
-            as.POSIXct(pOccur[occurIdx,1]),pOccur[occurIdx,6],type=c('p','l'),mar = c(1, 5, 0, 5),
-            xlab = 'Date',xtickpos = dateTicks, xticklab = dateLabels,axislab.cex=.8)
+Both_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+colnames(Both_predictionSet) <-"date"
+Both_predictionSet$MC <- NA
+m1 <- match(MC_times,Both_predictionSet$date)
+Both_predictionSet$MC[m1] <-pred_MC
 
+Both_predictionSet$GC <- NA
+m2 <- match(GC_times,Both_predictionSet$date)
+Both_predictionSet$GC[m2] <-pred_GC
+
+Both_predictionSet$DT <- NA
+m3 <- match(DT_times,Both_predictionSet$date)
+Both_predictionSet$DT[m3] <-pred_DT
+
+Both_predictionSet$DC <- NA
+m4 <- match(DC_times,Both_predictionSet$date)
+Both_predictionSet$DC[m4] <-pred_DC
+
+Both_predictionSet$MP <- NA
+m5 <- match(MP_times,Both_predictionSet$date)
+Both_predictionSet$MP[m5] <-pred_MP
+
+Both_predictionSet$Legend <- "Predictions"
 ```
 
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+# par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
+p1 <- ggplot() +
+  geom_line(data = Both_predictionSet,
+            aes(x=date, y=MC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
+  labs(y = "", x = "")+
+  scale_color_manual(values= c("#CC0000","#000099"), 
+                     guide = guide_legend(override.aes = 
+                        list(linetype = c("blank", "solid"),
+                             shape = c(16, NA))))+
+  theme(legend.position = c(0.9, 0.7))
+
+p2 <- ggplot() +
+  geom_line(data = Both_predictionSet,
+            aes(x=date, y=GC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p3 <- ggplot() +
+  geom_line(data = Both_predictionSet,
+            aes(x=date, y=DT, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "Encounter probability", x = "")+
+  theme(legend.position="none")
+
+p4 <- ggplot() +
+  geom_line(data = Both_predictionSet,
+            aes(x=date, y=DC, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "")+
+  theme(legend.position="none")
+
+p5 <- ggplot() +
+  geom_line(data = Both_predictionSet,
+            aes(x=date, y=MP, color = Legend)) +
+  geom_point(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
+  scale_color_manual(values= c("#CC0000","#000099"))+
+  labs(y = "", x = "Date")+
+  theme(legend.position="none")
+
+multiplot(p1, p2, p3, p4, p5, cols=1)
+
+```
 <br>
 
 ## Spatial Prediction
 
 Load in rasters for prediction periods (2009 winter and summer)
+
 ```{r Load rasters, eval = FALSE, include = FALSE}
 predTemplate <-raster('E:/NASData/AcoustoVisualDE/Prediction_template/Predictiontemplate.tif')
 CHL_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_jan2009.tif'),
@@ -1512,7 +1722,7 @@ load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')
 
 ### Acoustic Only 
 
-Evaluate the models for summer and winter
+Evaluate the models for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
 ```{r Ac Spatial Predict}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
@@ -1580,34 +1790,35 @@ july2009_prediction_crop <- mask(july2009_prediction_proj,predict_template_proj)
 
 Display map:
 
-```{r leaflet, echo = FALSE, message = FALSE, warning = FALSE}
+```{r leaflet, message = FALSE, warning = FALSE, width = 8, height = 5}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
 
-map <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
+map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
-  addRasterImage(jan2009_AcOnly_prediction_crop, colors = pal,
-                 opacity = 0.8, group = 'Acoustic Jan. 2009') %>%
   addRasterImage(july2009_AcOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Acoustic July 2009') %>%
+  addRasterImage(jan2009_AcOnly_prediction_crop, colors = pal,
+                 opacity = 0.8, group = 'Acoustic Jan. 2009') %>%
+  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
+                 opacity = 0.8, group = 'Visual July 2009') %>%
   addRasterImage(jan2009_VisOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Visual Jan. 2009') %>%
-  addRasterImage(july2009_VisOnly_prediction_crop,
-                 colors = pal, opacity = 0.8, group = 'Visual July 2009') %>%
-  addRasterImage(jan2009_prediction_crop, colors = pal,
-                 opacity = 0.8, group = 'Both Jan. 2009') %>%
   addRasterImage(july2009_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Both July 2009') %>%
+  addRasterImage(jan2009_prediction_crop, colors = pal,
+                 opacity = 0.8, group = 'Both Jan. 2009') %>%
   addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
-                 stroke = FALSE, fillOpacity = 0.5, group = 'Test Sightings (summer)') %>%
+                 stroke = TRUE, fillOpacity = 0.8,radius = 6,
+                 group = 'Test Sightings\n(Summer 2009)') %>%
   addLegend(pal = pal, values = c(0,1),
-    title = 'Probability of encounter') %>%
+    title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic Jan. 2009', 'Acoustic July 2009',
                    'Visual Jan. 2009', 'Visual July 2009',
                    'Both Jan. 2009','Both July 2009'),
-    overlayGroups = 'Sightings: Summer 2009',
+    overlayGroups = 'Test Sightings (Summer 2009)',
     options = layersControlOptions(collapsed = FALSE)
   )
 map
