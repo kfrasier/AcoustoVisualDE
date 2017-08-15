@@ -1309,10 +1309,8 @@ plot(residuals.gam(gamm_pruned_TF_best$gam))
 
 Predict on acoustic test data, and compare with actual observations for 2013. We are comparing the predicted probability of encountering animals with the actual weekly rate of occurrence of animals at a site. 
 
-CAVEAT: There are issues of magnitude differences between the predictions and observations. I think part of the problem is that I'm calculating observed probability of encounter as the fraction of 5-minute bins containing Risso's per week, which is heavily skewed toward 0. 
-It would probably be better to do # of days per week, although it will be a coarser estimate. Recalculation in progress. 
-
-Alternatively we could compare to weekly densities, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate...
+CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which Risso's were detected. This results in a pretty coarse estimate.
+Alternatively we could compare to daily densities or something, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate...
 
 ```{r Ac Temporal Predict}
 # Predict on acoustic test data, using acoustic only model for comparison...
@@ -1383,50 +1381,47 @@ pOccur$Legend <- "Observations"
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Ac <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   labs(y = "", x = "")+
-  scale_color_manual(values= c("#CC0000","#000099"), 
-                     guide = guide_legend(override.aes = 
-                        list(linetype = c("blank", "solid"),
-                             shape = c(16, NA))))+
+  scale_color_manual("",values= c("gray48","#009999"))+
   theme(legend.position = c(0.9, 0.7))
 
 p2_Ac <- ggplot() +
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
+  geom_line(data = pOccur[occurIdx,],
              aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=GC, color = Legend))+
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p3_Ac <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=DT, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+
   theme(legend.position="none")
 
 p4_Ac <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+  
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=DC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p5_Ac <- ggplot() +
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
+  geom_line(data = pOccur[occurIdx,],
              aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=MP, color = Legend))+
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "", x = "Date")+
   theme(legend.position="none")
 
@@ -1485,50 +1480,47 @@ VisOnly_predictionSet$Legend <- "Predictions"
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Vis <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   labs(y = "", x = "")+
-  scale_color_manual(values= c("#CC0000","#000099"), 
-                     guide = guide_legend(override.aes = 
-                        list(linetype = c("blank", "solid"),
-                             shape = c(16, NA))))+
+  scale_color_manual(values= c("gray48","#009999"))+
   theme(legend.position = c(0.9, 0.7))
 
 p2_Vis <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p3_Vis <- ggplot() +
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
+  geom_line(data = pOccur[occurIdx,],
              aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+    geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=DT, color = Legend)) +
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+
   theme(legend.position="none")
 
 p4_Vis <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+  
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=DC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p5_Vis <- ggplot() +
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
+  geom_line(data = pOccur[occurIdx,],
              aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=MP, color = Legend))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "Date")+
   theme(legend.position="none")
 
@@ -1588,50 +1580,47 @@ Both_predictionSet$Legend <- "Predictions"
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1 <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = Both_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   labs(y = "", x = "")+
-  scale_color_manual(values= c("#CC0000","#000099"), 
-                     guide = guide_legend(override.aes = 
-                        list(linetype = c("blank", "solid"),
-                             shape = c(16, NA))))+
+  scale_color_manual(values= c("gray48","#009999"))+
   theme(legend.position = c(0.9, 0.7))
 
 p2 <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
   geom_line(data = Both_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p3 <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
   geom_line(data = Both_predictionSet,
             aes(x=date, y=DT, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+
   theme(legend.position="none")
 
 p4 <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
   geom_line(data = Both_predictionSet,
             aes(x=date, y=DC, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "")+
   theme(legend.position="none")
 
 p5 <- ggplot() +
+  geom_line(data = pOccur[occurIdx,],
+             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
   geom_line(data = Both_predictionSet,
             aes(x=date, y=MP, color = Legend)) +
-  geom_point(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
-  scale_color_manual(values= c("#CC0000","#000099"))+
+  scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "", x = "Date")+
   theme(legend.position="none")
 
