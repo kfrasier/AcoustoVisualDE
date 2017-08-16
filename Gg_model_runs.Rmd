@@ -1800,14 +1800,14 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Both Jan. 2009') %>%
   addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
-                 group = 'Test Sightings\n(Summer 2009)') %>%
+                 group = 'Test Sightings (Summer 2009)') %>%
   addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic Jan. 2009', 'Acoustic July 2009',
                    'Visual Jan. 2009', 'Visual July 2009',
                    'Both Jan. 2009','Both July 2009'),
-    overlayGroups = 'Test Sightings (Summer 2009)',
+    overlayGroups = c('Test Sightings (Summer 2009)'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
