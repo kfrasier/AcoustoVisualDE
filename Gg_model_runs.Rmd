@@ -88,7 +88,7 @@ Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
 
 ### Preliminary Mapping
 
-The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Note that no Risso's dolphin sightings were reported during the 2014 survey. Blue markers indicate HARP locations.
+The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Blue markers indicate HARP locations.
 
 ```{r map inputs}
 #Get test visual sightings
@@ -97,7 +97,7 @@ sightingsTrain <- Train_VisOnly.set[Train_VisOnly.set$Density>0,c('lat','long','
 sightingsTest <- Test_VisOnly.set[Test_VisOnly.set$Density>0,c('lat','long','date')]
 HARPsites <- unique(Train_AcOnly.set[c('lat','long')])
 pal <-colorFactor(palette = "RdYlGn", 
-                  domain = c(2003,2004,2009,2012,2014))
+                  domain = c(2003,2004,2009,2012))
   
 map1 <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
@@ -112,7 +112,7 @@ map1
 ```
 <br>
 
-The timseries below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing.
+The time series below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing.
 
 ```{r plot timeseries, message = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
