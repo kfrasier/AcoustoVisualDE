@@ -50,9 +50,9 @@ Note: Future work could use monthly climatologies (averages) so that older sight
 ```{r Missing data}
 covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
 
-percFilled <- plot.missingdata(mergedSegments,covarList,paste0('AcousticAndVisual_',SP)) 
-percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0('AcousticOnly_',SP)) 
-percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0('VisualOnly_',SP)) 
+percFilled <- plot.missingdata(mergedSegments,covarList,paste0(outDir,'AcousticAndVisual_',SP)) 
+percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticOnly_',SP)) 
+percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
 
 ![](E:/NASData/ModelData/Gg/VisualOnly_Gg_missingData.png)
@@ -106,7 +106,7 @@ map1 <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
   addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = ~pal(year(date)),
                  stroke = TRUE, fillOpacity = 0.8, group = 'Test Set',radius = 7)%>%
   addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
-  addLegend(pal = pal,values = c(2003,2004,2009,2012,2014),title = 'Year') 
+  addLegend(pal = pal,values = c(2003,2004,2009,2012),title = 'Year') 
 
 map1
 ```
@@ -165,9 +165,9 @@ Covariates have different distributions across the observations.
 Here are the distributions of covariates from the acoustic observations:
 
 ```{r dot plots, eval = FALSE, message = FALSE}
-plot.cleveland(mergedTrain.set,covarList,FALSE,paste0('AcousticAndVisual_',SP))
-plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0('AcousticOnly_',SP))
-plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0('VisualOnly_',SP))
+plot.cleveland(mergedTrain.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP))
+plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP))
+plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
 ![](E:/NASData/ModelData/Gg/AcousticOnly_Gg_clevelandDots_noTransform.png)
@@ -184,38 +184,7 @@ Some of these covariates are more or less interrelated. HYCOM estimates of salin
 
 Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model. Day of year was excluded to avoid artifacts associated with the temporal differences of the datasets (Acoustic data are year-round, and Visual data are collected in spring/summer).
 
-```{r correlation plots, eval = FALSE, message = FALSE, warning = FALSE}
-# without transform
-png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
-
-# with transform
-png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off() 
-```
-![](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
-
-<br>
-
-### Transform Predictor Variables
-
-Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and can be log-transformed.
-
-```{r transform covars, message = FALSE}
+```{r correlation plots, eval = TRUE, message = FALSE, warning = FALSE}
 covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
                 "HYCOM_SALIN_0","HYCOM_DIR_0",
                 "HYCOM_MAG_0",
@@ -223,12 +192,6 @@ covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
                 "EddyDist","Neg_EddyDist","DayOfYear",
                 "fac1")
 
-transformList <- c("none","none","log10","log10",
-                   "none","none",
-                   "log10",
-                   "none","log10","none",
-                   "none","none",
-                   "none")
 
 
 # restrict covariates again to limited set
@@ -240,10 +203,46 @@ Train_VisOnly.set2<- Train_VisOnly.set[,covarList2]
 Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
 
 
-transformedCovars.train <- transform.covars(mergedTrain.set2,
-                                            covarList2,transformList)
-transformedCovars.test <- transform.covars(mergedTest.set2,
-                                           covarList2,transformList)
+# without transform
+png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(mergedTrain.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_AcOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(Train_VisOnly.set2[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off()
+
+
+```
+![](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
+
+<br>
+
+### Transform Predictor Variables
+
+Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and can be log-transformed.
+
+```{r transform covars, message = FALSE}
+# covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
+#                 "HYCOM_SALIN_0","HYCOM_DIR_0",
+#                 "HYCOM_MAG_0",
+#                 "HYCOM_UPVEL_50","FrontDist_Cayula",
+#                 "EddyDist","Neg_EddyDist","DayOfYear",
+#                 "fac1")
+
+transformList <- c("none","none","log10","log10",
+                   "none","none",
+                   "log10",
+                   "none","log10","none",
+                   "none","none",
+                   "none")
+
+transformedCovars.train <-
+  transform.covars(mergedTrain.set2,covarList2,transformList)
+transformedCovars.test <- 
+  transform.covars(mergedTest.set2,covarList2,transformList)
 
 transformedCovars_AcOnly.train <-
   transform.covars(Train_AcOnly.set2,covarList2,transformList)
@@ -254,6 +253,18 @@ transformedCovars_VisOnly.train <-
 transformedCovars_VisOnly.test <-
   transform.covars(Test_VisOnly.set2,covarList2,transformList)
 
+
+# Generate correlation plots with transform
+png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_AcOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), width = 2000, height = 1600)
+pairs.panels(transformedCovars_VisOnly.train[,1:length(covarList2)-1], ellipses=FALSE, method = "spearman",cex.cor=.75)
+dev.off() 
+
 ```
 <br>
 
@@ -262,12 +273,12 @@ Plotting the transformed variables:
 
 ```{r transformed dot plots, eval = FALSE, message = FALSE}
 plotCols = colnames(transformedCovars.train)[1:length(covarList2)-1]
-plot.cleveland(transformedCovars.train,plotCols,
-               paste0('AcousticAndVisual_',SP))
+plot.cleveland(transformedCovars.train,
+               plotCols,TRUE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(transformedCovars_AcOnly.train,
-               plotCols,TRUE,paste0('AcousticOnly_',SP))
+               plotCols,TRUE,paste0(outDir,'AcousticOnly_',SP))
 plot.cleveland(transformedCovars_VisOnly.train,
-               plotCols,TRUE,paste0('VisualOnly_',SP))
+               plotCols,TRUE,paste0(outDir,'VisualOnly_',SP))
 
 ```
 <br>
@@ -285,15 +296,15 @@ To get an idea of the basic predictive power of these covariates, we can look at
 ```{r presence absence histograms, eval = FALSE, message = FALSE}
 plot.covarDensity(transformedCovars.train,
                   colnames(transformedCovars.train),
-                  mergedTrain.set$SpPresent)
+                  mergedTrain.set$Density,paste0(outDir,'Both_',SP))
 
 plot.covarDensity(transformedCovars_AcOnly.train,
                    colnames(transformedCovars_AcOnly.train),
-                  Train_AcOnly.set$Density,paste0('AcousticOnly_',SP))		
+                  Train_AcOnly.set$Density,paste0(outDir,'AcousticOnly_',SP))		
 
 plot.covarDensity(transformedCovars_VisOnly.train,
                   colnames(transformedCovars_VisOnly.train),
-                  Train_VisOnly.set$Density,paste0('VisualOnly_',SP))
+                  Train_VisOnly.set$Density,paste0(outDir,'VisualOnly_',SP))
 ```
 
 
@@ -335,7 +346,15 @@ gamm_full_TF<-NULL
 ```
 <br>
 
-Calculate weights to use in combined visual/acoustic model:
+Currently, weights are based on the following logic: 
+* Acoustic data represent presence in 1 day bins, 
+* Visual data represent presence during 10 km transect segments traveling at ~10 knots or ~18.5km/hr. Therefore each visual datapoint represents 0.54 hours. 
+* Acoustic data have a truncation distance of ~2km, for a total monitoring area of $(2 km)^{2} \pi$, 
+* Visual truncation distance is ~5km, for a total monitoring area of 5km x 10km x 2, 
+
+\[\text{Acoustic to Visual ratio} = \frac{24 hrs \cdot (2 km)^{2} \pi}{.54 hrs \cdot 5 km \cdot 10 km \cdot 2} = 5.58 \approx 6 : 1
+\]
+
 
 ```{r Calculate weights}
 # Compute weights
@@ -375,7 +394,7 @@ Run full binomial GAMs on Acoustic only, Visual only, and combined Acoustic/Visu
 - Include distance to both cyclonic and anticyclonic eddies, 
 - ts splines
 
-```{r AC model 1, eval=FALSE} 
+```{r AC model 1, eval = FALSE} 
 gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -424,7 +443,7 @@ gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Substitute regular binomial distribution: 
 
-```{r AC model 2, eval=FALSE}
+```{r AC model 2, eval = FALSE}
 
 gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -476,7 +495,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try a quasibinomial distribution:
 
-```{r AC model 3, eval=FALSE}
+```{r AC model 3, eval = FALSE}
 gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                 + s(SSH, bs='ts', k=kVal)
                                 + s(log10_CHL, bs='ts', k=kVal)
@@ -524,7 +543,7 @@ gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Repeat the above models, but substitute negative eddy distances instead of looking at all eddies:
 
-```{r AC model 4, eval=FALSE}
+```{r AC model 4, eval = FALSE}
 gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -574,7 +593,7 @@ gamm_full_TF$v04 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Substitute both negative eddy distances AND binomial distribution:
 
-```{r AC model 5, eval=FALSE}
+```{r AC model 5, eval = FALSE}
 gamm_full_AcOnly_TF$v05 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -623,7 +642,7 @@ gamm_full_TF$v05 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 ### Model 6
 
 Substitute negative eddy distance with quasibinomial distribution.
-```{r AC model 6, eval=FALSE}
+```{r AC model 6, eval = FALSE}
 gamm_full_AcOnly_TF$v06 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                 + s(SSH, bs='ts', k=kVal)
                                 + s(log10_CHL, bs='ts', k=kVal)
@@ -672,7 +691,7 @@ gamm_full_TF$v06 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try adding a random effects structure:
 
-```{r AC model 7, eval=FALSE}
+```{r AC model 7, eval = FALSE}
 gamm_full_AcOnly_TF$v07 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -725,7 +744,7 @@ gamm_full_TF$v07 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Again substituting binomial distribution, retaining random effects.
 
-```{r AC model 8, eval=FALSE}
+```{r AC model 8, eval = FALSE}
 gamm_full_AcOnly_TF$v08 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -776,7 +795,7 @@ gamm_full_TF$v08 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Now substituting quasibinomial distribution, retaining random effects.
 
-```{r AC model 9, eval=FALSE}
+```{r AC model 9, eval = FALSE}
 gamm_full_AcOnly_TF$v09 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -829,7 +848,7 @@ gamm_full_TF$v09 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try distances to negative eddies only, negative binomial, retaining random effects structure:
 
-```{r AC model 10, eval=FALSE}
+```{r AC model 10, eval = FALSE}
 gamm_full_AcOnly_TF$v10 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -881,7 +900,7 @@ gamm_full_TF$v10 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try negative eddies with binomial distribution and random effects:
 
-```{r AC model 11, eval=FALSE}
+```{r AC model 11, eval = FALSE}
 gamm_full_AcOnly_TF$v11 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -933,7 +952,7 @@ gamm_full_TF$v11 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try negative eddies with quasibinomial distribution and random effects:
 
-```{r AC model 12, eval=FALSE}
+```{r AC model 12, eval = FALSE}
 gamm_full_AcOnly_TF$v12 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal) 
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -985,7 +1004,7 @@ gamm_full_TF$v12 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Try eddy distance and SSH as an interaction term instead of negative vs. positive eddies, with negative binomial distribution:
 
-```{r AC model 13, eval=FALSE}
+```{r AC model 13, eval = FALSE}
 gamm_full_AcOnly_TF$v13 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(EddyDist,SSH, bs='ts', k=kVal)
