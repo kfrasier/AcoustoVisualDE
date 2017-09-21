@@ -1500,7 +1500,9 @@ for (iM in 1:length(monthStr)){
   raster_set[[iM]] <- brick(SST_climate,SSH_climate,CHL_climate,eddy_climate,HYCOM_MAG_climate,
                          HYCOM_SALIN_climate,HYCOM_MLD_climate) 
   names(raster_set[[iM]])<-c('SST','SSH','CHL','EddyDist','log10_HYCOM_MAG_0',
-                         'HYCOM_SALIN_0','log10_HYCOM_MLD')
+                         'HYCOM_SALIN_0','log10_HYCOM_MLD')  
+  cat(paste0("done with month ", iM, "\n", collapse = ""))
+
 }
 
 save(raster_set,monthStr, monthNum,
@@ -1509,7 +1511,7 @@ save(raster_set,monthStr, monthNum,
 ```
 
 
-```{r evaluate climatology-based models}
+```{r evaluate climatology-based models, message = FALSE, warning = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata') 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1521,8 +1523,14 @@ for (iM in 1:length(monthStr)){
   climatePrediction[[iM]] <- raster::predict(raster_set[[iM]],gamm_pruned_TF_best$gam,
             type = 'response',na.action = na.pass)
   mapClimatePrediction[[iM]] <- mask(projectRaster(climatePrediction[[iM]], crs=map_proj),predict_template_proj)  
+  # output raster to geotiff
+  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'_mean_encounter_probability.tif')
+  writeRaster(mapClimatePrediction[[iM]],filename = rasterImageFileName, format="GTiff",overwrite = TRUE)
   
-  cat(paste0("done with month ", iM, "\n", collapse = ""))
+  #ouput raster to kml
+  kmlImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'_mean_encounter_probability.kml')
+  KML(mapClimatePrediction[[iM]],file = kmlImageFileName, col=matlab.like2(32),overwrite = TRUE)
+  
 }
   
 ```
