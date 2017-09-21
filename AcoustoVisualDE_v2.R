@@ -12,7 +12,8 @@ library(HabitatProject)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run setup_info_[your species here].R before running this
-load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
+#load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
+load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -29,15 +30,15 @@ if (matchACSegs){
   # Load acoustic segments and densities
   acSegmentsAll <- read.csv(acousticSegFile, header = TRUE,na.strings=c(""," ","NA","-99999","-9999","NaN"))
   acDensityAll <- read.csv(acousticDensityFile, header = TRUE,na.strings=c(""," ","NA","-99999","-9999","NaN"))
-  acSegmentsAll$XLSDATE = as.POSIXct(acSegmentsAll$XLSDATE,"%m/%d/%Y",tz = "GMT")
-  acDensityAll$xlsDate = as.POSIXct(strptime(acDensityAll$xlsDate,"%m/%d/%Y"),tz = "GMT")#"%m/%d/%Y %H:%M"
+  acSegmentsAll$XLSDATE <- as.POSIXct(acSegmentsAll$XLSDATE,"%Y-%m-%d",tz = "GMT")
+  acDensityAll$xlsDate <- as.POSIXct(strptime(acDensityAll$xlsDate,"%m/%d/%Y"),tz = "GMT")#"%m/%d/%Y %H:%M"
   nCol <- length(colnames(acDensityAll))
   
   keepPoints <- which(acDensityAll$xlsDate >= "2011-01-01" & acDensityAll$xlsDate < "2014-01-01")
   acDensityAll <- acDensityAll[keepPoints,]
   
   # Match segments to density datapoints
-  covarNames = names(acSegmentsAll[5:length(names(acSegmentsAll))])
+  covarNames <- names(acSegmentsAll[5:length(names(acSegmentsAll))])
   acDensityAll[,covarNames] <- NA
   for (iR in 1:nrow(acDensityAll)){
     # find all the segments with matching latitudes
@@ -72,7 +73,7 @@ cat("Loading visual data\n")
 
 load(visDataFile)
 visSegments <- read.csv(visSegmentsFile, header = TRUE,na.strings=c(""," ","NA","-99999.0000","-99999"))
-visSegments$date <- as.POSIXct(strptime(visSegments$date,"%m/%d/%Y"),tz="GMT")
+visSegments$date <- as.POSIXct(strptime(visSegments$date,"%Y-%m-%d"),tz="GMT")
 ## Process Visual data to determine detection probabilities and strip widths
 visSpIdx <- NULL
 for (spname in SPC_vis){
@@ -117,13 +118,13 @@ if (runDetFuns){
     ddfData$seastate <- visData$seastate[PLCspIdxOn]
     ddfData$swell <- visData$swell[PLCspIdxOn]
     ddfData$vis <- visData$vis[PLCspIdxOn]
-    
+    ddfData <- as.data.frame(ddfData)
     
     # Compute untruncated detection function
     cat("Calculating basic fit with non-truncated data and half-normal key, no covariates.\n")
     
     detFun_noTrunc <-ddf(method = 'ds', dsmodel =~ mcds(key = 'hn', formula = ~ 1),
-                         data = as.data.frame(ddfData), meta.data = list(binned=F,left=0),
+                         data = ddfData, meta.data = list(binned=F,left=0),
                          control = list(optimx.maxit = 20))
     # detFun_noTrunc2 <-ds(as.data.frame(ddfData),key='hn')
     
@@ -158,15 +159,15 @@ if (runDetFuns){
       df <-NULL
       if (grepl('none',adjInit[[i1]])){
         df <- ddf(method ='ds', dsmodel =~ mcds(key = keyListInit[[i1]], formula = ~ 1),
-                  data = as.data.frame(ddfData), meta.data = list(binned=F, width=tDist[nPlatform], left=0))
-        #         df <- ds(as.data.frame(ddfData), truncation = tDist[nPlatform], order = NULL, transect = "line", key = keyListInit[[i1]],
+                  data = ddfData, meta.data = list(binned=F, width=tDist[nPlatform], left=0))
+        #         df <- ds(ddfData, truncation = tDist[nPlatform], order = NULL, transect = "line", key = keyListInit[[i1]],
         #                   monotonicity = "weak")
         
       } else {
         df <-ddf(method ='ds', dsmodel =~ mcds(key = keyListInit[[i1]], formula = ~ 1,
                                                adj.series = adjInit[[i1]], adj.order = adjOrderInit[[i1]]), data = as.data.frame(ddfData),
                  meta.data = list(binned=F, width=tDist[nPlatform],left=0))
-        #         df <- ds(as.data.frame(ddfData), truncation = tDist[nPlatform], transect = "line", key = keyListInit[[i1]],
+        #         df <- ds(ddfData, truncation = tDist[nPlatform], transect = "line", key = keyListInit[[i1]],
         #                  adjustment = adjInit[i1], order = adjOrderInit[i1],
         #                  monotonicity = "weak")
       }
@@ -189,12 +190,58 @@ if (runDetFuns){
       }
     }
     
-    cat("Done fitting models")
+    
+    # #### Fitting detection functions with covariates
+    # # Iterate over detection functions with covariates and identify AIC for each
+    # covarList <- c("size", "seastate",'vis', 'swell')
+    # # list of keys: hn, hr
+    # keyCovar= c('hn', 'hr')
+    # CI <- 1
+    # aicList2 <- NULL # store AIC scores
+    # keyList2 <- NULL # store keys scores
+    # cSetStr <- NULL # store the covariate formulas
+    # detFun2<- NULL
+    # adjList2 <-NULL
+    # 
+    # # iterate over the key options
+    # for (iKey in keyCovar){
+    #   # iterate over covariate combinations - using "combn" to come up with different the combinations of covariates
+    #   for (i2 in 1 : length(covarList)){
+    #     covarSet <- combn(covarList,i2)
+    #     nSets <- dim(covarSet)
+    #     # for each set of covariates, fit a model
+    #     for (i3 in 1:nSets[2]){
+    #       cSet <- covarSet[,i3]
+    #       # nPlus <- nSets[1]-1
+    #       cSetStr[CI] <- paste('~', paste0(cSet, collapse = " + "))
+    #       # sometimes models do not converge, use try() to avoid crash if a model fails
+    #       dF <- NULL
+    #       try(dF <- ddf(method='ds',dsmodel=~mcds(key=iKey,  formula = cSetStr[CI]),
+    #                     data = ddfData,
+    #                     meta.data = list(binned=F, width=tDist[nPlatform],left=0)))
+    #       
+    #       if (is.null(dF)){
+    #         cat(paste0("Model did not converge: Key = ",iKey, "; covariates = ",cSetStr[CI],"\n", collapse = ""))
+    #         
+    #       }else {
+    #         detFun2[[CI]] <-dF
+    #         adjList2[CI]<- cSetStr[CI]
+    #         aicList2[CI] <- detFun2[[CI]]$criterion
+    #         keyList2[CI] <- iKey
+    #         cat(paste0("Model result ", CI+i1, ": Key = ",iKey, "; covariates = ",cSetStr[CI],"\n", collapse = ""))
+    #         cat(paste("AIC =",  round(aicList2[CI], digits=2),"\n", collapse = ""))
+    #         CI <- CI+1
+    #       }
+    #     }
+    #   }
+    # }
+    # 
+    # cat("Done fitting models")
     
     # Put all combinations together, and see which one has the lowest AIC
-    aicList<-c(aicList1)#,aicList2) (commented out part associated with covariate-models)
+    aicList<-c(aicList1)#,aicList2) 
     keyList <- c(keyList1)#,keyList2)
-    adjList <- c(adjStr)#,cSetStr)
+    adjList <- c(adjStr)#,adjList2)
     detFun <- c(detFun1)#,detFun2)
     
     ddfOut <- data.frame(model = adjList, key = keyList, aic = aicList)
@@ -243,7 +290,8 @@ if (runDetFuns){
 visSegments["ESW"] <- 0
 for (iP in 1:length(PLC)){
   thisSegList <-which(visSegments$ship==PLC[iP])
-  visSegments$ESW[thisSegList] <- predict(detFunByPlatform[[iP]],esw=TRUE)$fitted[1]
+  visSegments$ESW[thisSegList] <- predict(detFunByPlatform[[iP]],
+                                          esw=TRUE)$fitted[1]
 }
 
 # Get rid of off effort segments
@@ -255,10 +303,10 @@ prunedSightings <- visData[which(visData$Truncated==0),] # get all of the non-tr
 # Assign segment to each sighting
 for (iSight in 1:length(prunedSightings$date)){
   sightDate <- as.POSIXct(strptime(prunedSightings$date[iSight],"%Y-%m-%d"),tz="GMT")
-  cat(paste0('Original date = ', prunedSightings$date[iSight],'\n'))
-  cat(paste0('POSIXct date = ', sightDate,'\n'))
+  # cat(paste0('Original date = ', prunedSightings$date[iSight],'\n'))
+  # cat(paste0('POSIXct date = ', sightDate,'\n'))
   onThisDay <- which(visSeg_OnEffort$date == sightDate)
-  cat(paste0('matching day = ', onThisDay,'\n'))
+  # cat(paste0('matching day = ', onThisDay,'\n'))
   if (length(onThisDay)>0) {
     minIdx <- which.min(rowSums((visSeg_OnEffort[onThisDay,c('Lat','Long')]-
               matrix(as.numeric(rep(prunedSightings[iSight,c('boatlat','boatlon')],each=length(onThisDay)),ncol=2)))^2))
@@ -299,7 +347,7 @@ for (iSeg in 1:length(prunedSightings$Segment)){
 visSeg_OnEffort$sp_count_g0adj <- visSeg_OnEffort$sp_count/visG0
 
 # Estimate surveyed area
-visSeg_OnEffort$EffectiveArea <- (2*visSeg_OnEffort$ESW/1000)*(visSeg_OnEffort$SegmentLength/1000)
+visSeg_OnEffort$EffectiveArea <- (2*tDist/1000)*(visSeg_OnEffort$SegmentLength/1000)
 visSeg_OnEffort$Density <- visSeg_OnEffort$sp_count_g0adj/visSeg_OnEffort$EffectiveArea
 
 
@@ -321,14 +369,13 @@ uSiteYear <- unique((siteYear))
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
 AcOnlySegments$Density <- acDensityAll$meanDensity#[thisSet]/quant95
 
-
 AcOnlySegments$date <- acDensityAll$xlsDate #date
 AcOnlySegments$Numeric_date <- (as.numeric(acDensityAll$xlsDate)-min(as.numeric(acDensityAll$xlsDate)))/100
 AcOnlySegments$lat <- acDensityAll$Lat
 AcOnlySegments$long <- acDensityAll$Long
 
 AcOnlySegments$Category<- rep(2,length(acDensityAll$Long))
-AcOnlySegments$SST <- acDensityAll$SST_DAILY_CMC.L4
+AcOnlySegments$SST <- acDensityAll$SST_DAILY_CMC
 AcOnlySegments$SSH <- acDensityAll$SSH_DAILY_AVISO
 AcOnlySegments$CHL <- acDensityAll$CHL_8DAY_NASA
 #AcOnlySegments$HYCOM_QTOT <- acDensityAll$HYCOM_QTOT
@@ -343,12 +390,15 @@ AcOnlySegments$HYCOM_MAG_100 <- acDensityAll$HYCOM_MAG_100
 AcOnlySegments$HYCOM_UPVEL_100 <- acDensityAll$HYCOM_UPVEL_100
 AcOnlySegments$HYCOM_UPVEL_50 <- acDensityAll$HYCOM_UPVEL_50
 AcOnlySegments$FrontDist_Cayula <- acDensityAll$FRONTDIST_CAYULA
-AcOnlySegments$EddyDist <- acDensityAll$EDDYDIST
-AcOnlySegments$Neg_EddyDist <- acDensityAll$NEG_EDDYDIST
+AcOnlySegments$EddyDist <- acDensityAll$EddyDist
+AcOnlySegments$Neg_EddyDist <- acDensityAll$NegEddyDist
+AcOnlySegments$Pos_EddyDist <- acDensityAll$PosEddyDist
+
 AcOnlySegments$Type <- rep(2,times = nAc)
 AcOnlySegments$DayOfYear <- as.numeric(strftime(acDensityAll$xlsDate,"%j")) # day of year
+AcOnlySegments$Weight <- 24*(AcTruncDist^2)*pi # 24 hours, 5km radius
+AcOnlySegments$Site<- acDensityAll$Site
 AcOnlySegments <- as.data.frame(AcOnlySegments)
-
 # Make vector indicating deployment categories based on lat/long
 myLatLon = acDensityAll[c(4,5)]
 # # uLatLon <- unique(myLatLon)
@@ -361,7 +411,7 @@ AcOnlySegments$siteNum <- rep(NA,times = nRows) # will hold site label
 for (uR in 1:nrow(uLatLon.site)){
   thisSet1 <- which(as.logical(row.match(floor(myLatLon),uLatLon.site[uR,])))
   AcOnlySegments$siteNum[thisSet1] <- uR
-#  # indentify distinct deployments at site based on lat/long
+## indentify distinct deployments at site based on lat/long
 #   uLatLon.deployment <- unique(floor(myLatLon[thisSet1,]*10000))/10000 
 #   
 #   for (uV in 1:nrow(uLatLon.deployment)){
@@ -395,7 +445,9 @@ VisOnlySegments$HYCOM_UPVEL_100 <- visSeg_OnEffort$HYCOM_upVel_100
 VisOnlySegments$HYCOM_UPVEL_50 <- visSeg_OnEffort$HYCOM_UPVEL_50
 VisOnlySegments$FrontDist_Cayula <- visSeg_OnEffort$FrontDist_Cayula
 VisOnlySegments$EddyDist <- visSeg_OnEffort$EddyDist
-VisOnlySegments$Neg_EddyDist <- visSeg_OnEffort$Neg_EddyDist
+VisOnlySegments$Neg_EddyDist <- visSeg_OnEffort$NegEddyDist
+VisOnlySegments$Pos_EddyDist <- visSeg_OnEffort$PosEddyDist
+
 nVis <- length(visSeg_OnEffort$HYCOM_upVel_100)
 VisOnlySegments$Type <- rep(1,times = nVis)
 VisOnlySegments$DayOfYear <- as.numeric(strftime(VisOnlySegments$date,format="%j")) # day of year
@@ -403,6 +455,9 @@ VisOnlySegments <- as.data.frame(VisOnlySegments)
 visOrder <- order(VisOnlySegments$date)
 VisOnlySegments <-VisOnlySegments[visOrder,] # make sure the segments are sequential 
 # in case it matters for correlation structure.
+VisOnlySegments$Weight <- (((visSeg_OnEffort$SegmentLength/1000)/18.52)*
+                             visSeg_OnEffort$EffectiveArea)
+      # transect length, divided by speed (10knots/hr = 18.52 km/hr), times estimated strip width, times length, *2
 
 ##################### Merge Visual and Acoustic Segments #####################
 cat("Merging Visual and Acoustic Segments\n")
@@ -418,7 +473,7 @@ mergedSegments$Category<- c(rep(1,length(visSeg_OnEffort$Long)),rep(2,length(acD
 # mergedSegments$ESW <- c(acDensityAll$BW_ESW)
 mergedSegments$Density <- c(VisOnlySegments$Density,
                             AcOnlySegments$Density)
-mergedSegments$SST <- c(visSeg_OnEffort$SST_daily_CMC_L4_GLOB,acDensityAll$SST_DAILY_CMC.L4)
+mergedSegments$SST <- c(visSeg_OnEffort$SST_daily_CMC_L4_GLOB,acDensityAll$SST_DAILY_CMC)
 mergedSegments$SSH <- c(visSeg_OnEffort$SSH_daily_aviso_double,acDensityAll$SSH_DAILY_AVISO)
 mergedSegments$CHL <- c(visSeg_OnEffort$CHl_8Day_NASA, acDensityAll$CHL_8DAY_NASA)
 # mergedSegments$HYCOM_QTOT <- c(visSeg_OnEffort$HYCOM_qTot, acDensityAll$HYCOM_QTOT)
@@ -433,28 +488,33 @@ mergedSegments$HYCOM_MAG_100 <- c(visSeg_OnEffort$HYCOM_mag_100,acDensityAll$HYC
 mergedSegments$HYCOM_UPVEL_100 <- c(visSeg_OnEffort$HYCOM_upVel_100,acDensityAll$HYCOM_UPVEL_100)
 mergedSegments$HYCOM_UPVEL_50 <- c(visSeg_OnEffort$HYCOM_UPVEL_50,acDensityAll$HYCOM_UPVEL_50)
 mergedSegments$FrontDist_Cayula <- c(visSeg_OnEffort$FrontDist_Cayula,acDensityAll$FRONTDIST_CAYULA)
-mergedSegments$EddyDist <- c(visSeg_OnEffort$EddyDist,acDensityAll$EDDYDIST)
-mergedSegments$Neg_EddyDist <- c(visSeg_OnEffort$EddyDist,acDensityAll$NEG_EDDYDIST)
+mergedSegments$EddyDist <- c(visSeg_OnEffort$EddyDist,acDensityAll$EddyDist)
+mergedSegments$Neg_EddyDist <- c(visSeg_OnEffort$NegEddyDist,acDensityAll$NegEddyDist)
+mergedSegments$Pos_EddyDist <- c(visSeg_OnEffort$PosEddyDist,acDensityAll$PosEddyDist)
+
 mergedSegments$Type <- c(rep(1,times = nVis),rep(2,times = nAc))
 mergedSegments$DayOfYear <- as.numeric(strftime(mergedSegments$date,"%j")) # day of year
+mergedSegments$Weight <- c(VisOnlySegments$Weight,AcOnlySegments$Weight)
 mergedSegments <- as.data.frame(mergedSegments)
 
 
-
-
 ############ Calculate a covariance factor based on deployment (Acoustic) or Year (Visual) #############
-
+# Trying two grouping options: fac1 just groups acoustic monitoring by site, this seems ideal but results in small sample size
+# So fac2 groups by deployment, which seems less defensible, but might help models converge.
+# Visuals are grouped by cruise in both cases.
 myLatLon <- data.frame(AcOnlySegments$lat,AcOnlySegments$long)
 uLatLon <- unique(myLatLon)
 notNA <- which(!is.na(uLatLon[,1]))
 uLatLon <- uLatLon[notNA,]
 nRows <- length(AcOnlySegments[,1])
-fac1 <- rep(NA,times = nRows)
+fac2 <- rep(NA,times = nRows)
 for (uR in 1:nrow(uLatLon)){
   thisSet <- which(as.logical(row.match(myLatLon,(uLatLon[uR,]))))
-  fac1[thisSet] <-uR
+  fac2[thisSet] <-uR
 }
-AcOnlySegments$fac1 <- fac1
+AcOnlySegments$fac2 <- fac2
+AcOnlySegments$fac1 <- AcOnlySegments$siteNum
+
 
 myYear <- as.numeric(strftime(VisOnlySegments$date ,"%Y"))
 uYear <- unique(myYear)
@@ -462,14 +522,16 @@ nRows <- length(myYear)
 VisOnlySegments$fac1 <- rep(NA,times = nRows)
 for (uR in 1:length(uYear)){
   thisSet <- which(as.logical(match(myYear,uYear[uR])))
-  VisOnlySegments$fac1[thisSet] <- uR +max(AcOnlySegments$fac1,na.rm = TRUE)
+  VisOnlySegments$fac1[thisSet] <- uR + max(AcOnlySegments$fac1,na.rm = TRUE)
 }
+VisOnlySegments$fac2 <- VisOnlySegments$fac1
 
 mergedSegments$fac1 <- as.numeric(c(VisOnlySegments$fac1,AcOnlySegments$fac1))
-
+mergedSegments$fac2 <- as.numeric(c(VisOnlySegments$fac2,AcOnlySegments$fac2))
 
 save(mergedSegments,VisOnlySegments,AcOnlySegments,
      file = paste(outDir,SP,'MergedData.Rdata',sep=''))
+
 ##################### Data Exploration, Transformation and Plotting #####################
 
 # Explore the data, graphical output
