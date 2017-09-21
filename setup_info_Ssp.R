@@ -11,27 +11,28 @@ if (!file.exists(savePath)){
 }
 setwd(savePath)
 
+# Site names included:
+siteList <-c("MC","GC","DT","DC","MP")
+
 #File paths 
-acousticSegFile <- "E:/NASData/ALLSITES_segments_daily.csv" # acoustic input file
+acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
 acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Ssp_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 
 visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
-visSegmentsFile <- "E:/NASData/Visual_Segments_v2.csv" # visual segments
+visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
 
 # Mapping data
 surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
 SPC_vis <- c("Striped dolphin","Pantropical spotted dolphin",
              "Spinner dolphin","Stenella sp.","Clymene dolphin")
-# Platform Codes (visual only)
-PLC <- c("GU","OR")
 
-# Site names included:
-siteList= c("MC","GC","DT","DC","MP")
+# Platform Codes (visual only)
+PLC <- c("GU")  # ("OR")
 
 # Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
-runDetFuns <- FALSE # can be true or false
+runDetFuns <- TRUE # can be true or false
 
 # The name of the visual detection function file. 
 detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")# 
@@ -42,16 +43,9 @@ matchACSegs <- TRUE  # set to true if you need to match density estimates with e
 
 visG0 <- mean(c(.42,.37)) # for stenella from palka 2006 table 5, 2004 survey
 
-# Relative datatype weights
-weight_Vis <- 1 
-weight_Ac <- round(44*(12.6/100)) # in combined model, how should the acoustic data be weighted relative to visual? 
-# My logic: If ACOUSTIC estimates are daily bins, 
-# and VISUAL estimates are from 10km transect segments at 10 knot survey speed (~18.5km/hr) -> 10/18.5 = 0.54 hr
-# then 24/0.54 = 44 (i.e. each ACOUSTIC datapoint is equivalent to 44 VISUAL datapoints)
-# BUT, the trucation distance is smaller for acoustic -> surfaceAreaAC ~= 2*2*pi, vs surfaceAreaVis = 10*5*2
-# Alternative: If either weight is NULL the two datasets are given equal weights based on dataset size
-# ie Ac_weight = number_visSamples/number_acSamples
+# Acoustic truncation distance. Should be the distance within which 95% of detections occur.
+AcTruncDist <- 1.5 # km
 
 save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
-     runDetFuns,detFunFile,matchACSegs,visG0,weight_Ac,weight_Vis)
+     runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList)

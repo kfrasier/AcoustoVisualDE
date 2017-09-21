@@ -1,5 +1,5 @@
 ---
-title: 'Risso''s dolphin habitat models'
+title: 'Stenella spp. habitat models'
 output: 
   html_document:
     toc: true
@@ -34,8 +34,8 @@ library(lmtest)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
-load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Gg/GgMergedData.Rdata')
+load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('E:/NASData/ModelData/Ssp/SspMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 ```
@@ -57,7 +57,7 @@ percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticO
 percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
 
-![](E:/NASData/ModelData/Gg/AcousticOnly_Gg_missingData.png)
+![](E:/NASData/ModelData/Ssp/AcousticOnly_Ssp_missingData.png)
 <br> 
 
 
@@ -105,9 +105,9 @@ pal <-colorFactor(palette = "RdYlGn",
 map1 <- leaflet() %>%  setView(lng = -89.4, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addCircleMarkers(data = sightingsTrain, lng = ~ long, lat = ~ lat,color = ~pal(year(date)),
-                 stroke = TRUE, fillOpacity = 0.8, group = 'Training Set',radius = 7)%>%
+                 stroke = TRUE, fillOpacity = 0.8, group = 'Training Set',radius = 4)%>%
   addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = ~pal(year(date)),
-                 stroke = TRUE, fillOpacity = 0.8, group = 'Test Set',radius = 7)%>%
+                 stroke = TRUE, fillOpacity = 0.8, group = 'Test Set',radius = 4)%>%
   addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
   addLegend(pal = pal,values = c(2003,2004,2009,2012,2014),title = 'Year') 
 
@@ -123,11 +123,11 @@ plot.timeseries(siteList,outDir,AcOnlySegments)
 
 
 
-![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MC.png)
-![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_GC.png)
-![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DT.png)
-![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_DC.png)
-![](E:/NASData/ModelData/Gg/Gg_Timeseries_Site_MP.png)
+![](E:/NASData/ModelData/Ssp/Ssp_Timeseries_Site_MC.png)
+![](E:/NASData/ModelData/Ssp/Ssp_Timeseries_Site_GC.png)
+![](E:/NASData/ModelData/Ssp/Ssp_Timeseries_Site_DT.png)
+![](E:/NASData/ModelData/Ssp/Ssp_Timeseries_Site_DC.png)
+![](E:/NASData/ModelData/Ssp/Ssp_Timeseries_Site_MP.png)
 
 <br> 
 
@@ -173,7 +173,7 @@ plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
-![](E:/NASData/ModelData/Gg/AcousticOnly_Gg_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Ssp/AcousticOnly_Ssp_clevelandDots_noTransform.png)
 
 
 <br>  
@@ -181,7 +181,7 @@ plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP)
 
 
 Here are the distributions of covariates from the visual observations:
-![](E:/NASData/ModelData/Gg/VisualOnly_Gg_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Ssp/VisualOnly_Ssp_clevelandDots_noTransform.png)
 
 <br>
 
@@ -218,7 +218,7 @@ pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, meth
 dev.off()
 
 ```
-![](E:/NASData/ModelData/Gg/Gg_correlations_noTransform.png)
+![](E:/NASData/ModelData/Ssp/Ssp_correlations_noTransform.png)
 
 <br>
 
@@ -285,7 +285,7 @@ plot.cleveland(transformedCovars_VisOnly.train,
 <br>
 
 Below, the two sets of covariates have been combined and transformed. 
-![](E:/NASData/ModelData/Gg/AcousticAndVisual_Gg_clevelandDots_withTransform.png)
+![](E:/NASData/ModelData/Ssp/AcousticAndVisual_Ssp_clevelandDots_withTransform.png)
 
 <br>
 
@@ -310,12 +310,12 @@ plot.covarDensity(transformedCovars_VisOnly.train,
 <br> 
 Acoustic kernel densities:
 
-![](E:/NASData/ModelData/Gg/AcousticOnly_Gg_density_pres_abs.png)
+![](E:/NASData/ModelData/Ssp/AcousticOnly_Ssp_density_pres_abs.png)
 
 <br>  
 Visual kernel densities:
 
-![](E:/NASData/ModelData/Gg/VisualOnly_Gg_density_pres_abs.png)
+![](E:/NASData/ModelData/Ssp/VisualOnly_Ssp_density_pres_abs.png)
 
 <br> 
 
@@ -344,7 +344,7 @@ Currently, weights are based on the following logic:
 
 The best visual detection probability (model shown below) incorporated sea state and visibility, with a half-normal distribution.
 
-![](E:/NASData/ModelData/Gg/GgsightwTrunc_GU.png)
+![](E:/NASData/ModelData/Ssp/SspsightwTrunc_GU.png)
 
 <br> 
 
@@ -363,7 +363,7 @@ cat(paste0('Mean visual data point weight: ',
 Models were fit using gamm from the mgcv package in R. 
 
 ```{r load starting data} 
-weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Gg_jahStart.csv')
+weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Ssp_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 <br>
@@ -531,7 +531,7 @@ Models have the following characteristics:
 
 Use distance to all eddies:
 
-```{r AC model 1, eval = FALSE}
+```{r AC model 1, eval = TRUE}
 
 gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -546,7 +546,7 @@ gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 1, eval = FALSE, include = TRUE} 
+```{r other models 1, eval = TRUE, include = TRUE} 
 
 gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -579,7 +579,7 @@ gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Use distance to negative eddies only:
 
-```{r AC model 2, eval = FALSE}
+```{r AC model 2, eval = TRUE}
 gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -592,7 +592,7 @@ gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                correlation = corAR1(form=~1|fac2))
 ```
 
-```{r Other models 2, eval = FALSE, include = TRUE}
+```{r Other models 2, eval = TRUE, include = TRUE}
 gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)
@@ -626,7 +626,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Use distance to positive eddies only:
 
-```{r AC model 3, eval = FALSE}
+```{r AC model 3, eval = TRUE}
 gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
@@ -640,7 +640,7 @@ gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r Other models 3, eval = FALSE, include = TRUE}
+```{r Other models 3, eval = TRUE, include = TRUE}
 gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
                                + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)
@@ -669,7 +669,7 @@ gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 Try eddy distance and SSH as an interaction term:
 
 
-```{r AC model 4, eval = FALSE}
+```{r AC model 4, eval = TRUE}
 gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(SSH, EddyDist, bs='ts', k=kVal)
@@ -681,7 +681,7 @@ gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                correlation = corAR1(form=~1|fac2))
 ```
 
-```{r Other models 04, eval = FALSE, include = TRUE}
+```{r Other models 04, eval = TRUE, include = TRUE}
 gamm_full_VisOnly_TF$v04 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH,EddyDist, bs='ts', k=kVal)
                                + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)
@@ -710,7 +710,7 @@ Done trying different model configurations for now, time to compare the results.
 
 <br>
 
-```{r save models, eval = FALSE, echo = FALSE, include = FALSE}
+```{r save models, eval = TRUE, echo = FALSE, include = FALSE}
 # Save models if re-calculating everything
 save(gamm_full_AcOnly_TF,file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
 save(gamm_full_VisOnly_TF,file = paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
@@ -802,8 +802,7 @@ Re-run the best acoustic-only model with only the significant terms
 
 ```{r best AC model, message=FALSE, results = 'hide'}
 AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                                      + s(SSH, bs='ts', k=kVal)
-                                      + s(EddyDist, bs='ts', k=kVal)
+                                      + s(SSH,EddyDist, bs='ts', k=kVal)
                                       + s(HYCOM_SALIN_0,bs='ts', k=kVal),
                                       data = transformedCovars_AcOnly.train,
                                       na.action = na.omit,family = quasibinomial(),
@@ -1323,6 +1322,8 @@ july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
 ### Visual Only
 
 ```{r Vis Spatial Predict}
+dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,VisOnly_gamm_pruned_TF_best$gam,
             type = 'response',na.action = na.pass)
             
@@ -1334,7 +1335,9 @@ july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_gamm_pru
 
 ### Joint Visual and Acoustic 
 
-```{r Joint Model Spatial Predict, message=FALSE}
+```{r Combo Spatial Predict, message=FALSE}
+dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+
 jan2009_prediction <- raster::predict(jan2009_rasters,gamm_pruned_TF_best$gam,
             type = 'response',na.action = na.pass)
             
@@ -1391,7 +1394,7 @@ july2009mean <- mean(july2009_AcOnly_prediction_crop,july2009_VisOnly_prediction
 
 ```
 
-### Maps
+
 
 Display summer (July 2009) map:
 
@@ -1410,7 +1413,7 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint July 2009') %>%
   addRasterImage(july2009mean,colors = pal,
                  opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
-  addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
+addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
   addLegend(pal = pal, values = c(0,1),
@@ -1453,100 +1456,4 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   )
 map
 
-```
-
-
-# V. Monthly model predictions
-
-Spatial model predictions using oceanographic variables averaged by month between 2003 and 2015.
-
-```{r build climatology raster-bricks, eval = FALSE, include = FALSE}
-
-# folders
-eddy_ClimateDir <- 'E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected'
-SST_ClimateDir <- 'E:/NASData/SST_monthly_climatology_20030101to20151231/GLOB/JPL_OUROCEAN/G1SST/analysed_sst/Monthly_Climatology/Projected'
-SSH_ClimateDir <- 'E:/NASData/SSH_monthly_climatology_20030101to20151231'
-CHL_ClimateDir <- 'E:/NASData/CHL_monthly_climatology_20030101to20151231/aqua/monthly/4km/CHL_chlor_a/Monthly_Climatology/Projected'
-HYCOM_MAG_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mag/Monthly_Climatology/Depth_0000m/Projected'
-HYCOM_SALIN_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/salinity/Monthly_Climatology/Depth_0000m/Projected'
-HYCOM_MLD_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mld/Monthly_Climatology/Projected'
-
-monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
-monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-raster_set <- vector('list',length = 12)
-
-for (iM in 1:length(monthStr)){
-  SST_climate <- resample(raster(paste0(SST_ClimateDir,'/',
-                                        'proj_JPL_OUROCEAN-L4UHfnd-GLOB-v01-fv01_0-G1SST-analysed_sst-month',
-                                        monthNum[iM],'-mean.img')),predTemplate)
-  SSH_climate <- resample(raster(paste0(SSH_ClimateDir,'/',
-                                        'proj_SSH_',
-                                        monthStr[iM],'_climatology.tif')),predTemplate)
-  CHL_climate <- resample(raster(paste0(CHL_ClimateDir,'/',
-                                        'proj_aqua_CHL_chlor_a_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  eddy_climate <- resample(raster(paste0(eddy_ClimateDir,'/',
-                                        'proj_posEddyDist_',
-                                        monthStr[iM],'_climatology.tif')),predTemplate)
-  HYCOM_MAG_climate <- resample(raster(paste0(HYCOM_MAG_ClimateDir,'/',
-                                        'proj_mag_0000m_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  HYCOM_SALIN_climate <- resample(raster(paste0(HYCOM_SALIN_ClimateDir,'/',
-                                        'proj_salinity_0000m_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  HYCOM_MLD_climate <- resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
-                                        'proj_mld_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  raster_set[[iM]] <- brick(SST_climate,SSH_climate,CHL_climate,eddy_climate,HYCOM_MAG_climate,
-                         HYCOM_SALIN_climate,HYCOM_MLD_climate) 
-  names(raster_set[[iM]])<-c('SST','SSH','CHL','EddyDist','log10_HYCOM_MAG_0',
-                         'HYCOM_SALIN_0','log10_HYCOM_MLD')
-}
-
-save(raster_set,monthStr, monthNum,
-     file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata')  
-
-```
-
-
-```{r evaluate climatology-based models}
-load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata') 
-monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
-monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-
-climatePrediction <- vector('list',length = 12)
-mapClimatePrediction <- vector('list',length = 12)
-
-for (iM in 1:length(monthStr)){
-  climatePrediction[[iM]] <- raster::predict(raster_set[[iM]],gamm_pruned_TF_best$gam,
-            type = 'response',na.action = na.pass)
-  mapClimatePrediction[[iM]] <- mask(projectRaster(climatePrediction[[iM]], crs=map_proj),predict_template_proj)  
-  
-  cat(paste0("done with month ", iM, "\n", collapse = ""))
-}
-  
-```
-```{r plot climatologies, message = FALSE, warning = FALSE}
-pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,.1), 
-                    na.color = 'transparent')
-
-map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
-  addProviderTiles(providers$Esri.OceanBasemap) %>%
-  addRasterImage(mapClimatePrediction[[1]] , colors = pal,
-                 opacity = 0.8, group = 'Jan.') %>%
-  addRasterImage(mapClimatePrediction[[4]] , colors = pal,
-                 opacity = 0.8, group = 'April') %>%
-  addRasterImage(mapClimatePrediction[[7]] , colors = pal,
-                 opacity = 0.8, group = 'July') %>%
-  addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
-                 opacity = 0.8, group = 'Oct.') %>%
-  addLegend(pal = pal, values = c(0,.1),
-    title = 'P(encounter)',position = "bottomleft") %>%
-  addLayersControl(
-    baseGroups = c('Jan.','April',
-                   'July','Oct.'),
-    options = layersControlOptions(collapsed = FALSE)
-  )
-map
 ```
