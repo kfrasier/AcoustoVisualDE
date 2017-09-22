@@ -3,8 +3,9 @@ clearvars
 siteCodes = {'MC','GC','DT'};
 % get dataa and effort
 [effort,latLongs,errRates] = gofmx_dates3;
-dayTimeSeriesTable = readtable('G:\BW_TPWS\MC_GC_DT_binsize011000_Group_density_Cuviers.csv');
-outDir = sprintf('E:\\NASData\\ModelData\\%s','Zc');
+dayTimeSeriesTable = readtable('I:\BW_TPWS\MC_GC_DT_binsize011000_Group_density_Gervais.csv');
+spCode = 'Me';
+outDir = sprintf('E:\\NASData\\ModelData\\%s',spCode);
 % startTime = 734274; %<- May 16th, 2010, a Sunday
 startTime = 734276; %<- May 18th, 2010, a Tuesday
 
@@ -49,7 +50,7 @@ end
 %%
 cellOut = [cellstr(datestr(weekVec','yyyy-mm-dd')),cellstr(num2str(pOccur,'%.4f,%.4f,%.4f'))];
 fileID = fopen(fullfile(outDir,sprintf('ALLSITES_weeklyPOccurrence_%s_jahStart.csv',...
-     'Zc')),'w');
+     spCode)),'w');
 myHeaders = ['dateStr',siteCodes];
 fprintf(fileID,'%s,%s,%s,%s,%s,%s\n',myHeaders{:});
 formatSpec = '%s,%s\n';

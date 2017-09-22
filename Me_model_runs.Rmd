@@ -1,5 +1,5 @@
 ---
-title: 'Cuvier''s beaked whale habitat models'
+title: 'Gervais'' beaked whale habitat models'
 output: 
   html_document:
     toc: true
@@ -34,8 +34,8 @@ library(lmtest)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
-load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
-load('E:/NASData/ModelData/Zc/ZcMergedData.Rdata')
+load('E:/NASData/ModelData/Me/setup_info_Me.Rdata')
+load('E:/NASData/ModelData/Me/MeMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 ```
@@ -57,7 +57,7 @@ percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticO
 percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_missingData.png)
+![](E:/NASData/ModelData/Me/AcousticOnly_Me_missingData.png)
 <br> 
 
 
@@ -123,9 +123,9 @@ plot.timeseries(siteList,outDir,AcOnlySegments)
 
 
 
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_MC.png)
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_GC.png)
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_DT.png)
+![](E:/NASData/ModelData/Me/Me_Timeseries_Site_MC.png)
+![](E:/NASData/ModelData/Me/Me_Timeseries_Site_GC.png)
+![](E:/NASData/ModelData/Me/Me_Timeseries_Site_DT.png)
 
 <br> 
 
@@ -171,7 +171,7 @@ plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Me/AcousticOnly_Me_clevelandDots_noTransform.png)
 
 
 <br>  
@@ -179,7 +179,7 @@ plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP)
 
 
 Here are the distributions of covariates from the visual observations:
-![](E:/NASData/ModelData/Zc/VisualOnly_Zc_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Me/VisualOnly_Me_clevelandDots_noTransform.png)
 
 <br>
 
@@ -216,7 +216,7 @@ pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, meth
 dev.off()
 
 ```
-![](E:/NASData/ModelData/Zc/Zc_correlations_noTransform.png)
+![](E:/NASData/ModelData/Me/Me_correlations_noTransform.png)
 
 <br>
 
@@ -283,7 +283,7 @@ plot.cleveland(transformedCovars_VisOnly.train,
 <br>
 
 Below, the two sets of covariates have been combined and transformed. 
-![](E:/NASData/ModelData/Zc/AcousticAndVisual_Zc_clevelandDots_withTransform.png)
+![](E:/NASData/ModelData/Me/AcousticAndVisual_Me_clevelandDots_withTransform.png)
 
 <br>
 
@@ -308,12 +308,12 @@ plot.covarDensity(transformedCovars_VisOnly.train[,1:(length(transformedCovars_V
 <br> 
 Acoustic kernel densities:
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_density_pres_abs.png)
+![](E:/NASData/ModelData/Me/AcousticOnly_Me_density_pres_abs.png)
 
 <br>  
 Visual kernel densities:
 
-![](E:/NASData/ModelData/Zc/VisualOnly_Zc_density_pres_abs.png)
+![](E:/NASData/ModelData/Me/VisualOnly_Me_density_pres_abs.png)
 
 <br> 
 
@@ -342,7 +342,7 @@ Currently, weights are based on the following logic:
 
 The best visual detection probability (model shown below) incorporated sea state and visibility, with a half-normal distribution.
 
-![](E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.png)
+![](E:/NASData/ModelData/Me/MesightwTrunc_GU.png)
 
 <br> 
 
@@ -361,7 +361,7 @@ cat(paste0('Mean visual data point weight: ',
 Models were fit using gamm from the mgcv package in R. 
 
 ```{r load starting data} 
-weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Zc_jahStart.csv')
+weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Me_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 <br>
@@ -419,9 +419,9 @@ gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 
 gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
+                               + s(log10_CHL, bs='ts', k=kVal)
                                + s(EddyDist, bs='ts', k=kVal)
+                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
                                + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family =  quasibinomial(),
@@ -430,7 +430,7 @@ gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 
 gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(EddyDist,bs='ts', k=kVal)                        
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -465,20 +465,10 @@ gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 
 ```{r other models 2, eval = FALSE, include = TRUE} 
 
-gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))
-
 
 gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(Neg_EddyDist,bs='ts', k=kVal)                        
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -512,7 +502,6 @@ gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 
 gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
                                + s(Pos_EddyDist, bs='ts', k=kVal)
                                + s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -523,8 +512,9 @@ gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 
 gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
+                        + s(Pos_EddyDist, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, 
                         weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight),
@@ -556,7 +546,6 @@ gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
 ```{r Other models 4, eval = FALSE, include = TRUE}
 gamm_full_VisOnly_TF$v04 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
                                + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
@@ -673,7 +662,8 @@ Re-run the best acoustic-only model with only the significant terms
 
 ```{r best AC model, message=FALSE, results = 'hide'}
 AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                                      + s(SSH,bs='ts', k=kVal)
+                                      + s(log10_CHL,bs='ts', k=kVal)
+                                      + s(SSH,EddyDist,bs='ts', k=kVal)
                                       + s(HYCOM_SALIN_0,bs='ts', k=kVal),
                                       data = transformedCovars_AcOnly.train,
                                       na.action = na.omit,family = quasibinomial(),
@@ -704,9 +694,7 @@ summary(best_VisOnly_model$gam)
 Re-run the best visual-only model with only the significant term(s).
 
 ```{r best Vis model, message=FALSE, results = 'hide'}
-VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(SST,EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
@@ -738,8 +726,8 @@ Re-run the best joint model with only the significant terms
 
 ```{r best model, echo = TRUE, message=FALSE, results = 'hide'}
 gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(SSH,EddyDist,bs='ts', k=kVal),
+                        + s(SSH, bs='ts', k=kVal)
+                        + s(HYCOM_SALIN_0,bs='ts', k=kVal),
                         data = transformedCovars.train, 
                         weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight),
                         na.action = na.omit,family = quasibinomial(),
@@ -1182,20 +1170,20 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(july2009_AcOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Acoustic July 2009') %>%
-#  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
-#                 opacity = 0.8, group = 'Visual July 2009') %>%
+  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
+                 opacity = 0.8, group = 'Visual July 2009') %>%
   addRasterImage(july2009_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Joint July 2009') %>%
-#  addRasterImage(july2009mean,colors = pal,
-#                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
+  addRasterImage(july2009mean,colors = pal,
+                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
 addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
   addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('Acoustic July 2009',#'Visual July 2009',
-                   'Joint July 2009'),#,'Vis. & Ac. Mean July 2009'),
+    baseGroups = c('Acoustic July 2009','Visual July 2009',
+                   'Joint July 2009','Vis. & Ac. Mean July 2009'),
     overlayGroups = c('Test Sightings (Summer 2009)'),
     options = layersControlOptions(collapsed = FALSE)
   )
@@ -1325,7 +1313,7 @@ for (iM in 1:length(monthStr)){
 
 ```{r plot climatologies, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,.5), 
+                    domain=c(0,.7), 
                     na.color = 'transparent')
 
 map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1338,7 +1326,7 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'July') %>%
   addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
                  opacity = 0.8, group = 'Oct.') %>%
-  addLegend(pal = pal, values = c(0,.5),
+  addLegend(pal = pal, values = c(0,.7),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','April',

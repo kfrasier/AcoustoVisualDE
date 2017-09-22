@@ -1,6 +1,6 @@
 # setup_info_Zc
 # Species name
-SP <- "Zc" 
+SP <- "Me" 
 
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
@@ -15,7 +15,7 @@ siteList= c("MC","GC","DT")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ModelData/Zc/MC_GC_DT_binsize011000_Group_density_Cuviers.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+acousticDensityFile <-"E:/NASData/ModelData/Me/MC_GC_DT_binsize011000_Group_density_Gervais.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 
@@ -24,7 +24,7 @@ visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segment
 
 # Mapping data
 surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
-SPC_vis <- c("Cuvier's beaked whale", "unid. Ziphiid")# "unid. Mesoplodont""Gervais' beaked whale", "Beaked Whale","unid. Mesoplodont"
+SPC_vis <- c("unid. Mesoplodont","Gervais' beaked whale")
 
 # Platform Codes (visual only)
 PLC <- c("GU")#"OR"
@@ -44,6 +44,6 @@ visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 sur
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 2.0 # km
 
-save(file = "setup_info_Zc.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+save(file = "setup_info_Me.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList)

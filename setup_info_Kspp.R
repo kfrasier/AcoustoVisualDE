@@ -1,6 +1,6 @@
-# setup_info_Zc
+# setup_info_Kspp
 # Species name
-SP <- "Zc" 
+SP <- "Kspp" 
 
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
@@ -24,7 +24,7 @@ visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segment
 
 # Mapping data
 surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
-SPC_vis <- c("Cuvier's beaked whale", "unid. Ziphiid")# "unid. Mesoplodont""Gervais' beaked whale", "Beaked Whale","unid. Mesoplodont"
+SPC_vis <- c("Dwarf/pygmy sperm whale","Dwarf sperm whale","Pygmy/Dwarf sperm whale")
 
 # Platform Codes (visual only)
 PLC <- c("GU")#"OR"
@@ -39,11 +39,11 @@ detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")#
 
 matchACSegs <- TRUE  # set to true if you need to match density estimates with environmental parameters
 
-visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 survey
+visG0 <- mean(c(0.55,0.29)) # for kogia spp. from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
-AcTruncDist <- 2.0 # km
+AcTruncDist <- 0.25 # km
 
-save(file = "setup_info_Zc.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+save(file = "setup_info_Kspp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList)
