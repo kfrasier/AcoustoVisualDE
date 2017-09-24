@@ -1050,23 +1050,30 @@ log10_HYCOM_MLD_jan2009 <-
 log10_HYCOM_MLD_july2009 <- 
   resample(raster('E:/NASData/AcoustoVisualDE/MLD/log10_mld_july2009.tif'),
   predTemplate)
+
+HYCOM_UPVEL_50_jan2009 <- 
+  resample(raster('E:/NASData/AcoustoVisualDE/HYCOM_UpVel/proj_HYCOM_upvel_50_jan09.tif'),
+  predTemplate)
+HYCOM_UPVEL_50_july2009 <- 
+  resample(raster('E:/NASData/AcoustoVisualDE/HYCOM_UpVel/proj_HYCOM_upvel_50_july09.tif'),
+  predTemplate)
 ```
 
 ```{r brick rasters, eval = FALSE, include = FALSE}
 jan2009_rasters <- brick(CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
                          SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009,Pos_Eddy_jan_2009,
-                         log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009) 
+                         log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009,HYCOM_UPVEL_50_jan2009) 
 
 july2009_rasters <- brick(CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
                           SAL_july_2009,Eddy_july_2009,Neg_Eddy_july_2009,Pos_Eddy_july_2009,
-                          log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009)      
+                          log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009,HYCOM_UPVEL_50_july2009)      
 
 names(jan2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
                           'HYCOM_SALIN_0','EddyDist','Neg_EddyDist','Pos_EddyDist',
-                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD')
+                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
 names(july2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
                          'HYCOM_SALIN_0','EddyDist','Neg_EddyDist','Pos_EddyDist',
-                         'log10_HYCOM_MAG_0','log10_HYCOM_MLD')
+                         'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
 
 save(jan2009_rasters,july2009_rasters,
      file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')  
@@ -1182,20 +1189,20 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(july2009_AcOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Acoustic July 2009') %>%
-#  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
-#                 opacity = 0.8, group = 'Visual July 2009') %>%
+  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
+                 opacity = 0.8, group = 'Visual July 2009') %>%
   addRasterImage(july2009_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Joint July 2009') %>%
-#  addRasterImage(july2009mean,colors = pal,
-#                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
-addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
+  addRasterImage(july2009mean,colors = pal,
+                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
+  addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
   addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('Acoustic July 2009',#'Visual July 2009',
-                   'Joint July 2009'),#,'Vis. & Ac. Mean July 2009'),
+    baseGroups = c('Acoustic July 2009','Visual July 2009',
+                   'Joint July 2009','Vis. & Ac. Mean July 2009'),
     overlayGroups = c('Test Sightings (Summer 2009)'),
     options = layersControlOptions(collapsed = FALSE)
   )
@@ -1250,6 +1257,7 @@ CHL_ClimateDir <- 'E:/NASData/CHL_monthly_climatology_20030101to20151231/aqua/mo
 HYCOM_MAG_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mag/Monthly_Climatology/Depth_0000m/Projected'
 HYCOM_SALIN_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/salinity/Monthly_Climatology/Depth_0000m/Projected'
 HYCOM_MLD_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mld/Monthly_Climatology/Projected'
+HYCOM_UPVEL_50_Dir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/w_velocity/Monthly_Climatology/Depth_0050m/Projected'
 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1283,12 +1291,18 @@ for (iM in 1:length(monthStr)){
   HYCOM_MLD_climate <- resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
                                         'proj_mld_month',
                                         monthNum[iM],'_mean.img')),predTemplate)
+  HYCOM_UPVEL_50 <- resample(raster(paste0(HYCOM_UPVEL_50_Dir,'/',
+                                        'proj_w_velocity_0050m_month',
+                                        monthNum[iM],'_mean.img')),predTemplate)
+  
   raster_set[[iM]] <- brick(SST_climate,SSH_climate,CHL_climate,
                             eddy_climate,neg_eddy_climate,pos_eddy_climate,
-                            HYCOM_MAG_climate,HYCOM_SALIN_climate,HYCOM_MLD_climate) 
+                            HYCOM_MAG_climate,HYCOM_SALIN_climate,
+                            HYCOM_MLD_climate,HYCOM_UPVEL_50) 
   names(raster_set[[iM]])<-c('SST','SSH','log10_CHL',
                              'EddyDist','Neg_EddyDist','Pos_EddyDist',
-                             'log10_HYCOM_MAG_0','HYCOM_SALIN_0','log10_HYCOM_MLD')
+                             'log10_HYCOM_MAG_0','HYCOM_SALIN_0',
+                             'log10_HYCOM_MLD', 'HYCOM_UPVEL_50')
   cat(paste0("done with month ", iM, "\n", collapse = ""))
 }
 
@@ -1325,7 +1339,7 @@ for (iM in 1:length(monthStr)){
 
 ```{r plot climatologies, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,.5), 
+                    domain=c(0,.8), 
                     na.color = 'transparent')
 
 map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1338,7 +1352,7 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'July') %>%
   addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
                  opacity = 0.8, group = 'Oct.') %>%
-  addLegend(pal = pal, values = c(0,.5),
+  addLegend(pal = pal, values = c(0,.8),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','April',

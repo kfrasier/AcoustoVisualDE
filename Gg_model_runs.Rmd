@@ -1534,6 +1534,7 @@ for (iM in 1:length(monthStr)){
 }
   
 ```
+
 ```{r plot climatologies, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,.1), 
