@@ -490,6 +490,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 
 <br>  
+
 ### Model 3
 
 Use distance to nearest positive eddy:

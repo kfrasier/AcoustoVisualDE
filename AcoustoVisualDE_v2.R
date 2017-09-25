@@ -13,7 +13,7 @@ library(HabitatProject)
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run setup_info_[your species here].R before running this
 #load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('E:/NASData/ModelData/Kspp/setup_info_Kspp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -35,6 +35,8 @@ if (matchACSegs){
   nCol <- length(colnames(acDensityAll))
   
   keepPoints <- which(acDensityAll$xlsDate >= "2011-01-01" & acDensityAll$xlsDate < "2014-01-01")
+  acDensityAll2 <- acDensityAll[keepPoints,]
+  
   acDensityAll <- acDensityAll[keepPoints,]
   
   # Match segments to density datapoints
@@ -407,7 +409,7 @@ uLatLon.site <- unique(floor(myLatLon)) # indentify distinct sites based on lat/
 nRows <- length(acDensityAll[,4])
 AcOnlySegments$siteNum <- rep(NA,times = nRows) # will hold site label
 # AcOnlySegments$fac2 <- rep(NA,times = nRows) # will hold deployment label
-# 
+uLatLon.site <- uLatLon.site [!is.na(uLatLon.site[,1]),]
 for (uR in 1:nrow(uLatLon.site)){
   thisSet1 <- which(as.logical(row.match(floor(myLatLon),uLatLon.site[uR,])))
   AcOnlySegments$siteNum[thisSet1] <- uR
