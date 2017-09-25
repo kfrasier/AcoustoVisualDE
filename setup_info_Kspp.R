@@ -15,7 +15,7 @@ siteList= c("MC","GC","DT")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ModelData/Zc/MC_GC_DT_binsize011000_Group_density_Cuviers.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 
