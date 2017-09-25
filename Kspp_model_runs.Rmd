@@ -1,5 +1,5 @@
 ---
-title: 'Cuvier''s beaked whale habitat models'
+title: 'Kogia spp. habitat models'
 output: 
   html_document:
     toc: true
