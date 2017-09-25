@@ -16,3 +16,6 @@ https://kfrasier.github.io/AcoustoVisualDE
 
 
 [Gervais' Beaked Whale](https://kfrasier.github.io/AcoustoVisualDE/Me_model_runs.html)
+
+
+[Kogia spp.](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs.html)

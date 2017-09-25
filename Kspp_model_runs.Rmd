@@ -400,7 +400,7 @@ Models have the following characteristics:
 
 Use distance to nearest eddy:
 
-```{r AC model 1, eval = TRUE}
+```{r AC model 1, eval = FALSE}
 
 gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -414,14 +414,13 @@ gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 1, eval = TRUE, include = TRUE} 
+```{r other models 1, eval = FALSE, include = TRUE} 
 
 gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
+                               + s(log10_CHL,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+                               + s(EddyDist, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family =  quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
@@ -429,7 +428,7 @@ gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 
 gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(EddyDist,bs='ts', k=kVal)                        
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -448,7 +447,7 @@ gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Use distance to negative eddy:
 
-```{r AC model 2, eval = TRUE}
+```{r AC model 2, eval = FALSE}
 
 gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -462,14 +461,13 @@ gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 2, eval = TRUE, include = TRUE} 
+```{r other models 2, eval = FALSE, include = TRUE} 
 
 gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
+                               + s(log10_CHL,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+                               + s(Neg_EddyDist, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family =  quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
@@ -477,7 +475,7 @@ gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 
 gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(Neg_EddyDist,bs='ts', k=kVal)                        
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
@@ -493,7 +491,7 @@ gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 
 Use distance to nearest positive eddy:
 
-```{r AC model 3, eval = TRUE}
+```{r AC model 3, eval = FALSE}
 
 gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -507,14 +505,13 @@ gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 3, eval = TRUE, include = TRUE} 
+```{r other models 3, eval = FALSE, include = TRUE} 
 
 gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
+                               + s(log10_CHL,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+                               + s(Pos_EddyDist, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family =  quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
@@ -522,7 +519,8 @@ gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 
 gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
+                        + s(Pos_EddyDist,bs='ts', k=kVal)                        
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, 
@@ -541,7 +539,7 @@ gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal)
 Try eddy distance and SSH as an interaction term:
 
 
-```{r AC model 4, eval = TRUE}
+```{r AC model 4, eval = FALSE}
 gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
                                + s(SSH, EddyDist, bs='ts', k=kVal)
@@ -552,20 +550,19 @@ gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                correlation = corAR1(form=~1|fac2))
 ```
 
-```{r Other models 4, eval = TRUE, include = TRUE}
+```{r Other models 4, eval = FALSE, include = TRUE}
 gamm_full_VisOnly_TF$v04 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+                               + s(SSH,EddyDist, bs='ts', k=kVal)
+                               + s(log10_CHL,bs='ts', k=kVal)
+                               + s(HYCOM_SALIN_0,bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
+                               na.action = na.omit,family =  quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
 
 
 gamm_full_TF$v04 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                        + s(SSH, EddyDist,  bs='ts', k=kVal)
+                        + s(SSH,EddyDist, bs='ts', k=kVal)
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                         data = transformedCovars.train, 
@@ -580,7 +577,7 @@ Done trying different model configurations for now, time to compare the results.
 
 <br>
 
-```{r save models, eval = TRUE, echo = FALSE, include = FALSE}
+```{r save models, eval = FALSE, echo = FALSE, include = FALSE}
 # Save models if re-calculating everything
 save(gamm_full_AcOnly_TF,file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
 save(gamm_full_VisOnly_TF,file = paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
@@ -672,7 +669,7 @@ Re-run the best acoustic-only model with only the significant terms
 
 ```{r best AC model, message=FALSE, results = 'hide'}
 AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                                      + s(SSH,bs='ts', k=kVal)
+                                      + s(SSH,EddyDist, bs='ts', k=kVal)
                                       + s(HYCOM_SALIN_0,bs='ts', k=kVal),
                                       data = transformedCovars_AcOnly.train,
                                       na.action = na.omit,family = quasibinomial(),
@@ -682,7 +679,7 @@ AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```{r AC best model summary}
 summary(AcOnly_gamm_pruned_TF_best$gam)
 plot(AcOnly_gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
-save(AcOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_VisOnly_binomial_model.Rdata',sep=''))
+save(AcOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_AcOnly_binomial_model.Rdata',sep=''))
 
 ```
 <br>
@@ -703,9 +700,7 @@ summary(best_VisOnly_model$gam)
 Re-run the best visual-only model with only the significant term(s).
 
 ```{r best Vis model, message=FALSE, results = 'hide'}
-VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(SST,EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
+VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = quasibinomial(),
                                correlation = corAR1(form=~1|fac2))
@@ -737,6 +732,7 @@ Re-run the best joint model with only the significant terms
 
 ```{r best model, echo = TRUE, message=FALSE, results = 'hide'}
 gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
+                        + s(log10_CHL, bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(SSH,EddyDist,bs='ts', k=kVal),
                         data = transformedCovars.train, 

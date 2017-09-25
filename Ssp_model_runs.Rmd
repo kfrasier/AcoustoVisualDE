@@ -640,7 +640,7 @@ AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```{r AC best model summary}
 summary(AcOnly_gamm_pruned_TF_best$gam)
 plot(AcOnly_gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
-save(AcOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_VisOnly_binomial_model.Rdata',sep=''))
+save(AcOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_AcOnly_binomial_model.Rdata',sep=''))
 
 ```
 <br>
