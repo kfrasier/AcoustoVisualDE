@@ -13,7 +13,7 @@ library(HabitatProject)
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run setup_info_[your species here].R before running this
 #load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Kspp/setup_info_Kspp.Rdata')
+load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -35,16 +35,19 @@ if (matchACSegs){
   nCol <- length(colnames(acDensityAll))
   
   keepPoints <- which(acDensityAll$xlsDate >= "2011-01-01" & acDensityAll$xlsDate < "2014-01-01")
-  acDensityAll2 <- acDensityAll[keepPoints,]
-  
+
   acDensityAll <- acDensityAll[keepPoints,]
+  
+  acSegLatFloor <- floor(acSegmentsAll$LAT *1000)/1000
+  acDensLatFloor <- floor(acDensityAll$Lat *1000)/1000
   
   # Match segments to density datapoints
   covarNames <- names(acSegmentsAll[5:length(names(acSegmentsAll))])
   acDensityAll[,covarNames] <- NA
   for (iR in 1:nrow(acDensityAll)){
     # find all the segments with matching latitudes
-    goodLat <- which(acSegmentsAll$LAT %in% acDensityAll$Lat[iR])
+    
+    goodLat <- which(acSegLatFloor %in% acDensLatFloor[iR])
     densDate <- acDensityAll$xlsDate[iR]
     bestMatch <- goodLat[which.min(abs(densDate-acSegmentsAll$XLSDATE[goodLat]))]
     

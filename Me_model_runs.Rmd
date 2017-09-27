@@ -989,10 +989,10 @@ multiplot(p1, p2, p3, cols=1)
 #Load in rasters for prediction periods (2009 winter and summer)
 
 predTemplate <-raster('E:/NASData/AcoustoVisualDE/Prediction_template/Predictiontemplate.tif')
-CHL_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_jan2009.tif'),
-                         predTemplate)
-CHL_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_july2009.tif'),
-                          predTemplate)
+log1_CHL_jan_2009 <- log10(resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_jan2009.tif'),
+                         predTemplate))
+log1_CHL_july_2009 <- log10(resample(raster('E:/NASData/AcoustoVisualDE/CHL/CHL_july2009.tif'),
+                          predTemplate))
 SST_jan_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SST/SST_jan_2009.tif'),
                          predTemplate)
 SST_july_2009 <- resample(raster('E:/NASData/AcoustoVisualDE/SST/SST_july_2009.tif'),
@@ -1041,11 +1041,11 @@ log10_HYCOM_MLD_july2009 <-
 ```
 
 ```{r brick rasters, eval = FALSE, include = FALSE}
-jan2009_rasters <- brick(CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
+jan2009_rasters <- brick(log10_CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
                          SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009,Pos_Eddy_jan_2009,
                          log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009) 
 
-july2009_rasters <- brick(CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
+july2009_rasters <- brick(log10_CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
                           SAL_july_2009,Eddy_july_2009,Neg_Eddy_july_2009,Pos_Eddy_july_2009,
                           log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009)      
 
@@ -1250,9 +1250,9 @@ for (iM in 1:length(monthStr)){
   SSH_climate <- resample(raster(paste0(SSH_ClimateDir,'/',
                                         'proj_SSH_',
                                         monthStr[iM],'_climatology.tif')),predTemplate)
-  CHL_climate <- resample(raster(paste0(CHL_ClimateDir,'/',
+  log10_CHL_climate <- log10(resample(raster(paste0(CHL_ClimateDir,'/',
                                         'proj_aqua_CHL_chlor_a_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
+                                        monthNum[iM],'_mean.img')),predTemplate))
   eddy_climate <- resample(raster(paste0(eddy_ClimateDir,'/',
                                         'proj_eddyDist_',
                                         monthStr[iM],'_climatology.tif')),predTemplate)
@@ -1262,18 +1262,18 @@ for (iM in 1:length(monthStr)){
   neg_eddy_climate <- resample(raster(paste0(eddy_ClimateDir,'/',
                                         'proj_negEddyDist_',
                                         monthStr[iM],'_climatology.tif')),predTemplate)
-  HYCOM_MAG_climate <- resample(raster(paste0(HYCOM_MAG_ClimateDir,'/',
+  log10_HYCOM_MAG_climate <- log10(resample(raster(paste0(HYCOM_MAG_ClimateDir,'/',
                                         'proj_mag_0000m_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
+                                        monthNum[iM],'_mean.img')),predTemplate))
   HYCOM_SALIN_climate <- resample(raster(paste0(HYCOM_SALIN_ClimateDir,'/',
                                         'proj_salinity_0000m_month',
                                         monthNum[iM],'_mean.img')),predTemplate)
-  HYCOM_MLD_climate <- resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
+  log10_HYCOM_MLD_climate <- log10(resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
                                         'proj_mld_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  raster_set[[iM]] <- brick(SST_climate,SSH_climate,CHL_climate,
+                                        monthNum[iM],'_mean.img')),predTemplate))
+  raster_set[[iM]] <- brick(SST_climate,SSH_climate,log10_CHL_climate,
                             eddy_climate,neg_eddy_climate,pos_eddy_climate,
-                            HYCOM_MAG_climate,HYCOM_SALIN_climate,HYCOM_MLD_climate) 
+                            log10_HYCOM_MAG_climate,HYCOM_SALIN_climate,log10_HYCOM_MLD_climate) 
   names(raster_set[[iM]])<-c('SST','SSH','log10_CHL',
                              'EddyDist','Neg_EddyDist','Pos_EddyDist',
                              'log10_HYCOM_MAG_0','HYCOM_SALIN_0','log10_HYCOM_MLD')
@@ -1313,7 +1313,7 @@ for (iM in 1:length(monthStr)){
 
 ```{r plot climatologies, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,.7), 
+                    domain=c(0,1), 
                     na.color = 'transparent')
 
 map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1326,7 +1326,7 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'July') %>%
   addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
                  opacity = 0.8, group = 'Oct.') %>%
-  addLegend(pal = pal, values = c(0,.7),
+  addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','April',
