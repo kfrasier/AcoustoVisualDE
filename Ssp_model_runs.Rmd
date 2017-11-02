@@ -379,11 +379,31 @@ yAcOnly_TF <- as.logical(Train_AcOnly.set$Density >0)
 yVisOnly_TF <- as.logical(Train_VisOnly.set$Density >0)
 y_TF <- as.logical(mergedTrain.set$Density>0)
 
+yAcOnly <- Train_AcOnly.set$Density
+yVisOnly <- ceiling(Train_VisOnly.set$Density)
+y <- mergedTrain.set$Density
  # initialize empty structure for model storage
 
 gamm_full_AcOnly_TF<-NULL
 gamm_full_VisOnly_TF<-NULL
 gamm_full_TF<-NULL
+
+fac3 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1))
+fac4 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1))
+
+for (iFac in 1:length(transformedCovars.train$fac1)) {
+  if (!is.na(transformedCovars.train$fac1[iFac])){
+    if (transformedCovars.train$fac1[iFac]>5) {
+      fac3[iFac,1] <- 1
+      fac4[iFac,1] <- 0
+    } else {
+      fac3[iFac,1] <-  0
+      fac4[iFac,1] <- transformedCovars.train$fac1[iFac]
+    }
+  }
+}
+transformedCovars.train$fac3<-fac3
+transformedCovars.train$fac4<-fac4
 ```
 
 
@@ -448,42 +468,77 @@ Models have the following characteristics:
 Use distance to positive eddies:
 
 ```{r AC model 1, eval = FALSE}
-
-gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))#
+glmm_full_AcOnly_TF<-NULL
+glmm_full_AcOnly_TF$v01 <- glmmTMB(yAcOnly_TF~ SST + HYCOM_SALIN_0
+                               + log10_HYCOM_MLD+(1|fac1),
+                               data = transformedCovars_AcOnly.train, 
+                               family = binomial, ziformula=~0)
+glmm_full_AcOnly_TF$v01_1 <- glmmTMB(yAcOnly_TF~ SST + HYCOM_SALIN_0
+                               + log10_HYCOM_MLD+(1|fac2),
+                               data = transformedCovars_AcOnly.train, 
+                               family = binomial, ziformula=~0)
+glmm_full_AcOnly_TF$v01_2 <- glmmTMB(yAcOnly_TF~ SST + SSH + log10_HYCOM_MAG_0+ HYCOM_SALIN_0
+                               + Pos_EddyDist + log10_HYCOM_MLD + (1|fac2),
+                               data = transformedCovars_AcOnly.train, 
+                               family = binomial, ziformula=~0)
+glmm_full_AcOnly_TF$v01_3 <- glmmTMB(yAcOnly_TF~ SST + SSH + log10_HYCOM_MAG_0+ HYCOM_SALIN_0
+                               + Pos_EddyDist + log10_HYCOM_MLD + (1|fac1),
+                               data = transformedCovars_AcOnly.train, 
+                               family = binomial, ziformula=~0)
+glmm_full_AcOnly_TF$v01_4 <- glmmTMB(yAcOnly_TF~ SST + SSH + HYCOM_SALIN_0
+                               + Pos_EddyDist + (1|fac2),
+                               data = transformedCovars_AcOnly.train, 
+                               family = binomial, ziformula=~0)
+AICtab(glmm_full_AcOnly_TF$v01,glmm_full_AcOnly_TF$v01_1,glmm_full_AcOnly_TF$v01_2,
+       glmm_full_AcOnly_TF$v01_3, glmm_full_AcOnly_TF$v01_4)
 ```
 
 
 ```{r other models 1, eval = FALSE, include = TRUE} 
-
-gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))
-
-
-gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(SSH, bs='ts', k=kVal)
+gam_full_VisOnly_TF <-NULL
+gam_full_VisOnly_TF$v01_1 <- gam(yVisOnly~ s(SST, bs='ts', k=kVal) 
                         + s(log10_CHL, bs='ts', k=kVal)
-                        + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)                        
+                        + s(SSH,  bs='ts', k=kVal)
+                        + s(EddyDist,  bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 50)
+                        data = transformedCovars_VisOnly.train, 
+                        family = ziP, na.action = na.omit)
+
+glmm_full_VisOnly_TF$v01 <- glmmTMB(yVisOnly_TF~ SST + SSH + log10_HYCOM_MAG_0+ HYCOM_SALIN_0
+                               + Pos_EddyDist + log10_HYCOM_MLD,
+                               data = transformedCovars_VisOnly.train, 
+                               family = binomial, ziformula=~1)
+
+
+glmm_full_TF<-NULL
+glmm_full_TF$v01 <- glmmTMB(y_TF~ SST+ SSH+log10_CHL+log10_HYCOM_MAG_0                    
+                        + HYCOM_SALIN_0 + Pos_EddyDist +log10_HYCOM_MLD +(1|fac2),
+                        data = transformedCovars.train, ziformula=~fac1,
+                        family=binomial, dispformula=~0,
+                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight))
+glmm_full_TF$v01_1 <- glmmTMB(y_TF~log10_HYCOM_MLD +(1|fac1),
+                        data = transformedCovars.train, ziformula=~fac1,
+                        family=binomial,
+                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight))
+glmm_full_TF$v01_2 <- glmmTMB(y_TF~ SST+ SSH+log10_CHL+log10_HYCOM_MAG_0                    
+                        + HYCOM_SALIN_0 + Pos_EddyDist +log10_HYCOM_MLD +(1|fac2),
+                        data = transformedCovars.train, ziformula=~fac1,
+                        family=binomial,
+                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight))
+glmm_full_TF$v01_3 <- glmmTMB(y_TF~ SST+ SSH+log10_CHL+log10_HYCOM_MAG_0                    
+                        + HYCOM_SALIN_0 + Pos_EddyDist +log10_HYCOM_MLD +(1|fac1),
+                        data = transformedCovars.train, ziformula=~fac3,
+                        family=binomial,
+                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight))
+glmm_full_TF$v01_4 <- glmmTMB(y_TF~ SST+ SSH+log10_CHL+log10_HYCOM_MAG_0                    
+                        + HYCOM_SALIN_0 + Pos_EddyDist +log10_HYCOM_MLD + (1|fac2),
+                        data = transformedCovars.train, ziformula=~fac3,
+                        family=binomial,dispformula=~0,
+                        weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight))
+AICtab(glmm_full_TF$v01,glmm_full_TF$v01_1,glmm_full_TF$v01_2,glmm_full_TF$v01_3
+       ,glmm_full_TF$v01_4)
+
 ```
 
 
@@ -498,36 +553,37 @@ Try eddy distance and SSH as an interaction term:
 
 
 ```{r AC model 02, eval = FALSE}
-gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
+gamm_full_AcOnly_TF$v02 <- gam(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(log10_CHL, bs='ts', k=kVal)
-                               + s(SSH, EddyDist, bs='ts', k=kVal)
+                               + s(SSH, bs='ts', k=kVal)
+                               + s(EddyDist, bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
                                + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))
+                               na.action = na.omit,family = quasibinomial())
 ```
 
 ```{r Other models 02, eval = FALSE, include = TRUE}
-gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, EddyDist, bs='ts', k=kVal)
+gamm_full_VisOnly_TF$v02 <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
+                               + s(SSH, bs='ts', k=kVal)
+                               + s(EddyDist, bs='ts', k=kVal)
                                + s(log10_HYCOM_MAG_0,bs='ts', k=kVal)
                                + s(HYCOM_SALIN_0,bs='ts', k=kVal)
                                + s(log10_HYCOM_MLD, bs='ts', k=kVal),
                                data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))
+                               na.action = na.omit,family = quasibinomial())
 
 
 gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(log10_CHL, bs='ts', k=kVal)
-                        + s(SSH, EddyDist,  bs='ts', k=kVal)
+                        + s(SSH,  bs='ts', k=kVal)
+                        + s(EddyDist,  bs='ts', k=kVal)
                         + s(HYCOM_SALIN_0, bs='ts', k=kVal)
                         + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
+                        data = transformedCovars.train,random = list(fac3=~1),
                         weights = mergedTrain.set$Weight/mean(mergedTrain.set$Weight),
                         na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 50)
+                        niterPQL = 50)
 ```
 
 <br>

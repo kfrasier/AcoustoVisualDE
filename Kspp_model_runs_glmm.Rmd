@@ -1,5 +1,5 @@
 ---
-title: 'Cuvier''s beaked whale habitat models: GAMMs'
+title: 'Kogia spp. habitat models'
 output: 
   html_document:
     toc: true
@@ -31,11 +31,13 @@ library(colorRamps)
 library(lubridate)
 library(HabitatProject)
 library(lmtest)
+library(glmmTMB)
+library(bbmle)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
-load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
-load('E:/NASData/ModelData/Zc/ZcMergedData.Rdata')
+load('E:/NASData/ModelData/Kspp/setup_info_Kspp.Rdata')
+load('E:/NASData/ModelData/Kspp/KsppMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
 
 ```
@@ -57,10 +59,10 @@ percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticO
 percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_missingData.png)
+![](E:/NASData/ModelData/Kspp/AcousticOnly_Kspp_missingData.png)
 <br> 
 
-
+![](E:/NASData/ModelData/Kspp/VisualOnly_Kspp_missingData.png)
 ### Testing and Training Sets
 
 The data are split into training and testing sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
@@ -115,17 +117,16 @@ map1
 ```
 <br>
 
-The time series below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing.
-
+The time series below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing. These density magnitudes are very preliminary,and models only used presence absence data.
 ```{r plot timeseries, message = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
 ```
 
 
 
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_MC.png)
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_GC.png)
-![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_DT.png)
+![](E:/NASData/ModelData/Kspp/Kspp_Timeseries_Site_MC.png)
+![](E:/NASData/ModelData/Kspp/Kspp_Timeseries_Site_GC.png)
+![](E:/NASData/ModelData/Kspp/Kspp_Timeseries_Site_DT.png)
 
 <br> 
 
@@ -156,6 +157,15 @@ outlierList <-which(VisOnlySegments$FrontDist_Cayula>800000)
 VisOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
 outlierList <-which(VisOnlySegments$Density>10000)
 VisOnlySegments$Density[outlierList] <- NaN 
+
+# getRid of rows with NaN because glmmTMD doesnt seem to handle them
+mergedSegments_NoNa <-which(rowSums(is.na(mergedSegments))>0)
+AcOnlySegments_NoNa <-which(rowSums(is.na(AcOnlySegments))>0)
+VisOnlySegments_NoNa <-which(rowSums(is.na(VisOnlySegments))>0)
+
+mergedSegments<-VisOnlySegments[mergedSegments_NoNa,]
+AcOnlySegments<-VisOnlySegments[AcOnlySegments_NoNa,]
+VisOnlySegments<-VisOnlySegments[VisOnlySegments_NoNa,]
 ```
 
 <br>
@@ -171,7 +181,7 @@ plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Kspp/AcousticOnly_Kspp_clevelandDots_noTransform.png)
 
 
 <br>  
@@ -179,7 +189,7 @@ plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP)
 
 
 Here are the distributions of covariates from the visual observations:
-![](E:/NASData/ModelData/Zc/VisualOnly_Zc_clevelandDots_noTransform.png)
+![](E:/NASData/ModelData/Kspp/VisualOnly_Kspp_clevelandDots_noTransform.png)
 
 <br>
 
@@ -216,7 +226,7 @@ pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, meth
 dev.off()
 
 ```
-![](E:/NASData/ModelData/Zc/Zc_correlations_noTransform.png)
+![](E:/NASData/ModelData/Kspp/Kspp_correlations_noTransform.png)
 
 <br>
 
@@ -283,7 +293,7 @@ plot.cleveland(transformedCovars_VisOnly.train,
 <br>
 
 Below, the two sets of covariates have been combined and transformed. 
-![](E:/NASData/ModelData/Zc/AcousticAndVisual_Zc_clevelandDots_withTransform.png)
+![](E:/NASData/ModelData/Kspp/AcousticAndVisual_Kspp_clevelandDots_withTransform.png)
 
 <br>
 
@@ -308,12 +318,12 @@ plot.covarDensity(transformedCovars_VisOnly.train[,1:(length(transformedCovars_V
 <br> 
 Acoustic kernel densities:
 
-![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_density_pres_abs.png)
+![](E:/NASData/ModelData/Kspp/AcousticOnly_Kspp_density_pres_abs.png)
 
 <br>  
 Visual kernel densities:
 
-![](E:/NASData/ModelData/Zc/VisualOnly_Zc_density_pres_abs.png)
+![](E:/NASData/ModelData/Kspp/VisualOnly_Kspp_density_pres_abs.png)
 
 <br> 
 
@@ -342,7 +352,7 @@ Currently, weights are based on the following logic:
 
 The best visual detection probability (model shown below) incorporated sea state and visibility, with a half-normal distribution.
 
-![](E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.png)
+![](E:/NASData/ModelData/Kspp/KsppsightwTrunc_GU.png)
 
 <br> 
 
@@ -361,7 +371,7 @@ cat(paste0('Mean visual data point weight: ',
 Models were fit using gamm from the mgcv package in R. 
 
 ```{r load starting data} 
-weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Zc_jahStart.csv')
+weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Kspp_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 <br>
@@ -373,48 +383,58 @@ Initialize model parameters:
 # Run & evaluate models
 kVal <- 5 # choose a low value to avoid overfitting
 
+plot(rowSums(is.na(transformedCovars_AcOnly.train)))
+
 yAcOnly_TF <- as.logical(Train_AcOnly.set$Density >0)
 yVisOnly_TF <- as.logical(Train_VisOnly.set$Density >0)
 y_TF <- as.logical(mergedTrain.set$Density>0)
 
+yAcOnly <- Train_AcOnly.set$Density
+yVisOnly <- Train_VisOnly.set$Density
+y <- mergedTrain.set$Density
+
  # initialize empty structure for model storage
+glmm_full_AcOnly_TF<-NULL
+glmm_full_VisOnly_TF<-NULL
+glmm_full_TF<-NULL
 
-gamm_full_AcOnly_TF<-NULL
-gamm_full_VisOnly_TF<-NULL
-gamm_full_TF<-NULL
-
-#fac3 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1)) # fac 3 has visuals as one group, acoustics as another, only 2 categories.
-fac4 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1)) # fac4 keeps all visuals as one group, groups acoustics by site.
-# Add down weighting for visual zeros based on estimate of G0.
-weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+fac3 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1))
+fac4 <- array(data = NA, dim = c(length(transformedCovars.train$fac1),1))
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
   if (!is.na(transformedCovars.train$fac1[iFac])){
     if (transformedCovars.train$fac1[iFac]>5) {
-      #fac3[iFac,1] <- 1 # 
+      fac3[iFac,1] <- 1
       fac4[iFac,1] <- 1
-      if (mergedTrain.set$Density[iFac]==0){
-        # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
-        weightsG0[iFac,1] <- visG0
-      }
     } else {
-      #fac3[iFac,1] <-  0
+      fac3[iFac,1] <-  0
       fac4[iFac,1] <- transformedCovars.train$fac1[iFac]+1
     }
   }
 }
-#transformedCovars.train$fac3<-fac3
+transformedCovars.train$fac3<-fac3
 transformedCovars.train$fac4<-fac4
-transformedCovars.train$weightsG0<-weightsG0
+```
 
-weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
-for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
-  if (Train_VisOnly.set$Density[iFac]==0){
-    # if it's visual data and it's a zero, adjust by g0 ie, only an X% chance it was a true zero.
-    weightsG0[iFac,1] <- visG0
+
+```{r}
+fac3 <- array(data = NA, dim = c(length(transformedCovars.test$fac1),1))
+fac4 <- array(data = NA, dim = c(length(transformedCovars.test$fac1),1))
+
+for (iFac in 1:length(transformedCovars.test$fac1)) {
+  if (!is.na(transformedCovars.test$fac1[iFac])){
+    if (transformedCovars.test$fac1[iFac]>5) {
+      fac3[iFac,1] <- 1
+      fac4[iFac,1] <- 0
+    } else {
+      fac3[iFac,1] <-  0
+      fac4[iFac,1] <- transformedCovars.test$fac1[iFac]
+    }
   }
 }
-transformedCovars_VisOnly.train$weightsG0<-weightsG0
+transformedCovars.test$fac3<-fac3
+transformedCovars.test$fac4<-fac4
+transformedCovars_AcOnly.train$times<-factor(1:length(transformedCovars_AcOnly.train$fac1))
 ```
 
 
@@ -422,391 +442,161 @@ transformedCovars_VisOnly.train$weightsG0<-weightsG0
 
 ## Run Full Models 
 
-Run full binomial GAMs on Acoustic only, Visual only, and joint Acoustic/Visual datasets.
-
-Models have the following characteristics:
-- Binomial distribution, 
-- corAR1 correlation structure, 
-- ts splines
-
-
-### Model 1
-
-Use distance to nearest eddy:
+Run full binomial GLMMs on Acoustic only, Visual only, and joint Acoustic/Visual datasets.
 
 ```{r AC model 1, eval = FALSE}
+glmm_full_AcOnly_ed <- glmmTMB(yAcOnly ~ SST+SSH+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+EddyDist+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ed)
 
-gamm_full_AcOnly_TF$v01 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))#
+glmm_full_AcOnly_ed_pruned <- glmmTMB(yAcOnly ~ SST+SSH+log10_HYCOM_MLD+EddyDist+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ed_pruned)
+
+glmm_full_AcOnly_ped <- glmmTMB(yAcOnly ~ SST+SSH+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Pos_EddyDist+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ped)
+glmm_full_AcOnly_ped_pruned <- glmmTMB(yAcOnly ~ SST+SSH+log10_HYCOM_MLD+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ped_pruned)
+
+glmm_full_AcOnly_ned <- glmmTMB(yAcOnly ~ SST+SSH+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Neg_EddyDist+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ned)
+        
+        
+glmm_full_AcOnly_ied <- glmmTMB(yAcOnly ~ SST+SSH*EddyDist+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+ (1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ied)
+glmm_full_AcOnly_ied_pruned <- glmmTMB(yAcOnly ~ SST+SSH*EddyDist+log10_HYCOM_MLD+(1|fac1),
+  data = transformedCovars_AcOnly.train,ziformula=~fac1,family=poisson)
+summary(glmm_full_AcOnly_ied_pruned)
+
+AICtab(glmm_full_AcOnly_ed_pruned,glmm_full_AcOnly_ped_pruned,glmm_full_AcOnly_ied_pruned)
+
+
+bestACOnly_glmm <- glmm_full_AcOnly_ied_pruned
+
 ```
 
 
 ```{r other models 1, eval = FALSE, include = TRUE} 
+yVisOnly_norm <-round((yVisOnly/max(yVisOnly)*10))
+glmm_full_VisOnly_ed <- glmmTMB(yVisOnly_norm ~SST+SSH+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+summary(glmm_full_VisOnly_ed)
+glmm_full_VisOnly_ed_pruned <- glmmTMB(yVisOnly_norm ~SST+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +log10_FrontDist_Cayula+EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+summary(glmm_full_VisOnly_ed_pruned)
 
-gamm_full_VisOnly_TF$v01 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               weights = transformedCovars_VisOnly.train$weightsG0*
-                                  (Train_VisOnly.set$Weight/max(Train_VisOnly.set$Weight)),
-                               correlation = corAR1(form=~1|fac2))
+glmm_full_VisOnly_ned <- glmmTMB(yVisOnly_norm ~ SST+SSH+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Neg_EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+summary(glmm_full_VisOnly_ned)
+glmm_full_VisOnly_ned_pruned <- glmmTMB(yVisOnly_norm ~ SST+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+Neg_EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
 
+glmm_full_VisOnly_ped <- glmmTMB(yVisOnly_norm ~  SST+SSH+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Pos_EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+summary(glmm_full_VisOnly_ped)
+glmm_full_VisOnly_ped_pruned <- glmmTMB(yVisOnly_norm ~  SST++log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_FrontDist_Cayula+Pos_EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
 
-gamm_full_TF$v01 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                        + s(EddyDist,bs='ts', k=kVal)                        
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = transformedCovars.train$weightsG0*
-                          (mergedTrain.set$Weight/max(mergedTrain.set$Weight)),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 20)
+glmm_full_VisOnly_ied <- glmmTMB(yVisOnly_norm ~  SST+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+SSH*EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+summary(glmm_full_VisOnly_ied)
+glmm_full_VisOnly_ied_pruned <- glmmTMB(yVisOnly_norm ~  SST+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +log10_FrontDist_Cayula+SSH*EddyDist,
+  data = transformedCovars_VisOnly.train,ziformula=~1,family=poisson)
+
+AICtab(glmm_full_VisOnly_ed_pruned,glmm_full_VisOnly_ned_pruned,glmm_full_VisOnly_ped_pruned,glmm_full_VisOnly_ied_pruned)
+bestVisOnly_glmm <- glmm_full_VisOnly_ed_pruned
+
+glmm_full_ed <- glmmTMB(y ~ SST+SSH+log10_HYCOM_MLD+log10_CHL+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+EddyDist+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ed)
+glmm_full_ed_pruned <- glmmTMB(y ~ SST+SSH+log10_HYCOM_MLD+EddyDist+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ed_pruned)
+
+glmm_full_ped <- glmmTMB(y ~ SST+SSH+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Pos_EddyDist+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ped)
+glmm_full_ped_pruned <- glmmTMB(y ~ SST+SSH+log10_HYCOM_MLD+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ped_pruned)
+
+glmm_full_ned <- glmmTMB(y ~ SST+SSH+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+Neg_EddyDist+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ned)
+        
+glmm_full_ied <- glmmTMB(y ~ SST+SSH*EddyDist+log10_CHL+log10_HYCOM_MLD+HYCOM_SALIN_0
+  +HYCOM_DIR_0+log10_HYCOM_MAG_0+HYCOM_UPVEL_50+log10_FrontDist_Cayula+ (1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ied)
+glmm_full_ied_pruned <- glmmTMB(y ~ SST+SSH*EddyDist+log10_HYCOM_MLD+(1|fac4),
+  data = transformedCovars.train,ziformula=~fac4,family=poisson)
+summary(glmm_full_ied_pruned)
+
+AICtab(glmm_full_ed_pruned,glmm_full_ped_pruned,glmm_full_ied_pruned)
+best_full_glmm <-glmm_full_ied_pruned
 ```
 
 
 <br>  
 
 
-
-### Model 2
-
-Use distance to negative eddy:
-
-```{r AC model 2, eval = FALSE}
-
-gamm_full_AcOnly_TF$v02 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))#
-```
-
-
-```{r other models 2, eval = FALSE, include = TRUE} 
-
-gamm_full_VisOnly_TF$v02 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               weights = transformedCovars_VisOnly.train$weightsG0*
-                                  (Train_VisOnly.set$Weight/max(Train_VisOnly.set$Weight)),
-                               correlation = corAR1(form=~1|fac2))
-
-
-gamm_full_TF$v02 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                        + s(Neg_EddyDist,bs='ts', k=kVal)                        
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = transformedCovars.train$weightsG0*
-                          (mergedTrain.set$Weight/max(mergedTrain.set$Weight)),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 50)
-```
-
-
-<br>  
-
-### Model 3
-
-Use distance to nearest positive eddy:
-
-```{r AC model 3, eval = FALSE}
-
-gamm_full_AcOnly_TF$v03 <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))#
-```
-
-
-```{r other models 3, eval = FALSE, include = TRUE} 
-
-gamm_full_VisOnly_TF$v03 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family =  quasibinomial(),
-                               weights = transformedCovars_VisOnly.train$weightsG0*
-                                  (Train_VisOnly.set$Weight/max(Train_VisOnly.set$Weight)),
-                               correlation = corAR1(form=~1|fac2))
-
-
-gamm_full_TF$v03 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(SSH, bs='ts', k=kVal)
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = transformedCovars.train$weightsG0*
-                          (mergedTrain.set$Weight/max(mergedTrain.set$Weight)),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 20)
-```
-
-
-<br>  
-
-
-
-### Model 4
-
-Try eddy distance and SSH as an interaction term:
-
-
-```{r AC model 4, eval = FALSE}
-gamm_full_AcOnly_TF$v04 <- gamm(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(SSH, EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_AcOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
-                               correlation = corAR1(form=~1|fac2))
-```
-
-```{r Other models 4, eval = FALSE, include = TRUE}
-gamm_full_VisOnly_TF$v04 <- gamm(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
-                               weights = transformedCovars_VisOnly.train$weightsG0*
-                                  (Train_VisOnly.set$Weight/max(Train_VisOnly.set$Weight)),
-                               correlation = corAR1(form=~1|fac2))
-
-
-gamm_full_TF$v04 <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                        + s(SSH, EddyDist,  bs='ts', k=kVal)
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = transformedCovars.train$weightsG0*
-                          (mergedTrain.set$Weight/max(mergedTrain.set$Weight)),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 50)
-```
-
-<br>
 
 Done trying different model configurations for now, time to compare the results.
 
-<br>
-
-```{r save models, eval = FALSE, echo = FALSE, include = FALSE}
-# Save models if re-calculating everything
-save(gamm_full_AcOnly_TF,file = paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-save(gamm_full_VisOnly_TF,file = paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-save(gamm_full_TF,file = paste(outDir,SP,'_binomial_GAMMs_ALL.Rdata',sep=''))
-```
-
-```{r load models, eval = TRUE, echo = FALSE, include = FALSE}
-# alternative if models are already calculated
-load(paste(outDir,SP,'_AcOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-load(paste(outDir,SP,'_VisOnly_binomial_GAMMs_ALL.Rdata',sep=''))
-load(paste(outDir,SP,'_binomial_GAMMs_ALL.Rdata',sep=''))
-```
 
 <br>
-
-# III. Model Comparisons
-
-Look at AIC to select best acoustic-only model:
-
-```{r AC AIC}
-AC_model_AIC <- NULL
-for (iMod in 1:length(gamm_full_AcOnly_TF)){
-  AC_model_AIC[iMod] <- AIC(gamm_full_AcOnly_TF[[iMod]]$lme)
-  cat('Model ', names(gamm_full_AcOnly_TF[iMod]), ' AIC = ', AC_model_AIC[iMod], '\n')
-}
-```
-
-```{r Best acoustic model}
-best_AcOnly_model_index <- which.min(AC_model_AIC)
-best_AcOnly_model <- gamm_full_AcOnly_TF[[best_AcOnly_model_index]]
-best_AcOnly_model_name <- names(gamm_full_AcOnly_TF[best_AcOnly_model_index])
-
-cat('Best acoustic only model is ', best_AcOnly_model_name,' \n')
-```
-<br>
-
-Look at AIC to select best visual-only model:
-
-```{r Vis AIC}
-Vis_model_AIC <- NULL
-for (iMod in 1:length(gamm_full_VisOnly_TF)){
-  Vis_model_AIC[iMod] <- AIC(gamm_full_VisOnly_TF[[iMod]]$lme)
-  cat('Model ', names(gamm_full_VisOnly_TF[iMod]), ' AIC = ', Vis_model_AIC[iMod], '\n')
-}
-```
-
-```{r Best visual model}
-best_VisOnly_model_index <- which.min(Vis_model_AIC)
-best_VisOnly_model <- gamm_full_VisOnly_TF[[best_VisOnly_model_index]]
-best_VisOnly_model_name <- names(gamm_full_VisOnly_TF[best_VisOnly_model_index])
-
-cat('Best visual only model is ', best_VisOnly_model_name,' \n')
-```
-Note that all visual-only AIC models come out roughly equivalent, and eddy distance is not significant in any of them
-
-<br>
-
-Look at AIC to select best joint model:
-```{r joint AIC}
-model_AIC <- NULL
-for (iMod in 1:length(gamm_full_TF)){
-  model_AIC[iMod] <- AIC(gamm_full_TF[[iMod]]$lme)
-  cat('Model ', names(gamm_full_TF[iMod]), ' AIC = ', model_AIC[iMod], '\n')
-}
-```
-<br>
-
-
-```{r joint model}
-best_model_index <- which.min(model_AIC)
-best_model <- gamm_full_TF[[best_model_index]]
-best_model_name <- names(gamm_full_TF[best_model_index])
-
-
-cat('Best joint visual and acoustic model is ', best_model_name,' \n')
-```
-<br> 
-
-## Best Acoustic Only Model
-
-Summaries of the best models show that some terms were not significant.
-
-```{r Ac unpruned model summary}
-summary(best_AcOnly_model$gam)
-```
-<br> 
-
-Re-run the best acoustic-only model with only the significant terms
-
-```{r best AC model, message=FALSE, results = 'hide'}
-AcOnly_gamm_pruned_TF_best <- gamm(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                                      + s(SSH,bs='ts', k=kVal)
-                                      + s(HYCOM_SALIN_0,bs='ts', k=kVal),
-                                      data = transformedCovars_AcOnly.train,
-                                      na.action = na.omit,family = quasibinomial(),
-                                      correlation = corAR1(form=~1|fac2)) 
-```
 
 ```{r AC best model summary}
-summary(AcOnly_gamm_pruned_TF_best$gam)
-plot(AcOnly_gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
-save(AcOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_AcOnly_binomial_model.Rdata',sep=''))
+summary(bestACOnly_glmm)
+plot(residuals(bestACOnly_glmm))
+save(bestACOnly_glmm,file = paste(outDir,SP,'_best_AcOnly_glmm.Rdata',sep=''))
 
 ```
 <br>
 
-```{r AC best model residuals}
-plot(residuals.gam(AcOnly_gamm_pruned_TF_best$gam))
-# gam.check(AcOnly_gamm_pruned_TF_best$gam)
-```
+
 <br>
 
 ## Best Visual Only Model
 
-```{r Vis unpruned model summary}
-summary(best_VisOnly_model$gam)
-```
-<br>  
 
-Re-run the best visual-only model with only the significant term(s).
-
-```{r best Vis model, message=FALSE, results = 'hide'}
-VisOnly_gamm_pruned_TF_best <- gamm(yVisOnly_TF~ s(SST,EddyDist, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal),
-                               data = transformedCovars_VisOnly.train,
-                               na.action = na.omit,family = quasibinomial(),
-                               weights = transformedCovars_VisOnly.train$weightsG0*
-                                  (Train_VisOnly.set$Weight/max(Train_VisOnly.set$Weight)),
-                               correlation = corAR1(form=~1|fac2))
-```
-<br>
 
 ```{r Vis best model summary}
-summary(VisOnly_gamm_pruned_TF_best$gam)
-plot(VisOnly_gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
-save(VisOnly_gamm_pruned_TF_best,file = paste(outDir,SP,'_best_VisOnly_binomial_model.Rdata',sep=''))
+summary(bestVisOnly_glmm)
+plot(residuals(bestVisOnly_glmm))
+save(bestVisOnly_glmm,file = paste(outDir,SP,'_best_VisOnly_glmm.Rdata',sep=''))
 
 ```
 
-```{r Vis best model residuals}
-plot(residuals.gam(VisOnly_gamm_pruned_TF_best$gam))
-# gam.check(VisOnly_gamm_pruned_TF_best$gam)
-```
 
 <br>
 
 ## Best Joint Visual & Acoustic Model
 
-```{r unpruned model summary}
-summary(best_model$gam)
-```
-<br>
+```{r best joint model summary}
+summary(best_full_glmm)
+plot(residuals(best_full_glmm))
+save(best_full_glmm,file = paste(outDir,SP,'_best_joint_glmm.Rdata',sep=''))
 
-Re-run the best joint model with only the significant terms
-
-```{r best model, echo = TRUE, message=FALSE, results = 'hide'}
-gamm_pruned_TF_best <- gamm(y_TF~ s(SST, bs='ts', k=kVal) 
-                        + s(HYCOM_SALIN_0, bs='ts', k=kVal)
-                        + s(SSH,EddyDist,bs='ts', k=kVal),
-                        data = transformedCovars.train, 
-                        weights = transformedCovars.train$weightsG0*
-                          (mergedTrain.set$Weight/max(mergedTrain.set$Weight)),
-                        na.action = na.omit,family = quasibinomial(),
-                        correlation = corAR1(form=~1|fac2),niterPQL = 30)
-```
-<br>
-
-```{r best model summary}
-summary(gamm_pruned_TF_best$gam)
-plot(gamm_pruned_TF_best$gam,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
-save(gamm_pruned_TF_best,file = paste(outDir,SP,'_best_joint_binomial_model.Rdata',sep=''))
-
-```
-<br>
-
-```{r best model residuals}
-plot(residuals.gam(gamm_pruned_TF_best$gam))
-# gam.check(gamm_pruned_TF_best$gam)
 ```
 
 <br>
@@ -820,7 +610,7 @@ plot(residuals.gam(gamm_pruned_TF_best$gam))
 
 Predict on acoustic test data, and compare with actual observations for 2013. We are comparing the predicted probability of encountering animals with the actual weekly rate of occurrence of animals at a site. 
 
-CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which Cuvier's were detected. This results in a pretty coarse estimate.
+CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which Risso's were detected. This results in a pretty coarse estimate.
 Alternatively we could compare to daily densities or something, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate...
 
 ```{r Ac Temporal Predict}
@@ -835,17 +625,17 @@ dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
                          '2013-07-01 GMT','2013-10-01 GMT',
                          '2014-01-01 GMT'))
 dateLabels = c('Jan. 2013','Apr. 2013','Jul. 2013','Oct 2013','Jan. 2014')
-predAcOnly_MC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
-                             transformedCovars_AcOnly.test[compAcSet_MC,],
-                             type = 'response',na.action = na.pass)
-predAcOnly_GC <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
-                             transformedCovars_AcOnly.test[compAcSet_GC,],
-                             type = 'response',na.action = na.pass)
-predAcOnly_DT <- predict.gam(AcOnly_gamm_pruned_TF_best$gam,
-                             transformedCovars_AcOnly.test[compAcSet_DT,],
-                            type = 'response',na.action = na.pass)
+predAcOnly_MC <- predict(bestACOnly_glmm,
+                             newdata= transformedCovars_AcOnly.test[compAcSet_MC,],
+                             zitype = 'response')
+predAcOnly_GC <- predict(bestACOnly_glmm,
+                              newdata= transformedCovars_AcOnly.test[compAcSet_GC,],
+                             zitype = 'response')
+predAcOnly_DT <- predict(bestACOnly_glmm,
+                              newdata= transformedCovars_AcOnly.test[compAcSet_DT,],
+                             zitype = 'response')
 
-occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
+occurIdx <- which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
 AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
@@ -868,6 +658,10 @@ AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
 AcOnly_predictionSet$Legend <- "Predictions"
 
 pOccur$Legend <- "Observations"
+yTest <-Train_AcOnly.set$Density[compAcSet_MC]
+
+MSE.nn.test <- sum((yTest - predAcOnly_MC)^2)/length(yTest)
+
 ```
 
 
@@ -991,6 +785,7 @@ pred_GC <- predict.gam(gamm_pruned_TF_best$gam,
 pred_DT <- predict.gam(gamm_pruned_TF_best$gam,
                               transformedCovars_AcOnly.test[compAcSet_DT,],
                               type = 'response',na.action = na.pass)
+predict(glmm_full_TF$v01_2_3_2, newdata= transformedCovars_AcOnly.test[compAcSet_MC,], zitype = "response")
 
 Both_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(Both_predictionSet) <-"date"
@@ -1076,15 +871,12 @@ Eddy_jan_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologi
                           predTemplate)
 Eddy_july_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected/eddyDist_July_2009_proj.tif'),
                            predTemplate)
-Neg_Eddy_jan_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected/proj_negEddyDist_Jan_2009.tif'),
-                           predTemplate)
-Neg_Eddy_july_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected/proj_negEddyDist_Jul_2009.tif'),
-                           predTemplate)
-
-Pos_Eddy_jan_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected/proj_posEddyDist_Jan_2009.tif'),
-                           predTemplate)
-Pos_Eddy_july_2009 <- resample(raster('E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected/proj_posEddyDist_Jul_2009.tif'),
-                           predTemplate)
+Neg_Eddy_jan_2009 <- 
+  resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/DistNegMSLA_eddy_polarities_2009015.img'),
+  predTemplate)
+Neg_Eddy_july_2009 <- 
+  resample(raster('E:/NASData/AcoustoVisualDE/EddyDist/Neg_EddyDist_july2009.tif'),
+  predTemplate)
 
 log10_HYCOM_MAG_0_jan2009 <- 
   resample(raster('E:/NASData/AcoustoVisualDE/HYCOM_Mag/log10_mag_jan2009.tif'),
@@ -1099,30 +891,23 @@ log10_HYCOM_MLD_jan2009 <-
 log10_HYCOM_MLD_july2009 <- 
   resample(raster('E:/NASData/AcoustoVisualDE/MLD/log10_mld_july2009.tif'),
   predTemplate)
-
-HYCOM_UPVEL_50_jan2009 <- 
-  resample(raster('E:/NASData/AcoustoVisualDE/HYCOM_UpVel/proj_HYCOM_upvel_50_jan09.tif'),
-  predTemplate)
-HYCOM_UPVEL_50_july2009 <- 
-  resample(raster('E:/NASData/AcoustoVisualDE/HYCOM_UpVel/proj_HYCOM_upvel_50_july09.tif'),
-  predTemplate)
 ```
 
 ```{r brick rasters, eval = FALSE, include = FALSE}
 jan2009_rasters <- brick(log10_CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
-                         SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009,Pos_Eddy_jan_2009,
-                         log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009,HYCOM_UPVEL_50_jan2009) 
+                         SAL_jan_2009,Eddy_jan_2009,Neg_Eddy_jan_2009,
+                         log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009) 
 
 july2009_rasters <- brick(log10_CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
-                          SAL_july_2009,Eddy_july_2009,Neg_Eddy_july_2009,Pos_Eddy_july_2009,
-                          log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009,HYCOM_UPVEL_50_july2009)      
+                          SAL_july_2009,Eddy_july_2009,Neg_Eddy_july_2009,
+                          log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009)      
 
-names(jan2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
-                          'HYCOM_SALIN_0','EddyDist','Neg_EddyDist','Pos_EddyDist',
-                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
+names(jan2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula'
+                          ,'HYCOM_SALIN_0','EddyDist','Neg_EddyDist',
+                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD')
 names(july2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
-                         'HYCOM_SALIN_0','EddyDist','Neg_EddyDist','Pos_EddyDist',
-                         'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
+                         'HYCOM_SALIN_0','EddyDist','Neg_EddyDist'
+                         ,'log10_HYCOM_MAG_0','log10_HYCOM_MLD')
 
 save(jan2009_rasters,july2009_rasters,
      file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')  
@@ -1139,13 +924,16 @@ load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')
 Evaluate the models for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
 ```{r Ac Spatial Predict}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
-
+jan2009_rasters$fac1<-jan2009_rasters$SST
+jan2009_rasters$fac1<-1
+july2009_rasters$fac1<-july2009_rasters$SST
+july2009_rasters$fac1<-1
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,
-                                             AcOnly_gamm_pruned_TF_best$gam,
+                                             bestACOnly_glmm,
                                              type = 'response',na.action = na.pass)
-            
+
 july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
-                                              AcOnly_gamm_pruned_TF_best$gam,
+                                              bestACOnly_glmm,
                                               type = 'response',na.action = na.pass)    
 ```
 <br>
@@ -1155,10 +943,10 @@ july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
 ```{r Vis Spatial Predict}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,VisOnly_gamm_pruned_TF_best$gam,
+jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,bestVisOnly_glmm,
             type = 'response',na.action = na.pass)
             
-july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_gamm_pruned_TF_best$gam,
+july2009_VisOnly_prediction <- raster::predict(july2009_rasters,bestVisOnly_glmm,
             type = 'response',na.action = na.pass)    
 ```
 
@@ -1167,12 +955,16 @@ july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_gamm_pru
 ### Joint Visual and Acoustic 
 
 ```{r Combo Spatial Predict, message=FALSE}
-dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_prediction <- raster::predict(jan2009_rasters,gamm_pruned_TF_best$gam,
+dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+jan2009_rasters$fac4<-jan2009_rasters$SST
+jan2009_rasters$fac4<-0
+july2009_rasters$fac4<-july2009_rasters$SST
+july2009_rasters$fac4<-0
+jan2009_prediction <- raster::predict(jan2009_rasters,best_full_glmm,
             type = 'response',na.action = na.pass)
-            
-july2009_prediction <- raster::predict(july2009_rasters,gamm_pruned_TF_best$gam,
+
+july2009_prediction <- raster::predict(july2009_rasters,best_full_glmm,
             type = 'response',na.action = na.pass)    
 ```
 <br>
@@ -1231,23 +1023,26 @@ Display summer (July 2009) map:
 
 ```{r leaflet summer, message = FALSE, warning = FALSE, width = 8, height = 5}
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,1), 
+                    domain=c(0,1.2), 
                     na.color = 'transparent')
 
 map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
-  addRasterImage(july2009_AcOnly_prediction_crop, colors = pal,
+  addRasterImage(july2009_AcOnly_prediction_crop/
+                   cellStats(july2009_AcOnly_prediction_crop, stat='mean', na.rm=TRUE), colors = pal,
                  opacity = 0.8, group = 'Acoustic July 2009') %>%
-  addRasterImage(july2009_VisOnly_prediction_crop, colors = pal,
+  addRasterImage(july2009_VisOnly_prediction_crop/
+                   cellStats(july2009_VisOnly_prediction_crop, stat='mean', na.rm=TRUE), colors = pal,
                  opacity = 0.8, group = 'Visual July 2009') %>%
-  addRasterImage(july2009_prediction_crop, colors = pal,
+  addRasterImage(july2009_prediction_crop/
+                   cellStats(july2009_prediction_crop, stat='mean', na.rm=TRUE), colors = pal,
                  opacity = 0.8, group = 'Joint July 2009') %>%
-  addRasterImage(july2009mean,colors = pal,
+  addRasterImage(july2009mean/cellStats(july2009mean, stat='mean', na.rm=TRUE),colors = pal,
                  opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%  
   addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
-  addLegend(pal = pal, values = c(0,1),
+  addLegend(pal = pal, values = c(0,1.2),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic July 2009','Visual July 2009',
@@ -1306,7 +1101,6 @@ CHL_ClimateDir <- 'E:/NASData/CHL_monthly_climatology_20030101to20151231/aqua/mo
 HYCOM_MAG_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mag/Monthly_Climatology/Depth_0000m/Projected'
 HYCOM_SALIN_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/salinity/Monthly_Climatology/Depth_0000m/Projected'
 HYCOM_MLD_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mld/Monthly_Climatology/Projected'
-HYCOM_UPVEL_50_Dir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/w_velocity/Monthly_Climatology/Depth_0050m/Projected'
 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1342,7 +1136,6 @@ for (iM in 1:length(monthStr)){
 
 }
 
-
 save(raster_set,monthStr, monthNum,
      file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata')  
 
@@ -1376,7 +1169,7 @@ for (iM in 1:length(monthStr)){
 
 ```{r plot climatologies, message = FALSE, warning = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,1), 
+                    domain=c(0,.8), 
                     na.color = 'transparent')
 
 map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1389,7 +1182,7 @@ map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'July') %>%
   addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
                  opacity = 0.8, group = 'Oct.') %>%
-  addLegend(pal = pal, values = c(0,1),
+  addLegend(pal = pal, values = c(0,.8),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','April',

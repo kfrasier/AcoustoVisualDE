@@ -11,9 +11,8 @@ library(plotrix)
 library(HabitatProject)
 
 ## Read set up file for species of choice.
-# NOTE: if you have changed the setup info, re-run setup_info_[your species here].R before running this
-#load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
+# NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
+load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -77,23 +76,33 @@ if (matchACSegs){
 cat("Loading visual data\n")
 
 load(visDataFile)
+# Truncate visual data to exclude sightings outside the 200m contour polygon
+visDataDF <- data.frame(visData)
+pred_polygon <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
+coordinates(visDataDF) <- ~boatlon + boatlat
+crs(visDataDF) <- crs("+proj=longlat +datum=WGS84")
+pred_polygon_proj <- spTransform(pred_polygon,crs(visDataDF))
+visDataDF_proj_crop <- visDataDF[pred_polygon_proj,]
+visDataDF_crop <- as.data.frame(visDataDF_proj_crop)
+# visDataDF_crop<-visDataDF
+
 visSegments <- read.csv(visSegmentsFile, header = TRUE,na.strings=c(""," ","NA","-99999.0000","-99999"))
 visSegments$date <- as.POSIXct(strptime(visSegments$date,"%Y-%m-%d"),tz="GMT")
 ## Process Visual data to determine detection probabilities and strip widths
 visSpIdx <- NULL
 for (spname in SPC_vis){
-  visSpIdx <- c(visSpIdx,which(grepl(spname, visData$commonname)))
+  visSpIdx <- c(visSpIdx,which(grepl(spname, visDataDF_crop$commonname)))
 }
 
 # prune out off-effort sightings
-spIdxON <- visSpIdx[which(as.logical(visData$effort[visSpIdx]))]
+spIdxON <- visSpIdx[which(as.logical(visDataDF_crop$effort[visSpIdx]))]
 
 # prune out sightings with an angle over 90 deg
-spIdxON2 <- spIdxON[which(visData$relbear[spIdxON]<90)]
+spIdxON2 <- spIdxON[which(visDataDF_crop$relbear[spIdxON]<90)]
 
 # Populate truncated column of on effort sightings of species of interest with zeros
-visData$Truncated <- 1
-visData$Truncated[spIdxON2] <- 0
+visDataDF_crop$Truncated <- 1
+visDataDF_crop$Truncated[spIdxON2] <- 0
 
 ####################### Fit Visual Survey Detection Functions #########################
 
@@ -112,17 +121,17 @@ if (runDetFuns){
     cat(paste("Fitting platform ", i,"\n"))
     
     # identify sightings assoicated with the a certain platform
-    PLCspIdxOn <- spIdxON2[which(grepl(i,visData$ship[spIdxON]))] 
+    PLCspIdxOn <- spIdxON2[which(grepl(i,visDataDF_crop$ship[spIdxON]))] 
     
     # Make dataframe with the inputs that the ddf distance function wants
     ddfData$observer <- rep(1,length(PLCspIdxOn))
     ddfData$detected <- rep(1,length(PLCspIdxOn))
     ddfData$object <- (1:length(PLCspIdxOn))
-    ddfData$distance <- visData$transect_distm[PLCspIdxOn]
-    ddfData$size <- visData$size[PLCspIdxOn]
-    ddfData$seastate <- visData$seastate[PLCspIdxOn]
-    ddfData$swell <- visData$swell[PLCspIdxOn]
-    ddfData$vis <- visData$vis[PLCspIdxOn]
+    ddfData$distance <- visDataDF_crop$transect_distm[PLCspIdxOn]
+    ddfData$size <- visDataDF_crop$size[PLCspIdxOn]
+    ddfData$seastate <- visDataDF_crop$seastate[PLCspIdxOn]
+    ddfData$swell <- visDataDF_crop$swell[PLCspIdxOn]
+    ddfData$vis <- visDataDF_crop$vis[PLCspIdxOn]
     ddfData <- as.data.frame(ddfData)
     
     # Compute untruncated detection function
@@ -303,7 +312,7 @@ for (iP in 1:length(PLC)){
 visSeg_OnEffort <- visSegments[which(visSegments$effort==1),]
 
 # Tally encounters by segment
-prunedSightings <- visData[which(visData$Truncated==0),] # get all of the non-truncated sightings
+prunedSightings <- visDataDF_crop[which(visDataDF_crop$Truncated==0),] # get all of the non-truncated sightings
 
 # Assign segment to each sighting
 for (iSight in 1:length(prunedSightings$date)){

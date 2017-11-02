@@ -25,8 +25,8 @@ visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segment
 
 # Mapping data
 surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
-SPC_vis <- c("Striped dolphin","Pantropical spotted dolphin",
-             "Spinner dolphin","Stenella sp.","Clymene dolphin")
+SPC_vis <- c("Striped dolphin","Pantropical spotted dolphin","Spotted dolphin",
+             "Spinner dolphin","Stenella sp.","Clymene dolphin","Atlantic spotted dolphin")
 
 # Platform Codes (visual only)
 PLC <- c("GU")  # ("OR")
