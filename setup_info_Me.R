@@ -42,7 +42,7 @@ matchACSegs <- TRUE  # set to true if you need to match density estimates with e
 visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
-AcTruncDist <- 2.0 # km
+AcTruncDist <- 1.0 # km
 
 save(file = "setup_info_Me.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,

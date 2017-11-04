@@ -41,10 +41,10 @@ detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")#
 
 matchACSegs <- TRUE  # set to true if you need to match density estimates with environmental parameters
 
-visG0 <- mean(c(.42,.37)) # for stenella from palka 2006 table 5, 2004 survey
+visG0 <- mean(c(.37,.94)) # for striped and spotted dolphins from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
-AcTruncDist <- 1.5 # km
+AcTruncDist <- 1.3 # km (for click detections)
 
 save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,

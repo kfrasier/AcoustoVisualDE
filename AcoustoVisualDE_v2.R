@@ -9,10 +9,12 @@ library(psych)
 library(pracma)
 library(plotrix)
 library(HabitatProject)
+library(rgdal)
+library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
+load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -543,7 +545,7 @@ VisOnlySegments$fac2 <- VisOnlySegments$fac1
 mergedSegments$fac1 <- as.numeric(c(VisOnlySegments$fac1,AcOnlySegments$fac1))
 mergedSegments$fac2 <- as.numeric(c(VisOnlySegments$fac2,AcOnlySegments$fac2))
 
-save(mergedSegments,VisOnlySegments,AcOnlySegments,
+save(mergedSegments,VisOnlySegments,AcOnlySegments,tDist,
      file = paste(outDir,SP,'MergedData.Rdata',sep=''))
 
 ##################### Data Exploration, Transformation and Plotting #####################
