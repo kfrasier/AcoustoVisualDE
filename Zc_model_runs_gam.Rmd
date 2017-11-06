@@ -1204,60 +1204,8 @@ map
 
 Spatial model predictions using oceanographic variables averaged by month between 2003 and 2015.
 
-```{r build climatology raster-bricks, eval = FALSE, include = FALSE, echo = FALSE}
 
-# folders
-eddy_ClimateDir <- 'E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected'
-SST_ClimateDir <- 'E:/NASData/SST_monthly_climatology_20030101to20151231/GLOB/JPL_OUROCEAN/G1SST/analysed_sst/Monthly_Climatology/Projected'
-SSH_ClimateDir <- 'E:/NASData/SSH_monthly_climatology_20030101to20151231'
-CHL_ClimateDir <- 'E:/NASData/CHL_monthly_climatology_20030101to20151231/aqua/monthly/4km/CHL_chlor_a/Monthly_Climatology/Projected'
-HYCOM_MAG_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mag/Monthly_Climatology/Depth_0000m/Projected'
-HYCOM_SALIN_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/salinity/Monthly_Climatology/Depth_0000m/Projected'
-HYCOM_MLD_ClimateDir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/mld/Monthly_Climatology/Projected'
-HYCOM_UPVEL_50_Dir <- 'E:/NASData/HYCOM_monthly_climatology_20030101to20151231/w_velocity/Monthly_Climatology/Depth_0050m/Projected'
-
-monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
-monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-raster_set <- vector('list',length = 12)
-
-for (iM in 1:length(monthStr)){
-  SST_climate <- resample(raster(paste0(SST_ClimateDir,'/',
-                                        'proj_JPL_OUROCEAN-L4UHfnd-GLOB-v01-fv01_0-G1SST-analysed_sst-month',
-                                        monthNum[iM],'-mean.img')),predTemplate)
-  SSH_climate <- resample(raster(paste0(SSH_ClimateDir,'/',
-                                        'proj_SSH_',
-                                        monthStr[iM],'_climatology.tif')),predTemplate)
-  log10_CHL_climate <- log10(resample(raster(paste0(CHL_ClimateDir,'/',
-                                        'proj_aqua_CHL_chlor_a_month',
-                                        monthNum[iM],'_mean.img')),predTemplate))
-  eddy_climate <- resample(raster(paste0(eddy_ClimateDir,'/',
-                                        'proj_posEddyDist_',
-                                        monthStr[iM],'_climatology.tif')),predTemplate)
-  log10_HYCOM_MAG_climate <- log10(resample(raster(paste0(HYCOM_MAG_ClimateDir,'/',
-                                        'proj_mag_0000m_month',
-                                        monthNum[iM],'_mean.img')),predTemplate))
-  HYCOM_SALIN_climate <- resample(raster(paste0(HYCOM_SALIN_ClimateDir,'/',
-                                        'proj_salinity_0000m_month',
-                                        monthNum[iM],'_mean.img')),predTemplate)
-  log10_HYCOM_MLD_climate <- log10(resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
-                                        'proj_mld_month',
-                                        monthNum[iM],'_mean.img')),predTemplate))
-  raster_set[[iM]] <- brick(SST_climate,SSH_climate,log10_CHL_climate,eddy_climate,log10_HYCOM_MAG_climate,
-                         HYCOM_SALIN_climate,log10_HYCOM_MLD_climate) 
-  names(raster_set[[iM]])<-c('SST','SSH','log10_CHL','EddyDist','log10_HYCOM_MAG_0',
-                         'HYCOM_SALIN_0','log10_HYCOM_MLD')  
-  cat(paste0("done with month ", iM, "\n", collapse = ""))
-
-}
-
-
-save(raster_set,monthStr, monthNum,
-     file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata')  
-
-```
-
-
-```{r evaluate climatology-based models, eval = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r evaluate climatology-based models, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata') 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1282,7 +1230,9 @@ for (iM in 1:length(monthStr)){
   
 ```
 
-```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE, echo = FALSE}
+
+
+```{r plot climatologies, message = FALSE, warning = FALSE, echo=FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
@@ -1291,17 +1241,24 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(mapClimatePrediction[[1]] , colors = pal,
                  opacity = 0.8, group = 'Jan.') %>%
-  addRasterImage(mapClimatePrediction[[4]] , colors = pal,
-                 opacity = 0.8, group = 'April') %>%
+  addRasterImage(mapClimatePrediction[[3]] , colors = pal,
+                 opacity = 0.8, group = 'March') %>%
+  addRasterImage(mapClimatePrediction[[5]] , colors = pal,
+                 opacity = 0.8, group = 'May') %>%
   addRasterImage(mapClimatePrediction[[7]] , colors = pal,
                  opacity = 0.8, group = 'July') %>%
-  addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
-                 opacity = 0.8, group = 'Oct.') %>%
+  addRasterImage(mapClimatePrediction[[9]] ,colors = pal,
+                 opacity = 0.8, group = 'Sept.') %>%
+  addRasterImage(mapClimatePrediction[[11]] ,colors = pal,
+                 opacity = 0.8, group = 'Nov.') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat,
+                 group = 'HARP Locations') %>%
   addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('Jan.','April',
-                   'July','Oct.'),
+    baseGroups = c('Jan.','March','May',
+                   'July','Sept.','Nov.'),
+    overlayGroups = c('HARP Locations'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
