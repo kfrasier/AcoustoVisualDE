@@ -581,7 +581,7 @@ for (layerSize in layerSizeList){
   nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, 
                                        data = VisOnly_train_scaled, 
                                        size = layerSize, 
-                                       repeats = 20,
+                                       repeats = 50,
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
@@ -602,7 +602,7 @@ for (layerSize in layerSizeList){
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
                                       size = layerSize, 
-                                      repeats = 20, 
+                                      repeats = 50, 
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
@@ -671,7 +671,7 @@ print(MSEtable, digits = 3)
 ```{r best model index, echo = FALSE,}
 best_AcOnly_ModelIndex <-1
 best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-3
+best_Joint_ModelIndex <-2
 ```
 
 # III. Predict on Test Data

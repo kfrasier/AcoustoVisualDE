@@ -531,7 +531,7 @@ pr.nn_Joint_test <- NULL
 ```
 Iterate over a range of hidden layer sizes between 2 and 14 nodes.
 
-```{r Set up parallel cluster, echo = FALSE}
+```{r Set up parallel cluster, echo = FALSE, eval = FALSE}
 numCores <- detectCores() - 1
 cl <-makeCluster(numCores)
 ```
@@ -580,7 +580,7 @@ for (layerSize in layerSizeList){
   nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, 
                                        data = VisOnly_train_scaled, 
                                        size = layerSize, 
-                                       repeats = 20,
+                                       repeats = 50,
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
@@ -600,7 +600,7 @@ for (layerSize in layerSizeList){
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
                                       size = layerSize, 
-                                      repeats = 20, 
+                                      repeats = 50, 
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
@@ -619,7 +619,7 @@ for (layerSize in layerSizeList){
 ```
 
 
-```{r Turn off parallel cluster, echo = FALSE}
+```{r Turn off parallel cluster, eval = FALSE, echo = FALSE}
 stopCluster(cl)
 ```
 <br>  
@@ -667,7 +667,7 @@ print(MSEtable, digits = 2)
 ```{r best model index, echo = FALSE,}
 best_AcOnly_ModelIndex <-1
 best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-2
+best_Joint_ModelIndex <-4
 
 ```
 
@@ -1226,11 +1226,23 @@ for (iM in 1:length(monthStr)){
                      monthStr[iM],'_climatology.tif')),predTemplate),
                      center = covars_Joint_min.train[10],scale = 
                      covars_Joint_max.train[10]-covars_Joint_min.train[10])
-    
+  
+  pos_eddy_climate <- scale(resample(raster(paste0(eddy_ClimateDir,'/','proj_posEddyDist_',
+                     monthStr[iM],'_climatology.tif')),predTemplate),
+                     center = covars_Joint_min.train[11],scale = 
+                     covars_Joint_max.train[10]-covars_Joint_min.train[11])
+  
+  neg_eddy_climate <- scale(resample(raster(paste0(eddy_ClimateDir,'/','proj_negEddyDist_',
+                     monthStr[iM],'_climatology.tif')),predTemplate),
+                     center = covars_Joint_min.train[12],scale = 
+                     covars_Joint_max.train[10]-covars_Joint_min.train[12])  
+  
   raster_set[[iM]] <- brick(SST_climate,SSH_climate,log10_CHL_climate,eddy_climate,log10_HYCOM_MAG_climate,
-                         HYCOM_UPVEL_climate,HYCOM_SALIN_climate,log10_HYCOM_MLD_climate) 
+                         HYCOM_UPVEL_climate,HYCOM_SALIN_climate,log10_HYCOM_MLD_climate,
+                         neg_eddy_climate,pos_eddy_climate) 
   names(raster_set[[iM]])<-c('SST','SSH','log10_CHL','EddyDist','log10_HYCOM_MAG_0',
-                         'HYCOM_UPVEL_50','HYCOM_SALIN_0','log10_HYCOM_MLD')  
+                         'HYCOM_UPVEL_50','HYCOM_SALIN_0','log10_HYCOM_MLD',
+                         'Neg_EddyDist',"Pos_EddyDist")  
   cat(paste0("done with month ", iM, "\n", collapse = ""))
 
 }

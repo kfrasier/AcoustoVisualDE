@@ -49,7 +49,7 @@ The visual data goes back to 1992, but as shown in the figure below, many predic
 
 Note: Future work could use monthly climatologies (averages) so that older sightings data could be used. Some dynamic drivers like eddy and front locations would not be able to be considered using that approach.
 
-```{r Missing data}
+```{r Missing data, echo = FALSE}
 covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
 
 percFilled <- plot.missingdata(mergedSegments,covarList,paste0(outDir,'AcousticAndVisual_',SP)) 
@@ -65,7 +65,7 @@ percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOn
 
 The data are split into training and testing sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
 
-```{r test train split}
+```{r test train split, echo = FALSE}
 # If you decide from the missing data plots that you want to restrict years going forward:
 yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
 yearListIdx_AcOnly = as.numeric(format(AcOnlySegments$date,"%Y"))
@@ -93,7 +93,7 @@ Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
 
 The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Blue markers indicate HARP locations.
 
-```{r map inputs, warning = FALSE}
+```{r map inputs, warning = FALSE, echo = FALSE}
 #Get test visual sightings
 sightingsTrain <- Train_VisOnly.set[Train_VisOnly.set$Density>0,c('lat','long','date')]
 
@@ -134,7 +134,7 @@ plot.timeseries(siteList,outDir,AcOnlySegments)
 ### Identify Outliers
 
 Replace extreme outliers (bad data) with NaNs.
-```{r remove outliers, message = FALSE, results = 'hide'}
+```{r remove outliers, message = FALSE, results = 'hide', echo = FALSE}
 # Identify and clear problematic outliers
 outlierList <-which(mergedSegments$CHL< -10)
 mergedSegments$CHL[outlierList] <- NaN 
@@ -165,7 +165,7 @@ VisOnlySegments$Density[outlierList] <- NaN
 Covariates have different distributions across the observations. 
 Here are the distributions of covariates from the acoustic observations:
 
-```{r dot plots, eval = TRUE, message = FALSE, results = 'hide'}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plot.cleveland(mergedTrain.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP))
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
@@ -188,7 +188,7 @@ Some of these covariates are more or less interrelated. HYCOM estimates of salin
 
 Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model. Day of year was excluded to avoid artifacts associated with the temporal differences of the datasets (Acoustic data are year-round, and visual data are collected in spring/summer).
 
-```{r correlation plots, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide'}
+```{r correlation plots, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide, echo = FALSE'}
 covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
                 "HYCOM_SALIN_0","HYCOM_DIR_0",
                 "HYCOM_MAG_0",
@@ -224,7 +224,7 @@ dev.off()
 
 Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and can be log-transformed.
 
-```{r transform covars, message = FALSE, results = 'hide'}
+```{r transform covars, message = FALSE, results = 'hide', echo = FALSE}
 # covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
 #                 "HYCOM_SALIN_0","HYCOM_DIR_0",
 #                 "HYCOM_MAG_0",
@@ -270,7 +270,7 @@ dev.off()
 Plotting the transformed variables: 
 
 
-```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide'}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols = colnames(transformedCovars.train)[1:(length(covarList2)-2)]
 plot.cleveland(transformedCovars.train,
                plotCols,TRUE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -291,7 +291,7 @@ Below, the two sets of covariates have been combined and transformed.
 
 To get an idea of the basic predictive power of these covariates, we can look at presence/absence relative to each variable. This also provides an opportunity to look at the range of values observed for each covariate in the visual and acoustic datasets. In the plots below dotted lines indicate the distribution of each covariate when animals were present, and solid lines indicate the distribution when animals were absent. Note that these plots do not account for effort.
 
-```{r presence absence histograms, eval = TRUE, message = FALSE, results = 'hide'}
+```{r presence absence histograms, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plot.covarDensity(transformedCovars.train[,1:(length(transformedCovars.train)-2)],
                   colnames(transformedCovars.train[,1:(length(transformedCovars.train)-2)]),
                   mergedTrain.set$Density,paste0(outDir,'Both_',SP))
@@ -346,7 +346,7 @@ The best visual detection probability (model shown below) incorporated sea state
 
 <br> 
 
-```{r Calculate weights}
+```{r Calculate weights, echo = FALSE}
 
 cat(paste0('Mean visual data point weight: ', 
            round(mean(Train_VisOnly.set$Weight)), 
@@ -360,7 +360,7 @@ cat(paste0('Mean visual data point weight: ',
 
 Models were fit using gam from the mgcv package in R. 
 
-```{r load starting data} 
+```{r load starting data, echo = FALSE} 
 weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Zc_jahStart.csv')
 pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
@@ -369,7 +369,7 @@ pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA',
 Initialize model parameters:
 
 
-```{r model setup} 
+```{r model setup, echo = FALSE} 
 # Run & evaluate models
 kVal <- 5 # choose a low value to avoid overfitting
 
@@ -448,7 +448,7 @@ gam_full_AcOnly_TF$v01 <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 1, eval = FALSE, include = TRUE} 
+```{r other models 1, eval = FALSE, include = TRUE, echo = FALSE} 
 
 gam_full_VisOnly_TF$v01 <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -496,7 +496,7 @@ gam_full_AcOnly_TF$v02 <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 2, eval = FALSE, include = TRUE} 
+```{r other models 2, eval = FALSE, include = TRUE, echo = FALSE} 
 
 gam_full_VisOnly_TF$v02 <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -542,7 +542,7 @@ gam_full_AcOnly_TF$v03 <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
 ```
 
 
-```{r other models 3, eval = FALSE, include = TRUE} 
+```{r other models 3, eval = FALSE, include = TRUE, echo = FALSE} 
 
 gam_full_VisOnly_TF$v03 <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -587,7 +587,7 @@ gam_full_AcOnly_TF$v04 <- gam(yAcOnly_TF~ s(SST, bs='ts', k=kVal)
                                na.action = na.omit,family = binomial())
 ```
 
-```{r Other models 4, eval = FALSE, include = TRUE}
+```{r Other models 4, eval = FALSE, include = TRUE, echo = FALSE}
 gam_full_VisOnly_TF$v04 <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(SSH, EddyDist, bs='ts', k=kVal)
                                + s(HYCOM_UPVEL_50,bs='ts', k=kVal)
@@ -636,7 +636,7 @@ load(paste(outDir,SP,'_binomial_GAMs_ALL.Rdata',sep=''))
 
 Look at AIC to select best acoustic-only model:
 
-```{r AC AIC}
+```{r AC AIC, echo = FALSE}
 AC_model_AIC <- NULL
 for (iMod in 1:length(gam_full_AcOnly_TF)){
   AC_model_AIC[iMod] <- AIC(gam_full_AcOnly_TF[[iMod]])
@@ -644,7 +644,7 @@ for (iMod in 1:length(gam_full_AcOnly_TF)){
 }
 ```
 
-```{r Best acoustic model}
+```{r Best acoustic model, echo = FALSE}
 best_AcOnly_model_index <- which.min(AC_model_AIC)
 best_AcOnly_model <- gam_full_AcOnly_TF[[best_AcOnly_model_index]]
 best_AcOnly_model_name <- names(gam_full_AcOnly_TF[best_AcOnly_model_index])
@@ -655,7 +655,7 @@ cat('Best acoustic only model is ', best_AcOnly_model_name,' \n')
 
 Look at AIC to select best visual-only model:
 
-```{r Vis AIC}
+```{r Vis AIC, echo = FALSE}
 Vis_model_AIC <- NULL
 for (iMod in 1:length(gam_full_VisOnly_TF)){
   Vis_model_AIC[iMod] <- AIC(gam_full_VisOnly_TF[[iMod]])
@@ -663,7 +663,7 @@ for (iMod in 1:length(gam_full_VisOnly_TF)){
 }
 ```
 
-```{r Best visual model}
+```{r Best visual model, echo = FALSE}
 best_VisOnly_model_index <- which.min(Vis_model_AIC)
 best_VisOnly_model <- gam_full_VisOnly_TF[[best_VisOnly_model_index]]
 best_VisOnly_model_name <- names(gam_full_VisOnly_TF[best_VisOnly_model_index])
@@ -675,7 +675,7 @@ Note that all visual-only AIC models come out roughly equivalent, and eddy dista
 <br>
 
 Look at AIC to select best joint model:
-```{r joint AIC}
+```{r joint AIC, echo = FALSE}
 model_AIC <- NULL
 for (iMod in 1:length(gam_full_TF)){
   model_AIC[iMod] <- AIC(gam_full_TF[[iMod]])
@@ -685,7 +685,7 @@ for (iMod in 1:length(gam_full_TF)){
 <br>
 
 
-```{r joint model}
+```{r joint model, echo = FALSE}
 best_model_index <- which.min(model_AIC)
 best_model <- gam_full_TF[[best_model_index]]
 best_model_name <- names(gam_full_TF[best_model_index])
@@ -706,7 +706,7 @@ summary(best_AcOnly_model)
 
 Re-run the best acoustic-only model with only the significant terms
 
-```{r best AC model, message=FALSE, results = 'hide'}
+```{r best AC model, message=FALSE, results = 'hide', echo = FALSE, warning=FALSE}
 AcOnly_gam_pruned_TF_best <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                       + s(SSH,bs='ts', k=kVal)
                                       + s(log10_CHL,bs='ts', k=kVal)
@@ -716,7 +716,7 @@ AcOnly_gam_pruned_TF_best <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                       na.action = na.omit,family = binomial()) 
 ```
 
-```{r AC best model summary}
+```{r AC best model summary, echo = FALSE}
 summary(AcOnly_gam_pruned_TF_best)
 plot(AcOnly_gam_pruned_TF_best,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
 save(AcOnly_gam_pruned_TF_best,file = paste(outDir,SP,'_best_AcOnly_binomial_model.Rdata',sep=''))
@@ -724,7 +724,7 @@ save(AcOnly_gam_pruned_TF_best,file = paste(outDir,SP,'_best_AcOnly_binomial_mod
 ```
 <br>
 
-```{r AC best model residuals}
+```{r AC best model residuals, echo = FALSE}
 plot(residuals.gam(AcOnly_gam_pruned_TF_best))
 # gam.check(AcOnly_gam_pruned_TF_best)
 ```
@@ -739,7 +739,7 @@ summary(best_VisOnly_model)
 
 Re-run the best visual-only model with only the significant term(s).
 
-```{r best Vis model, message=FALSE, results = 'hide'}
+```{r best Vis model, message=FALSE, results = 'hide', echo = FALSE, warning=FALSE}
 VisOnly_gam_pruned_TF_best <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
                                + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
                                + s(Pos_EddyDist, bs='ts', k=kVal)
@@ -751,14 +751,14 @@ VisOnly_gam_pruned_TF_best <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
 ```
 <br>
 
-```{r Vis best model summary}
+```{r Vis best model summary,echo = FALSE}
 summary(VisOnly_gam_pruned_TF_best)
 plot(VisOnly_gam_pruned_TF_best,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
 save(VisOnly_gam_pruned_TF_best,file = paste(outDir,SP,'_best_VisOnly_binomial_model.Rdata',sep=''))
 
 ```
 
-```{r Vis best model residuals}
+```{r Vis best model residuals, echo = FALSE}
 plot(residuals.gam(VisOnly_gam_pruned_TF_best))
 # gam.check(VisOnly_gam_pruned_TF_best)
 ```
@@ -767,14 +767,14 @@ plot(residuals.gam(VisOnly_gam_pruned_TF_best))
 
 ## Best Joint Visual & Acoustic Model
 
-```{r unpruned model summary}
+```{r unpruned model summary, echo  = FALSE}
 summary(best_model)
 ```
 <br>
 
 Re-run the best joint model with only the significant terms
 
-```{r best model, echo = TRUE, message=FALSE, results = 'hide'}
+```{r best model, echo = FALSE, message=FALSE, results = 'hide', warning=FALSE}
 gam_pruned_TF_best <- gam(y_TF~ s(SST, bs='ts', k=kVal) 
                         + s(SSH, bs='ts', k=kVal)
                         + s(EddyDist, bs='ts', k=kVal)
@@ -787,7 +787,7 @@ gam_pruned_TF_best <- gam(y_TF~ s(SST, bs='ts', k=kVal)
 ```
 <br>
 
-```{r best model summary}
+```{r best model summary,echo = FALSE}
 summary(gam_pruned_TF_best)
 plot(gam_pruned_TF_best,pages=1,cex.lab = 1.3,cex.axis = 1.1,scale=0)
 save(gam_pruned_TF_best,file = paste(outDir,SP,'_best_joint_binomial_model.Rdata',sep=''))
@@ -795,7 +795,7 @@ save(gam_pruned_TF_best,file = paste(outDir,SP,'_best_joint_binomial_model.Rdata
 ```
 <br>
 
-```{r best model residuals}
+```{r best model residuals, echo = FALSE}
 plot(residuals.gam(gam_pruned_TF_best))
 # gam.check(gam_pruned_TF_best)
 ```
@@ -814,7 +814,7 @@ Predict on acoustic test data, and compare with actual observations for 2013. We
 CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which Risso's were detected. This results in a pretty coarse estimate.
 Alternatively we could compare to daily densities or something, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate...
 
-```{r Ac Temporal Predict}
+```{r Ac Temporal Predict, echo = FALSE}
 # Predict on acoustic test data, using acoustic only model for comparison...
 compAcSet_MC <- which((Test_AcOnly.set$fac2)==5)
 compAcSet_GC <- which((Test_AcOnly.set$fac2)==10)
@@ -862,7 +862,7 @@ pOccur$Legend <- "Observations"
 ```
 
 
-```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Ac <- ggplot() +
   geom_line(data = pOccur[occurIdx,],
@@ -901,7 +901,7 @@ multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
 ### Visual Only Model
 
 
-```{r Vis Temporal Predict}
+```{r Vis Temporal Predict, warning = FALSE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since
 # we're predicting on the acoustic timeseries.
 predVisOnly_MC <- predict.gam(VisOnly_gam_pruned_TF_best,
@@ -931,7 +931,7 @@ VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
-```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Vis <- ggplot() +
   geom_line(data = pOccur[occurIdx,],
@@ -971,7 +971,7 @@ multiplot(p1_Vis, p2_Vis, p3_Vis, cols=1)
 ### Joint Model
 
 
-```{r Combo Temporal Predict,fig.height = 10, fig.width = 7}
+```{r Combo Temporal Predict,fig.height = 10, fig.width = 7, warning = FALSE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since we're predicting on the acoustic timeseries.
 pred_MC <- predict.gam(gam_pruned_TF_best,
                               transformedCovars_AcOnly.test[compAcSet_MC,],
@@ -1000,7 +1000,7 @@ Both_predictionSet$DT[m3] <-pred_DT
 Both_predictionSet$Legend <- "Predictions"
 ```
 
-```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE}
+```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1 <- ggplot() +
   geom_line(data = pOccur[occurIdx,],
@@ -1045,7 +1045,7 @@ load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata')
 ### Acoustic Only 
 
 Evaluate the models for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
-```{r Ac Spatial Predict}
+```{r Ac Spatial Predict, warning = FALSE, echo = FALSE}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,
@@ -1060,7 +1060,7 @@ july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
 
 ### Visual Only
 
-```{r Vis Spatial Predict}
+```{r Vis Spatial Predict, warning = FALSE, echo = FALSE}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,VisOnly_gam_pruned_TF_best,
@@ -1074,7 +1074,7 @@ july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_gam_prun
 
 ### Joint Visual and Acoustic 
 
-```{r Combo Spatial Predict, message=FALSE}
+```{r Combo Spatial Predict, message=FALSE, warning = FALSE, echo = FALSE}
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
 jan2009_prediction <- raster::predict(jan2009_rasters,gam_pruned_TF_best,
@@ -1088,7 +1088,7 @@ july2009_prediction <- raster::predict(july2009_rasters,gam_pruned_TF_best,
 
 Wrangle projections for mapping:
 
-```{r wrangle projections, message = FALSE, warning = FALSE, results = 'hide'}
+```{r wrangle projections, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE}
 predict_template <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
 map_proj <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 predict_template_proj <- spTransform(predict_template, CRSobj = map_proj)
@@ -1126,7 +1126,7 @@ july2009_prediction_crop <- mask(july2009_prediction_proj,predict_template_proj)
 Alternatively, the visual and acoustic models could be averaged.
 <br>
 
-```{r Model Averaging}
+```{r Model Averaging, warning = FALSE, echo = FALSE}
 
 jan2009mean <- mean(jan2009_AcOnly_prediction_crop,jan2009_VisOnly_prediction_crop)
 july2009mean <- mean(july2009_AcOnly_prediction_crop,july2009_VisOnly_prediction_crop)
@@ -1137,12 +1137,12 @@ july2009mean <- mean(july2009_AcOnly_prediction_crop,july2009_VisOnly_prediction
 
 Display summer (July 2009) map:
 
-```{r leaflet summer, message = FALSE, warning = FALSE, width = 8, height = 5}
+```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
 
-map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(july2009_AcOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Acoustic July 2009') %>%
@@ -1171,12 +1171,12 @@ map
 
 Display winter (January 2009) map:
 
-```{r leaflet winter, message = FALSE, warning = FALSE, width = 8, height = 5}
+```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
 
-map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(jan2009_AcOnly_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Acoustic Jan. 2009') %>%
@@ -1204,7 +1204,7 @@ map
 
 Spatial model predictions using oceanographic variables averaged by month between 2003 and 2015.
 
-```{r build climatology raster-bricks, eval = FALSE, include = FALSE}
+```{r build climatology raster-bricks, eval = FALSE, include = FALSE, echo = FALSE}
 
 # folders
 eddy_ClimateDir <- 'E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected'
@@ -1257,7 +1257,7 @@ save(raster_set,monthStr, monthNum,
 ```
 
 
-```{r evaluate climatology-based models, eval = FALSE, message = FALSE, warning = FALSE}
+```{r evaluate climatology-based models, eval = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters.Rdata') 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1282,12 +1282,12 @@ for (iM in 1:length(monthStr)){
   
 ```
 
-```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE}
+```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE, echo = FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
 
-map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(mapClimatePrediction[[1]] , colors = pal,
                  opacity = 0.8, group = 'Jan.') %>%

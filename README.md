@@ -17,6 +17,8 @@ https://kfrasier.github.io/AcoustoVisualDE
 
 [Cuvier's beaked whale *GAMM*](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs.html)
 
+[Cuvier's beaked whale *GAM*](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_gam.html)
+
 [Cuvier's beaked whale *NN*](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html)
 
 
@@ -27,9 +29,10 @@ https://kfrasier.github.io/AcoustoVisualDE
 
 [Kogia spp. *GAMM*](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs.html)
 
-[Kogia spp. *GAM*](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_GAM.html)
+[Kogia spp. *GAM*](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_gam.html)
 
 [Kogia spp. *NN*](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN.html)
+
 
 [Pilot whale *GAMM*](https://kfrasier.github.io/AcoustoVisualDE/Gmsp_model_runs.html)
 

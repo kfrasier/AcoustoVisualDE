@@ -534,7 +534,7 @@ numCores <- detectCores() - 1
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
+```{r Ac. only Model, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
 
@@ -566,7 +566,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models, eval = TRUE, echo = FALSE} 
+```{r other models, eval = FALSE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -578,7 +578,7 @@ for (layerSize in layerSizeList){
   nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, 
                                        data = VisOnly_train_scaled, 
                                        size = layerSize, 
-                                       repeats = 20,
+                                       repeats = 50,
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
@@ -598,7 +598,7 @@ for (layerSize in layerSizeList){
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
                                       size = layerSize, 
-                                      repeats = 20, 
+                                      repeats = 50, 
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
@@ -622,7 +622,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -666,7 +666,7 @@ Note: There may be a challenge here because Stenella are so common at the acoust
 ```{r best model index, echo = FALSE}
 best_AcOnly_ModelIndex <-1
 best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-3
+best_Joint_ModelIndex <-1
 
 ```
 
