@@ -49,7 +49,7 @@ The visual data goes back to 1992, but as shown in the figure below, many predic
 
 Note: Future work could use monthly climatologies (averages) so that older sightings data could be used. Some dynamic drivers like eddy and front locations would not be able to be considered using that approach.
 
-```{r Missing data}
+```{r Missing data, echo = FALSE}
 covarList<-names(mergedSegments[c(2,5:length(mergedSegments))])
 
 percFilled <- plot.missingdata(mergedSegments,covarList,paste0(outDir,'AcousticAndVisual_',SP)) 
@@ -394,7 +394,7 @@ Binomial or negative binomial?
 Try it in a simple glm model.
 
 
-```{r Best family, eval = TRUE}
+```{r Best family, eval = FALSE}
 # Acoustic model
 AcOnly_negbin_simple <-glm(yAcOnly_TF~ 1,
                            data = transformedCovars_AcOnly.train,
@@ -1536,26 +1536,34 @@ for (iM in 1:length(monthStr)){
   
 ```
 
-```{r plot climatologies, message = FALSE, warning = FALSE}
+
+```{r plot climatologies, message = FALSE, warning = FALSE, echo=FALSE}
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,1), 
                     na.color = 'transparent')
 
-map <- leaflet() %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(mapClimatePrediction[[1]] , colors = pal,
                  opacity = 0.8, group = 'Jan.') %>%
-  addRasterImage(mapClimatePrediction[[4]] , colors = pal,
-                 opacity = 0.8, group = 'April') %>%
+  addRasterImage(mapClimatePrediction[[3]] , colors = pal,
+                 opacity = 0.8, group = 'March') %>%
+  addRasterImage(mapClimatePrediction[[5]] , colors = pal,
+                 opacity = 0.8, group = 'May') %>%
   addRasterImage(mapClimatePrediction[[7]] , colors = pal,
                  opacity = 0.8, group = 'July') %>%
-  addRasterImage(mapClimatePrediction[[10]] ,colors = pal,
-                 opacity = 0.8, group = 'Oct.') %>%
+  addRasterImage(mapClimatePrediction[[9]] ,colors = pal,
+                 opacity = 0.8, group = 'Sept.') %>%
+  addRasterImage(mapClimatePrediction[[11]] ,colors = pal,
+                 opacity = 0.8, group = 'Nov.') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat,
+                 group = 'HARP Locations') %>%
   addLegend(pal = pal, values = c(0,1),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('Jan.','April',
-                   'July','Oct.'),
+    baseGroups = c('Jan.','March','May',
+                   'July','Sept.','Nov.'),
+    overlayGroups = c('HARP Locations'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map

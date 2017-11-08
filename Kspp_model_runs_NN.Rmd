@@ -31,6 +31,8 @@ library(HabitatProject)
 library(nnet)
 library(caret)
 library(parallel)
+library(MLmetrics)
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
@@ -366,14 +368,13 @@ pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA',
 <br>
 
 ```{r model setup, echo = FALSE} 
-
 yAcOnly <- Train_AcOnly.set$Density
 yVisOnly <- Train_VisOnly.set$Density
 y <- mergedTrain.set$Density
 
-
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
   if (!is.na(transformedCovars.train$fac1[iFac])){
@@ -387,7 +388,20 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
 }
 
 
+for (iFac in 1:length(transformedCovars.test$fac1)) {
+  if (!is.na(transformedCovars.test$fac1[iFac])){
+    if (transformedCovars.test$fac1[iFac]>5) {
+       if (mergedTest.set$Density[iFac]==0){
+        # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
+        joint_test_weightsG0[iFac,1] <- visG0
+      }
+    }
+  }
+}
+
 VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
+VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
+
 for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   if (Train_VisOnly.set$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
@@ -395,7 +409,12 @@ for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   }
 }
 
-
+for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
+  if (Test_VisOnly.set$Density[iFac]==0){
+    # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
+    VisOnly.test_weightsG0[iFac,1] <- visG0
+  }
+}
 transformedCovars_AcOnly.train$yAcOnly_TF<-(Train_AcOnly.set$Density >0)*1
 transformedCovars_VisOnly.train$yVisOnly_TF<-(Train_VisOnly.set$Density >0)*1
 transformedCovars.train$y_TF<-(mergedTrain.set$Density>0)*1
@@ -425,6 +444,7 @@ goodData_Joint_test <- which(!is.na(rowSums(transformedCovars.test)))
 Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 
 ```
+
 
 ```{r Scale all the data, echo = FALSE}
 # NNs don't do well with unscaled data. Scale it and then unscale it at the end.
@@ -470,6 +490,10 @@ covars_VisOnly_min.test <- apply(VisOnly.test.NoNa, 2, min, na.rm = TRUE)
 VisOnly_test_scaled <- as.data.frame(scale(VisOnly.test.NoNa, 
                          center = covars_VisOnly_min.test, 
                          scale = covars_VisOnly_max.test-covars_VisOnly_min.test))
+VisOnly_test_scaled$weightsG0<-VisOnly.test_weightsG0[goodData_Vis_test]*
+      (Test_VisOnly.set$Weight[goodData_Vis_test]/
+      max(Test_VisOnly.set$Weight[goodData_Vis_test]))
+
 
 # Scale Joint test data for the NN
 covars_Joint_max.test <- apply(Joint.test.NoNa, 2, max, na.rm = TRUE) 
@@ -477,7 +501,9 @@ covars_Joint_min.test <- apply(Joint.test.NoNa, 2, min, na.rm = TRUE)
 Joint_test_scaled <- as.data.frame(scale(Joint.test.NoNa, 
                         center = covars_Joint_min.test, 
                         scale = covars_Joint_max.test-covars_Joint_min.test))
-
+Joint_test_scaled$weightsG0<-joint_test_weightsG0[goodData_Joint_test]*
+                                (mergedTest.set$Weight[goodData_Joint_test]/
+                                max(mergedTest.set$Weight[goodData_Joint_test]))
 n <- names(Joint_test_scaled)
 
 ```
@@ -507,7 +533,7 @@ Models have the following characteristics:
 model1.indices <- c(1:5,7,8,10)
 nMax1 <- length(model1.indices)
 
-layerSizeList <- seq(2,14,2)
+layerSizeList <- seq(2,12,2)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -589,13 +615,17 @@ for (layerSize in layerSizeList){
   
   # predict on train data and estimate MSE
   pr.nn_VisOnly_train[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],VisOnly_train_scaled[,model1.indices])
-  MSE.nn_VisOnly_train[[modelCounter]] <- sum((VisOnly_train_scaled$yVisOnly_TF - 
-                                                 round(pr.nn_VisOnly_train[[modelCounter]]))^2)/nrow(VisOnly_train_scaled[model1.indices])
+  MSE.nn_VisOnly_train[[modelCounter]] <- sum(VisOnly_train_scaled$weightsG0*
+                                                (VisOnly_train_scaled$yVisOnly_TF - 
+                                                round(pr.nn_VisOnly_train[[modelCounter]]))^2)/
+                                                nrow(VisOnly_train_scaled[model1.indices])
   
   # predict on test data and estimate MSE
   pr.nn_VisOnly_test[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],VisOnly_test_scaled[,model1.indices])
-  MSE.nn_VisOnly_test[[modelCounter]] <- sum((VisOnly_test_scaled$yVisOnly_TF - 
-                                                round(pr.nn_VisOnly_test[[modelCounter]]))^2)/nrow(VisOnly_test_scaled[model1.indices])
+  MSE.nn_VisOnly_test[[modelCounter]] <- sum(VisOnly_test_scaled$weightsG0*
+                                               (VisOnly_test_scaled$yVisOnly_TF - 
+                                                round(pr.nn_VisOnly_test[[modelCounter]]))^2)/
+                                                nrow(VisOnly_test_scaled[model1.indices])
   
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
@@ -608,12 +638,14 @@ for (layerSize in layerSizeList){
                                       weights = Joint_train_scaled$weightsG0, trace=FALSE, entropy=TRUE)
   
   pr.nn_Joint_train[[modelCounter]]  <- predict(nn_Joint[[modelCounter]] ,Joint_train_scaled[,model1.indices],na.action=na.omit)
-  MSE.nn_Joint_train[[modelCounter]]  <- sum((Joint_train_scaled$y_TF - 
-                                                round(pr.nn_Joint_train[[modelCounter]] ))^2)/nrow(Joint_train_scaled[model1.indices])
+  MSE.nn_Joint_train[[modelCounter]]  <- sum(Joint_train_scaled$weightsG0*(Joint_train_scaled$y_TF - 
+                                                round(pr.nn_Joint_train[[modelCounter]]))^2)/
+                                                nrow(Joint_train_scaled[model1.indices])
   
-  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]] ,Joint_test_scaled[,model1.indices],na.action=na.omit)
-  MSE.nn_Joint_test[[modelCounter]]  <- sum((Joint_test_scaled$y_TF - 
-                                               round(pr.nn_Joint_test[[modelCounter]] ))^2)/nrow(Joint_test_scaled[model1.indices])
+  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],Joint_test_scaled[,model1.indices],na.action=na.omit)
+  MSE.nn_Joint_test[[modelCounter]]  <- sum(Joint_test_scaled$weightsG0*(Joint_test_scaled$y_TF - 
+                                               round(pr.nn_Joint_test[[modelCounter]] ))^2)/
+                                               nrow(Joint_test_scaled[model1.indices])
   cat(paste("Done with VisOnly and Joint model iteration ",modelCounter, " of ", length(layerSizeList),": Layer Size = ", layerSize, "\n"))
 }
 ```
@@ -631,7 +663,7 @@ save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
      file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))
 save(nn_VisOnly,MSE.nn_VisOnly_train,MSE.nn_VisOnly_test,
-     MSE.nn_VisOnly_train,MSE.nn_VisOnly_test,
+     pr.nn_VisOnly_train,pr.nn_VisOnly_test,
      file = paste(outDir,SP,'_VisOnly_NN.Rdata',sep=''))
 save(nn_Joint,MSE.nn_Joint_train,MSE.nn_Joint_test,
      pr.nn_Joint_train,pr.nn_Joint_test,
@@ -651,6 +683,40 @@ load(paste(outDir,SP,'_Joint_NN.Rdata',sep=''))
 
 Compare models:
 ```{r}
+XEntropy.AcOnly_train <- NULL
+XEntropy.AcOnly_test <- NULL
+XEntropy.VisOnly_train <- NULL
+XEntropy.VisOnly_test <- NULL
+XEntropy.Joint_train <- NULL
+XEntropy.Joint_test <- NULL
+for (iM in 1: length(nn_AcOnly)){
+  XEntropy.AcOnly_train[[iM]] <- LogLoss(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
+  XEntropy.AcOnly_test[[iM]] <- LogLoss(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
+  XEntropy.VisOnly_train[[iM]] <- weighted_logloss(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF,
+                                         VisOnly_train_scaled$weightsG0)
+  XEntropy.VisOnly_test[[iM]] <- weighted_logloss(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF,
+                                         VisOnly_test_scaled$weightsG0)
+  XEntropy.Joint_train[[iM]] <- weighted_logloss(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF,
+                                         Joint_train_scaled$weightsG0)
+  XEntropy.Joint_test[[iM]] <- weighted_logloss(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF,
+                                         Joint_test_scaled$weightsG0)  
+}
+
+KSStat.AcOnly_train <- NULL
+KSStat.AcOnly_test <- NULL
+KSStat.VisOnly_train <- NULL
+KSStat.VisOnly_test <- NULL
+KSStat.Joint_train <- NULL
+KSStat.Joint_test <- NULL
+for (iM in 1: length(nn_AcOnly)){
+  KSStat.AcOnly_train[[iM]] <- KS_Stat(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
+  KSStat.AcOnly_test[[iM]] <- KS_Stat(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
+  KSStat.VisOnly_train[[iM]] <- KS_Stat(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF)
+  KSStat.VisOnly_test[[iM]] <- KS_Stat(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF)
+  KSStat.Joint_train[[iM]] <- KS_Stat(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF)
+  KSStat.Joint_test[[iM]] <- KS_Stat(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF)
+}
+
 
 MSEtable<- rbind(MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,MSE.nn_VisOnly_train,
                  MSE.nn_VisOnly_test,MSE.nn_Joint_train,MSE.nn_Joint_test)
@@ -659,15 +725,37 @@ rownames(MSEtable)<- c("Acoustic - Train","Acoustic - Test",
                        "Visual - Train","Visual - Test",
                        "Joint - Train","Joint - Test")
 
-
+print('mean squared error scores (lower is better)')
 print(MSEtable, digits = 2)
+
+
+XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
+                 XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
+
+colnames(XEntropyTable)<- layerSizeList
+rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
+                       "Visual - Train","Visual - Test",
+                       "Joint - Train","Joint - Test")
+print('cross entropy scores (lower is better)')
+print(XEntropyTable, digits = 2)
+
+
+KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
+                 KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
+
+colnames(KSStatTable)<- layerSizeList
+rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
+                       "Visual - Train","Visual - Test",
+                       "Joint - Train","Joint - Test")
+print('KS statistic (higher is better)')
+print(KSStatTable, digits = 2)
 ```
 
 
 ```{r best model index, echo = FALSE,}
 best_AcOnly_ModelIndex <-1
-best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-4
+best_VisOnly_ModelIndex <-4
+best_Joint_ModelIndex <-1
 
 ```
 
