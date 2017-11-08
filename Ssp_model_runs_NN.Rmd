@@ -536,7 +536,7 @@ numCores <- detectCores() - 1
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
+```{r Ac. only Model, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
 
@@ -568,7 +568,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models, eval = TRUE, echo = FALSE} 
+```{r other models, eval = FALSE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -730,7 +730,7 @@ print(KSStatTable, digits = 2)
 Note: There may be a challenge here because Stenella are so common at the acoustic sites that there isn't much of a relationsip to anything when you look at things in terms of presence/absence.
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-1
+best_AcOnly_ModelIndex <-3
 best_VisOnly_ModelIndex <-1
 best_Joint_ModelIndex <-1
 
