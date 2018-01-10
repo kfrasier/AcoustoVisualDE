@@ -1,4 +1,5 @@
-# setup_info_Zc
+# setup_info_Me
+
 # Species name
 SP <- "Me" 
 

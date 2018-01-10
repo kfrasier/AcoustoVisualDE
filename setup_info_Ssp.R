@@ -19,6 +19,7 @@ acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic 
 acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Ssp_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
+pOccurenceFile <- 'E:/NASData/ModelData/Zc/ALLSITES_weeklyPOccurrence_Ssp_jahStart.csv' # percent ofdays/week they were present 
 
 visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
 visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
@@ -29,7 +30,7 @@ SPC_vis <- c("Striped dolphin","Pantropical spotted dolphin","Spotted dolphin",
              "Spinner dolphin","Stenella sp.","Clymene dolphin","Atlantic spotted dolphin")
 
 # Platform Codes (visual only)
-PLC <- c("GU")  # ("OR")
+PLC <- c("GU")#"OR"
 
 # Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
 runDetFuns <- TRUE # can be true or false
@@ -48,4 +49,4 @@ AcTruncDist <- 1.3 # km (for click detections)
 
 save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
-     runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList)
+     runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

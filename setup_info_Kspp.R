@@ -1,4 +1,5 @@
 # setup_info_Kspp
+
 # Species name
 SP <- "Kspp" 
 
@@ -17,10 +18,9 @@ siteList= c("MC","GC","DT")#,"DC","MP")
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
 #acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_DC_MP_binsize011000_Group_density_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density2_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
-pOccurenceFile <- 'E:/NASData/ModelData/Kspp/ALLSITES_weeklyPOccurrence_Kspp_jahStart.csv' # percent ofdays/week they were present 
-
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
+pOccurenceFile <- 'E:/NASData/ModelData/Kspp/ALLSITES_weeklyPOccurrence_Kspp_jahStart.csv' # percent ofdays/week they were present 
 
 visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
 visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
