@@ -16,8 +16,8 @@ siteList= c("MC","GC","DT")#,"DC","MP")
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
 #acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_DC_MP_binsize011000_Group_density_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
-acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
-
+acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density2_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+pOccurenceFile <- 'E:/NASData/ModelData/Kspp/ALLSITES_weeklyPOccurrence_Kspp_jahStart.csv' # percent ofdays/week they were present 
 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
@@ -49,4 +49,4 @@ AcTruncDist <- .5 # km
 
 save(file = "setup_info_Kspp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
-     runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList)
+     runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

@@ -32,6 +32,8 @@ library(nnet)
 library(caret)
 library(parallel)
 library(MLmetrics)
+library(pracma)
+library(knitr)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 options(stringsAsFactors = FALSE)
@@ -364,8 +366,7 @@ cat(paste0('Mean visual data point weight: ',
 Models were fit using avNNet from the caret package in R. 
 
 ```{r load starting data, echo = FALSE} 
-weeklyOccurrenceFile = paste0(outDir,'ALLSITES_weeklyPOccurrence_Me_jahStart.csv')
-pOccur <- read.csv(weeklyOccurrenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
+pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 <br>
 
@@ -532,12 +533,16 @@ pr.nn_Joint_train <- NULL
 pr.nn_AcOnly_test <- NULL
 pr.nn_VisOnly_test<- NULL
 pr.nn_Joint_test <- NULL
+
+trainRepeats <- 50
+
 ```
 Iterate over a range of hidden layer sizes between 2 and 14 nodes.
 
 ```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
-numCores <- detectCores() - 1
+numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
+
 ```
 
 ```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
@@ -550,12 +555,12 @@ for (layerSize in layerSizeList){
   # train network
   nn_AcOnly[[AcCounter]] <- avNNet(f.AcOnly_NN1, data=AcOnly_train_scaled, 
                                  size = layerSize, 
-                                 repeats = 50,
+                                 repeats = trainRepeats,
                                  na.action = na.omit,
                                  rang = 0.7, 
                                  decay = 0.0001, 
                                  maxit = 1000, bag = TRUE,
-                                 trace=FALSE, entropy=TRUE)
+                                 trace = FALSE, entropy = TRUE)
   
   # predict on train data and estimate Mean Squared Error (MSE)
   pr.nn_AcOnly_train[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],AcOnly_train_scaled[,model1.indices])
@@ -573,6 +578,38 @@ for (layerSize in layerSizeList){
 
 
 ```{r other models 1, eval = FALSE, echo = FALSE} 
+# ## VISUAL ONLY
+# modelCounter <- 0
+# # put together the formula
+# f.VisOnly_NN1 <- as.formula(paste("yVisOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
+# f.Joint_NN1 <- as.formula(paste("y_TF ~", paste(n[model1.indices], collapse = " + ")))
+# 
+# 
+# nn_VisOnly <- train(f.VisOnly_NN1, data=VisOnly_train_scaled,method = 'avNNet',
+#       metric="RMSE",na.action = na.omit, maxit=1000,entropy = TRUE,
+#       trControl = fitControl,verboseItr = FALSE,
+#       weights = VisOnly_train_scaled$weightsG0,
+#       tuneGrid = nnetGrid)
+# 
+# # predict on train data 
+# pr.nn_VisOnly_train <- predict(nn_VisOnly,VisOnly_train_scaled[,model1.indices])
+# # predict on test data 
+# pr.nn_VisOnly_test <- predict(nn_VisOnly,VisOnly_test_scaled[,model1.indices])
+# 
+# 
+# ## JOINT
+# nn_Joint <- train(f.Joint_NN1, data=Joint_train_scaled,method = 'avNNet',
+#       metric="RMSE",na.action = na.omit, maxit=1000,
+#       trControl = fitControl,verboseItr = FALSE,
+#       weights = Joint_train_scaled$weightsG0,
+#       tuneGrid = nnetGrid)
+# 
+# # predict on train data 
+# pr.nn_Joint_train <- predict(nn_Joint,Joint_train_scaled[,model1.indices])
+# # predict on test data 
+# pr.nn_Joint_test <- predict(nn_Joint,Joint_test_scaled[,model1.indices])
+
+
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -584,13 +621,13 @@ for (layerSize in layerSizeList){
   nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, 
                                        data = VisOnly_train_scaled, 
                                        size = layerSize, 
-                                       repeats = 50,
+                                       repeats = trainRepeats,
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
-                                       maxit = 10000, 
-                                       weights = VisOnly_train_scaled$weightsG0,
-                                       bag = TRUE, trace=FALSE, entropy=TRUE)
+                                       maxit = 10000, bag = TRUE,
+                                       weights = VisOnly_train_scaled$weightsG0, 
+                                       trace=FALSE, entropy=TRUE)
   
   # predict on train data and estimate MSE
   pr.nn_VisOnly_train[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],VisOnly_train_scaled[,model1.indices])
@@ -606,6 +643,7 @@ for (layerSize in layerSizeList){
                                                 round(pr.nn_VisOnly_test[[modelCounter]]))^2)/
                                                 nrow(VisOnly_test_scaled[model1.indices])
   
+  
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
                                       size = layerSize, 
@@ -613,16 +651,16 @@ for (layerSize in layerSizeList){
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
-                                      maxit = 10000, 
-                                      weights = Joint_train_scaled$weightsG0,
-                                      bag = TRUE, trace=FALSE, entropy=TRUE)
+                                      maxit = 10000, bag = TRUE,
+                                      weights = Joint_train_scaled$weightsG0, 
+                                      trace=FALSE, entropy=TRUE)
   
   pr.nn_Joint_train[[modelCounter]]  <- predict(nn_Joint[[modelCounter]] ,Joint_train_scaled[,model1.indices],na.action=na.omit)
   MSE.nn_Joint_train[[modelCounter]]  <- sum(Joint_train_scaled$weightsG0*(Joint_train_scaled$y_TF - 
                                                 round(pr.nn_Joint_train[[modelCounter]]))^2)/
                                                 nrow(Joint_train_scaled[model1.indices])
   
-  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]] ,Joint_test_scaled[,model1.indices],na.action=na.omit)
+  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],Joint_test_scaled[,model1.indices],na.action=na.omit)
   MSE.nn_Joint_test[[modelCounter]]  <- sum(Joint_test_scaled$weightsG0*(Joint_test_scaled$y_TF - 
                                                round(pr.nn_Joint_test[[modelCounter]] ))^2)/
                                                nrow(Joint_test_scaled[model1.indices])
@@ -733,12 +771,54 @@ print(KSStatTable, digits = 2)
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-3
+best_AcOnly_ModelIndex <-1
 best_VisOnly_ModelIndex <-5
 best_Joint_ModelIndex <-1
 ```
 
 <br> 
+
+## Variable Importance
+
+Calculate mean importance of each input variable in the best models across the 50 iterations.
+
+```{r, Variable Importance, echo = FALSE}
+Ac_importance_avg <-varImp(nn_AcOnly[[best_AcOnly_ModelIndex]])
+Vis_importance_avg <-varImp(nn_VisOnly[[best_VisOnly_ModelIndex]])
+Joint_importance_avg <-varImp(nn_Joint[[best_Joint_ModelIndex]])
+
+AcOnly_node_mean<-NULL
+AcOnly_node_cv<-NULL
+VisOnly_node_mean<-NULL
+VisOnly_node_cv<-NULL
+Joint_node_mean<-NULL
+Joint_node_cv<-NULL
+
+for (iNode in 1:length(model1.indices)) {
+  thisSet <- (1:trainRepeats)+(trainRepeats*(iNode-1))
+  
+  AcOnly_node_mean[iNode] <- mean(Ac_importance_avg$Overall[thisSet])
+  AcOnly_node_cv[iNode] <- std(Ac_importance_avg$Overall[thisSet])/mean(Ac_importance_avg$Overall[thisSet])
+
+  VisOnly_node_mean[iNode] <- mean(Vis_importance_avg$Overall[thisSet])
+  VisOnly_node_cv[iNode] <- std(Vis_importance_avg$Overall[thisSet])/mean(Vis_importance_avg$Overall[thisSet])
+  
+  Joint_node_mean[iNode] <- mean(Joint_importance_avg$Overall[thisSet])
+  Joint_node_cv[iNode] <- std(Joint_importance_avg$Overall[thisSet])/mean(Joint_importance_avg$Overall[thisSet])
+}
+mean_var_importance<-NULL
+mean_var_importance$AcOnly <- AcOnly_node_mean
+mean_var_importance$VisOnly <- VisOnly_node_mean
+mean_var_importance$Joint <- Joint_node_mean
+mean_var_importance<-as.data.frame(mean_var_importance)
+row.names(mean_var_importance)<-n[model1.indices]
+
+kable(mean_var_importance,'markdown',digits = 1)
+
+```
+
+<br>
+
 
 # III. Predict on Test Data
 
@@ -753,12 +833,12 @@ Alternatively we could compare to daily densities or something, but then the y-a
 <br>
 
 ### Acoustic Only Prediction
-```{r Ac Temporal Predict, echo = FALSE, warning = FALSE}
+```{r Ac Temporal Predict, echo = FALSE, warning = TRUE}
 # Predict on acoustic test data, using acoustic only model for comparison...
-compAcSet_MC <- which((Test_AcOnly.set$fac2)==5)
-compAcSet_GC <- which((Test_AcOnly.set$fac2)==10)
-compAcSet_DT <- which((Test_AcOnly.set$fac2)==15 |
-                        (Test_AcOnly.set$fac2)==16)
+compAcSet_MC <- which((AcOnly.test.NoNa$fac2)==5)
+compAcSet_GC <- which((AcOnly.test.NoNa$fac2)==10)
+compAcSet_DT <- which((AcOnly.test.NoNa$fac2)==15 |
+                        (AcOnly.test.NoNa$fac2)==16)
 
 # Predict in time
 dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
@@ -796,7 +876,7 @@ pOccur$Legend <- "Observations"
 ```
 
 
-```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
+```{r,fig.height = 10, fig.width = 7, message = TRUE, warning = TRUE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Ac <- ggplot() +
   geom_line(data = pOccur[occurIdx,],
@@ -833,12 +913,13 @@ multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
 
 ### Visual Only Prediction
 
-```{r Vis Temporal Predict, warning = FALSE, echo = FALSE}
+```{r Vis Temporal Predict, warning = TRUE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since
 # we're predicting on the acoustic timeseries.
 predVisOnly_MC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_MC,model1.indices])
 predVisOnly_GC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_GC,model1.indices])
 predVisOnly_DT <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_DT,model1.indices])
+
 
 VisOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(VisOnly_predictionSet) <-"date"
@@ -858,7 +939,7 @@ VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
 
-```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
+```{r,fig.height = 10, fig.width = 7, message = TRUE, warning = TRUE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Vis <- ggplot() +
   geom_line(data = pOccur[occurIdx,],
@@ -969,10 +1050,10 @@ Note: Because there are so few sightings, it seems the visual data are not predi
 
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,nn_AcOnly[[best_AcOnly_ModelIndex]],
+jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,nn_AcOnly,
                                              na.action = na.pass)
             
-july2009_AcOnly_prediction <- raster::predict(july2009_rasters,nn_AcOnly[[best_AcOnly_ModelIndex]],na.action = na.pass)    
+july2009_AcOnly_prediction <- raster::predict(july2009_rasters,nn_AcOnly,na.action = na.pass)    
 ```
 
 
@@ -980,9 +1061,9 @@ july2009_AcOnly_prediction <- raster::predict(july2009_rasters,nn_AcOnly[[best_A
 ### Visual Only spatial prediction
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)
+jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,nn_VisOnly,na.action = na.pass)
             
-july2009_VisOnly_prediction <- raster::predict(july2009_rasters,nn_VisOnly[[best_VisOnly_ModelIndex]],
+july2009_VisOnly_prediction <- raster::predict(july2009_rasters,nn_VisOnly,
             na.action = na.pass)    
 ```
 
@@ -992,9 +1073,9 @@ july2009_VisOnly_prediction <- raster::predict(july2009_rasters,nn_VisOnly[[best
 
 dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_prediction <- raster::predict(jan2009_rasters,nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)
+jan2009_prediction <- raster::predict(jan2009_rasters,nn_Joint,na.action = na.pass)
             
-july2009_prediction <- raster::predict(july2009_rasters,nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)    
+july2009_prediction <- raster::predict(july2009_rasters,nn_Joint,na.action = na.pass)    
 ```
 
 
