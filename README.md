@@ -7,13 +7,13 @@ https://kfrasier.github.io/AcoustoVisualDE
 ### Species specific models:
 
 
-[Cuvier's beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html)
++[Cuvier's beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html)
 
 
-[Gervais' beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Me_model_runs_NN.html)
++[Gervais' beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Me_model_runs_NN.html)
 
 
-[Sperm whale](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN.html)
++[Sperm whale](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN.html)
 
 
 [*Kogia* spp.](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN.html)
