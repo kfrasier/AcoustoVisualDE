@@ -3,8 +3,8 @@ clearvars
 siteCodes = {'MC','GC','DT'};
 % get dataa and effort
 [effort,latLongs,errRates] = gofmx_dates3;
-dayTimeSeriesTable = readtable('H:\Kogia_TPWS\MC_GC_DT_binsize011000_Group_density2_Kogia.xls');
-spCode = 'Kspp';
+dayTimeSeriesTable = readtable('G:\GOM_Spermwhale\TPWS\MC_GC_DT_binsize011000_Group_density2_Pm.xls');
+spCode = 'Pm';
 outDir = sprintf('E:\\NASData\\ModelData\\%s',spCode);
 % startTime = 734274; %<- May 16th, 2010, a Sunday
 startTime = 734276; %<- May 18th, 2010, a Tuesday

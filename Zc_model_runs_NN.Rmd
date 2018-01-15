@@ -36,6 +36,7 @@ library(pracma)
 library(knitr)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
@@ -578,7 +579,7 @@ trainRepeats <- 50
 ```
 
 ```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
-numCores <- detectCores() - 1
+numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
@@ -709,25 +710,29 @@ Models were compared using a Kolmogorov-Smirnov test to compare predicted and ob
 
 
 ```{r Model comparison, echo = FALSE}
-# 
-# XEntropy.AcOnly_train <- NULL
-# XEntropy.AcOnly_test <- NULL
-# XEntropy.VisOnly_train <- NULL
-# XEntropy.VisOnly_test <- NULL
-# XEntropy.Joint_train <- NULL
-# XEntropy.Joint_test <- NULL
-# for (iM in 1: length(nn_AcOnly)){
-#   XEntropy.AcOnly_train[[iM]] <- LogLoss(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
-#   XEntropy.AcOnly_test[[iM]] <- LogLoss(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
-#   XEntropy.VisOnly_train[[iM]] <- weighted_logloss(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF,
-#                                          VisOnly_train_scaled$weightsG0)
-#   XEntropy.VisOnly_test[[iM]] <- weighted_logloss(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF,
-#                                          VisOnly_test_scaled$weightsG0)
-#   XEntropy.Joint_train[[iM]] <- weighted_logloss(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF,
-#                                          Joint_train_scaled$weightsG0)
-#   XEntropy.Joint_test[[iM]] <- weighted_logloss(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF,
-#                                          Joint_test_scaled$weightsG0)  
-# }
+
+XEntropy.AcOnly_train <- NULL
+XEntropy.AcOnly_test <- NULL
+XEntropy.VisOnly_train <- NULL
+XEntropy.VisOnly_test <- NULL
+XEntropy.Joint_train <- NULL
+XEntropy.Joint_test <- NULL
+for (iM in 1: length(nn_AcOnly)){
+  XEntropy.AcOnly_train[[iM]] <- LogLoss(round(pr.nn_AcOnly_train[[iM]],digits = 0),AcOnly_train_scaled$yAcOnly_TF)
+  XEntropy.AcOnly_test[[iM]] <- LogLoss(round(pr.nn_AcOnly_test[[iM]],digits = 0),AcOnly_test_scaled$yAcOnly_TF)
+  XEntropy.VisOnly_train[[iM]] <- weighted_logloss(round(pr.nn_VisOnly_train[[iM]],
+                                         digits = 0),VisOnly_train_scaled$yVisOnly_TF,
+                                         VisOnly_train_scaled$weightsG0)
+  XEntropy.VisOnly_test[[iM]] <- weighted_logloss(round(pr.nn_VisOnly_test[[iM]],digits = 0),
+                                         VisOnly_test_scaled$yVisOnly_TF,
+                                         VisOnly_test_scaled$weightsG0)
+  XEntropy.Joint_train[[iM]] <- weighted_logloss(round(pr.nn_Joint_train[[iM]], digits = 0),
+                                         Joint_train_scaled$y_TF,
+                                         Joint_train_scaled$weightsG0)
+  XEntropy.Joint_test[[iM]] <- weighted_logloss(round(pr.nn_Joint_test[[iM]], digits = 0),
+                                         Joint_test_scaled$y_TF,
+                                         Joint_test_scaled$weightsG0)
+}
 
 KSStat.AcOnly_train <- NULL
 KSStat.AcOnly_test <- NULL
@@ -736,12 +741,12 @@ KSStat.VisOnly_test <- NULL
 KSStat.Joint_train <- NULL
 KSStat.Joint_test <- NULL
 for (iM in 1: length(nn_AcOnly)){
-  KSStat.AcOnly_train[[iM]] <- KS_Stat(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
-  KSStat.AcOnly_test[[iM]] <- KS_Stat(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
-  KSStat.VisOnly_train[[iM]] <- KS_Stat(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF)
-  KSStat.VisOnly_test[[iM]] <- KS_Stat(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF)
-  KSStat.Joint_train[[iM]] <- KS_Stat(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF)
-  KSStat.Joint_test[[iM]] <- KS_Stat(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF)
+  KSStat.AcOnly_train[[iM]] <- KS_Stat(round(pr.nn_AcOnly_train[[iM]],digits = 0),AcOnly_train_scaled$yAcOnly_TF)
+  KSStat.AcOnly_test[[iM]] <- KS_Stat(round(pr.nn_AcOnly_test[[iM]],digits = 0),AcOnly_test_scaled$yAcOnly_TF)
+  KSStat.VisOnly_train[[iM]] <- KS_Stat(round(pr.nn_VisOnly_train[[iM]],digits = 0),VisOnly_train_scaled$yVisOnly_TF)
+  KSStat.VisOnly_test[[iM]] <- KS_Stat(round(pr.nn_VisOnly_test[[iM]],digits = 0),VisOnly_test_scaled$yVisOnly_TF)
+  KSStat.Joint_train[[iM]] <- KS_Stat(round(pr.nn_Joint_train[[iM]],digits = 0),Joint_train_scaled$y_TF)
+  KSStat.Joint_test[[iM]] <- KS_Stat(round(pr.nn_Joint_test[[iM]],digits = 0),Joint_test_scaled$y_TF)
 }
 
 
@@ -756,33 +761,33 @@ for (iM in 1: length(nn_AcOnly)){
 # print(MSEtable, digits = 2)
 # 
 # 
-# XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
-#                  XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
-# 
-# colnames(XEntropyTable)<- layerSizeList
-# rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
-#                        "Visual - Train","Visual - Test",
-#                        "Joint - Train","Joint - Test")
-# print('cross entropy scores (lower is better)')
-# print(XEntropyTable, digits = 2)
+XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
+                 XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
 
-
-KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
-                 KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
-
-colnames(KSStatTable)<- layerSizeList
-rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
+colnames(XEntropyTable)<- layerSizeList
+rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
                        "Visual - Train","Visual - Test",
                        "Joint - Train","Joint - Test")
-print('KS statistic (higher is better)')
-print(KSStatTable, digits = 2)
+print('cross entropy scores (lower is better)')
+print(round(XEntropyTable, digits = 2))
+
+
+# KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
+#                  KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
+# 
+# colnames(KSStatTable)<- layerSizeList
+# rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
+#                        "Visual - Train","Visual - Test",
+#                        "Joint - Train","Joint - Test")
+# print('KS statistic (higher is better)')
+# print(KSStatTable, digits = 2)
 ```
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-1
-best_VisOnly_ModelIndex <-3
-best_Joint_ModelIndex <-1
+best_AcOnly_ModelIndex <-4
+best_VisOnly_ModelIndex <-4
+best_Joint_ModelIndex <-5
 ```
 
 <br> 
@@ -824,6 +829,18 @@ row.names(mean_var_importance)<-n[model1.indices]
 
 kable(mean_var_importance,'markdown',digits = 1)
 ```
+
+```{r plot network, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE, fig.width = 14, fig.height = 8}
+
+n2 = c('SST','SSH','CHL','MLD','SAL','CURRENT','UPWELLING','EDDY')
+  png(paste(outDir,SP,'_exampleNetwork.png',sep=''), width = 1400, height = 800)
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=2)
+dev.off()
+```
+***Example network:***
+
+![](E:/NASData/ModelData/Zc/Zc_exampleNetwork.png)
+
 <br> 
 
 # 3. Predict on Test Data
@@ -1039,7 +1056,7 @@ p3 <- ggplot() +
   labs(y = "Encounter probability", x = "")+
   theme(legend.position="none")
 
-multiplot(p1, p2, p3, cols=1)
+multiplot(p1, p2, p3, cols = 1)
 
 ```
 <br>

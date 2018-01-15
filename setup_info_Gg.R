@@ -19,7 +19,7 @@ acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic 
 acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Gg_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
-pOccurenceFile <- 'E:/NASData/ModelData/Zc/ALLSITES_weeklyPOccurrence_Zc_jahStart.csv' # percent ofdays/week they were present 
+pOccurenceFile <- 'E:/NASData/ModelData/Gg/ALLSITES_weeklyPOccurrence_Gg_jahStart.csv' # percent ofdays/week they were present 
 
 visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
 visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
