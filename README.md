@@ -22,8 +22,9 @@ https://kfrasier.github.io/AcoustoVisualDE
 [Pilot whale](https://kfrasier.github.io/AcoustoVisualDE/Gmsp_model_runs_NN.html)
 
 
-[Risso's dolphin]
+[Risso's dolphin] 
 https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN.html)
+
 
 [Pelagic Stenellid dolphins (*Stenella spp.*)](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN.html)
 
