@@ -786,7 +786,7 @@ print(round(XEntropyTable, digits = 3))
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-3
+best_AcOnly_ModelIndex <-6
 best_VisOnly_ModelIndex <-1
 best_Joint_ModelIndex <-1
 ```

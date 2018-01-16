@@ -790,7 +790,7 @@ Note: There may be a challenge here because Stenella are so common at the acoust
 ```{r best model index, echo = FALSE}
 best_AcOnly_ModelIndex <-1
 best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-2
+best_Joint_ModelIndex <-1
 ```
 
 <br> 
