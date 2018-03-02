@@ -1,4 +1,4 @@
-# AcoustoVisualDE
+# Integrating Visual and Acoustic Data on Cetacean Abundance and Habitat in the Deep Water Gulf of Mexico
 
 This [page](https://kfrasier.github.io/AcoustoVisualDE) summarizes a joint effort by Scripps Institution of Oceanography and NOAA scientists to develop spatiotemporal predictions of marine mammal distributions using joint learning from visual survey and passive acoustic monitoring data.
 
