@@ -4,7 +4,7 @@ This page summarizes a joint effort by Scripps Institution of Oceanography and N
 
 This work was funded by the National Academy of Sciences.  
 A final report is available here:  
-https://kfrasier.github.io/AcoustoVisualDE/FinalReport.pdf
+https://kfrasier.github.io/AcoustoVisualDE/Final_Report.pdf
 
 Tools in R for combining visual and acoustic data into spatial models are available here:
 https://kfrasier.github.io/AcoustoVisualDE
