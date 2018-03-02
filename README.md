@@ -1,13 +1,12 @@
 # AcoustoVisualDE
 
-This page summarizes a joint effort by Scripps Institution of Oceanography and NOAA scientists to develop spatiotemporal predictions of marine mammal distributions using joint learning from visual survey and passive acoustic monitoring data.
+This [page] (https://kfrasier.github.io/AcoustoVisualDE) summarizes a joint effort by Scripps Institution of Oceanography and NOAA scientists to develop spatiotemporal predictions of marine mammal distributions using joint learning from visual survey and passive acoustic monitoring data.
 
 This work was funded by the National Academy of Sciences.  
-A final report is available here:  
-(https://kfrasier.github.io/AcoustoVisualDE/Final_Report.pdf)
 
-Tools in R for combining visual and acoustic data into spatial models are available here:
-(https://kfrasier.github.io/AcoustoVisualDE)
+A final report is available here:  
+[Final Report](https://kfrasier.github.io/AcoustoVisualDE/Final_Report.pdf)
+
 
 ### Species specific models:
 
