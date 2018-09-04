@@ -558,7 +558,7 @@ Models have the following characteristics:
 model1.indices <- c(1:5,7,8,10)
 nMax1 <- length(model1.indices)
 
-layerSizeList <- seq(1,13,2)
+layerSizeList <- seq(2,20,2)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -580,7 +580,7 @@ pr.nn_AcOnly_test <- NULL
 pr.nn_VisOnly_test<- NULL
 pr.nn_Joint_test <- NULL
 
-trainRepeats <- 50
+trainRepeats <- 20
 
 ```
 
@@ -589,7 +589,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -599,12 +599,14 @@ for (layerSize in layerSizeList){
   AcCounter <- AcCounter + 1  
   # put together the formula
   # train network
-  nn_AcOnly[[AcCounter]] <- avNNet(f.AcOnly_NN1, data=AcOnly_train_scaled, 
+  nn_AcOnly[[AcCounter]] <- avNNet(f.AcOnly_NN1, data = AcOnly_train_scaled, 
                                  size = layerSize, 
                                  repeats = trainRepeats,
+                                 bag = TRUE,
                                  na.action = na.omit,
                                  rang = 0.7, 
                                  decay = 0.0001, 
+                                 reltol =  1.0e-5,
                                  maxit = 1000,
                                  trace = FALSE)
   
@@ -623,7 +625,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -638,6 +640,7 @@ for (layerSize in layerSizeList){
                                        repeats = trainRepeats,
                                        na.action = na.omit,
                                        rang = 0.7,  
+                                       reltol =  1.0e-5,
                                        decay = 0.0001, 
                                        maxit = 10000,
                                        trace = FALSE)
@@ -665,6 +668,7 @@ for (layerSize in layerSizeList){
                                       repeats = trainRepeats, 
                                       na.action = na.omit,
                                       rang = 0.7,  
+                                      
                                       decay = 0.0001, 
                                       maxit = 10000,
                                       trace = FALSE)                                     
@@ -1537,7 +1541,7 @@ map
 
 
 **Summer 2009 prediction uncertainty:**
-```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
+```{r leaflet summer uncert, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColor <- ceiling(max(c(predCV_july2009_AcOnly_crop@data@max,
                 predCV_july2009_VisOnly_crop@data@max,
@@ -1642,7 +1646,7 @@ map
 ```
 
 **Winter 2009 prediction uncertainty:**
-```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
+```{r leaflet winter uncert, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColor <- ceiling(max(c(predCV_jan2009_AcOnly_crop@data@max,
                 predCV_jan2009_VisOnly_crop@data@max,

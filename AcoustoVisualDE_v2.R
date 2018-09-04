@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
+load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -364,7 +364,7 @@ visSeg_OnEffort$sp_count_g0adj <- visSeg_OnEffort$sp_count/visG0
 
 # Estimate surveyed area
 visSeg_OnEffort$EffectiveArea <- (2*tDist/1000)*(visSeg_OnEffort$SegmentLength/1000)
-visSeg_OnEffort$Density <- visSeg_OnEffort$sp_count_g0adj/visSeg_OnEffort$EffectiveArea
+visSeg_OnEffort$Density <- (visSeg_OnEffort$sp_count_g0adj*1000)/visSeg_OnEffort$EffectiveArea
 
 
 ############## Form Acoustic and Visual Covariate Dataframes #####################
@@ -383,7 +383,7 @@ uSiteYear <- unique((siteYear))
 #   thisSet <- which(as.logical(row.match(siteYear,uSiteYear[uR,])))
 #   thisSet_gt0 <- which(acDensityAll$meanDensity[thisSet]>0)
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
-AcOnlySegments$Density <- acDensityAll$meanDensity#[thisSet]/quant95
+AcOnlySegments$Density <- acDensityAll$meanDensity*1000/(pi*r_sp^2)#[thisSet]/quant95
 
 AcOnlySegments$date <- acDensityAll$xlsDate #date
 AcOnlySegments$Numeric_date <- (as.numeric(acDensityAll$xlsDate)-min(as.numeric(acDensityAll$xlsDate)))/100

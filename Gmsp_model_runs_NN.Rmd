@@ -559,7 +559,7 @@ Models have the following characteristics:
 model1.indices <- c(1:5,7,8,10)
 nMax1 <- length(model1.indices)
 
-layerSizeList <- seq(2,14,2)
+layerSizeList <- seq(1,15,2)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -590,7 +590,7 @@ numCores <- detectCores() - 1
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -624,7 +624,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -690,7 +690,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,

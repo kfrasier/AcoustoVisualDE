@@ -47,6 +47,8 @@ visG0 <- mean(c(.37,.94)) # for striped and spotted dolphins from palka 2006 tab
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 1.3 # km (for click detections)
 
+r_sp <-5
+
 save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,r_sp,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

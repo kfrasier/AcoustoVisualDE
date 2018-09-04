@@ -405,13 +405,13 @@ y <- mergedTrain.set$Density
 load("E:/NASData/ModelData/Ssp/SspsightwTrunc_GU.Rdata")
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
-transformedCovars_AcOnly.train$yAcOnly_TF<-(Train_AcOnly.set$Density >0)*1
-transformedCovars_VisOnly.train$yVisOnly_TF<-(Train_VisOnly.set$Density >0)*1
-transformedCovars.train$y_TF<-(mergedTrain.set$Density>0)*1
+transformedCovars_AcOnly.train$yAcOnly_TF<-(Train_AcOnly.set$Density)*1
+transformedCovars_VisOnly.train$yVisOnly_TF<-(Train_VisOnly.set$Density)*1
+transformedCovars.train$y_TF<-(mergedTrain.set$Density)*1
 
-transformedCovars_AcOnly.test$yAcOnly_TF<-(Test_AcOnly.set$Density >0)*1
-transformedCovars_VisOnly.test$yVisOnly_TF<-(Test_VisOnly.set$Density >0)*1
-transformedCovars.test$y_TF<- (mergedTest.set$Density>0)*1
+transformedCovars_AcOnly.test$yAcOnly_TF<-(Test_AcOnly.set$Density)*1
+transformedCovars_VisOnly.test$yVisOnly_TF<-(Test_VisOnly.set$Density)*1
+transformedCovars.test$y_TF<- (mergedTest.set$Density)*1
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
@@ -559,7 +559,7 @@ Models have the following characteristics:
 model1.indices <- c(1:5,7,8,10)
 nMax1 <- length(model1.indices)
 
-layerSizeList <- seq(1,13,2)
+layerSizeList <- seq(1,15,2)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -590,7 +590,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -606,7 +606,10 @@ for (layerSize in layerSizeList){
                                  na.action = na.omit,
                                  rang = 0.7, 
                                  decay = 0.0001, 
+                                 bag = TRUE,
                                  maxit = 1000,
+                                 reltol = 1.0e-5,
+                                 linout = TRUE,
                                  trace = FALSE)
   
   # predict on train data and estimate Mean Squared Error (MSE)
@@ -624,7 +627,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -690,7 +693,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
