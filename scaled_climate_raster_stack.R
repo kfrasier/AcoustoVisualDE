@@ -1,4 +1,8 @@
 scaled_climate_raster_stack <- function(covars_Joint_max.train,covars_Joint_min.train) {
+  
+predTemplate <-raster('E:/NASData/Eddy/RefRaster.tif')
+#map_proj <- crs(predTemplate)
+  
 # folders
 eddy_ClimateDir <- 'E:/NASData/Eddy/JPL_ManualEddyDist/Climatologies/Projected'
 SST_ClimateDir <- 'E:/NASData/SST_monthly_climatology_20030101to20151231/GLOB/JPL_OUROCEAN/G1SST/analysed_sst/Monthly_Climatology/Projected'
@@ -15,50 +19,63 @@ raster_set <- vector('list',length = 12)
 
 for (iM in 1:length(monthStr)){
   SST_climate <- scale(resample(raster(paste0(SST_ClimateDir,'/',
-                                              'proj_JPL_OUROCEAN-L4UHfnd-GLOB-v01-fv01_0-G1SST-analysed_sst-month',
-                                              monthNum[iM],'-mean.img')),predTemplate),
-                       center = covars_Joint_min.train[1],scale = 
-                         covars_Joint_max.train[1]-covars_Joint_min.train[1])
+                       'proj_JPL_OUROCEAN-L4UHfnd-GLOB-v01-fv01_0-G1SST-analysed_sst-month',
+                       monthNum[iM],'-mean.img')),predTemplate),
+                       center = covars_Joint_min.train['SST'],scale = 
+                       covars_Joint_max.train['SST']-covars_Joint_min.train['SST'])
   
   SSH_climate <- scale(resample(raster(paste0(SSH_ClimateDir,'/','proj_SSH_',
-                                              monthStr[iM],'_climatology.tif')),predTemplate),
-                       center = covars_Joint_min.train[2],scale = 
-                         covars_Joint_max.train[2]-covars_Joint_min.train[2])
+                       monthStr[iM],'_climatology.tif')),predTemplate),
+                       center = covars_Joint_min.train['SSH'],scale = 
+                       covars_Joint_max.train['SSH']-covars_Joint_min.train['SSH'])
   
   log10_CHL_climate <- scale(log10(resample(raster(paste0(CHL_ClimateDir,'/',
-                                                          'proj_aqua_CHL_chlor_a_month',
-                                                          monthNum[iM],'_mean.img')),predTemplate)),
-                             center = covars_Joint_min.train[3],scale = 
-                               covars_Joint_max.train[3]-covars_Joint_min.train[3])
+                       'proj_aqua_CHL_chlor_a_month',
+                       monthNum[iM],'_mean.img')),predTemplate)),
+                       center = covars_Joint_min.train['log10_CHL'],scale = 
+                       covars_Joint_max.train['log10_CHL']-covars_Joint_min.train['log10_CHL'])
   
   log10_HYCOM_MLD_climate <- scale(log10(resample(raster(paste0(HYCOM_MLD_ClimateDir,'/',
-                                                                'proj_mld_month',monthNum[iM],'_mean.img')),predTemplate)),
-                                   center = covars_Joint_min.train[4],scale = 
-                                     covars_Joint_max.train[4]-covars_Joint_min.train[4])  
+                             'proj_mld_month',monthNum[iM],'_mean.img')),predTemplate)),
+                             center = covars_Joint_min.train['log10_HYCOM_MLD'],scale = 
+                             covars_Joint_max.train['log10_HYCOM_MLD']-covars_Joint_min.train['log10_HYCOM_MLD'])  
   
   HYCOM_SALIN_climate <- scale(resample(raster(paste0(HYCOM_SALIN_ClimateDir,'/',
-                                                      'proj_salinity_0000m_month',monthNum[iM],'_mean.img')),predTemplate),
-                               center = covars_Joint_min.train[5],scale = 
-                                 covars_Joint_max.train[5]-covars_Joint_min.train[5])
+                         'proj_salinity_0000m_month',monthNum[iM],'_mean.img')),predTemplate),
+                         center = covars_Joint_min.train['HYCOM_SALIN_0'],scale = 
+                         covars_Joint_max.train['HYCOM_SALIN_0']-covars_Joint_min.train['HYCOM_SALIN_0'])
   
   log10_HYCOM_MAG_climate <- scale(log10(resample(raster(paste0(HYCOM_MAG_ClimateDir,'/',
-                                                                'proj_mag_0000m_month', monthNum[iM],'_mean.img')),predTemplate)),
-                                   center = covars_Joint_min.train[7],
-                                   scale = covars_Joint_max.train[7]-covars_Joint_min.train[7])
+                              'proj_mag_0000m_month', monthNum[iM],'_mean.img')),predTemplate)),
+                               center = covars_Joint_min.train['log10_HYCOM_MAG_0'],
+                               scale = covars_Joint_max.train['log10_HYCOM_MAG_0']-covars_Joint_min.train['log10_HYCOM_MAG_0'])
   
   HYCOM_UPVEL_climate <- scale(resample(raster(paste0(HYCOM_UPVEL_ClimateDir,'/',
-                                                      'proj_w_velocity_0050m_month', monthNum[iM],'_mean.img')),predTemplate),
-                               center = covars_Joint_min.train[8],
-                               scale = covars_Joint_max.train[8]-covars_Joint_min.train[8])
+                         'proj_w_velocity_0050m_month', monthNum[iM],'_mean.img')),predTemplate),
+                          center = covars_Joint_min.train['HYCOM_UPVEL_50'],
+                          scale = covars_Joint_max.train['HYCOM_UPVEL_50']-covars_Joint_min.train['HYCOM_UPVEL_50'])
   
   eddy_climate <- scale(resample(raster(paste0(eddy_ClimateDir,'/','proj_eddyDist_',
-                                               monthStr[iM],'_climatology.tif')),predTemplate),
-                        center = covars_Joint_min.train[10],scale = 
-                          covars_Joint_max.train[10]-covars_Joint_min.train[10])
+                  monthStr[iM],'_climatology.tif')),predTemplate),
+                  center = covars_Joint_min.train['EddyDist'],scale = 
+                  covars_Joint_max.train['EddyDist']-covars_Joint_min.train['EddyDist'])
   
-  raster_set[[iM]] <- brick(SST_climate,SSH_climate,log10_CHL_climate,eddy_climate,log10_HYCOM_MAG_climate,
+  pos_eddy_climate <- scale(resample(raster(paste0(eddy_ClimateDir,'/','proj_posEddyDist_',
+                      monthStr[iM],'_climatology.tif')),predTemplate),
+                      center = covars_Joint_min.train['Pos_EddyDist'],scale = 
+                      covars_Joint_max.train['Pos_EddyDist']-covars_Joint_min.train['Pos_EddyDist'])
+  
+  neg_eddy_climate <- scale(resample(raster(paste0(eddy_ClimateDir,'/','proj_negEddyDist_',
+                      monthStr[iM],'_climatology.tif')),predTemplate),
+                      center = covars_Joint_min.train['Neg_EddyDist'],scale = 
+                      covars_Joint_max.train['Neg_EddyDist']-covars_Joint_min.train['Neg_EddyDist'])
+  
+  raster_set[[iM]] <- brick(SST_climate,SSH_climate,log10_CHL_climate,eddy_climate,
+                            pos_eddy_climate,neg_eddy_climate,log10_HYCOM_MAG_climate,
                             HYCOM_UPVEL_climate,HYCOM_SALIN_climate,log10_HYCOM_MLD_climate) 
-  names(raster_set[[iM]])<-c('SST','SSH','log10_CHL','EddyDist','log10_HYCOM_MAG_0',
+  
+  names(raster_set[[iM]])<-c('SST','SSH','log10_CHL','EddyDist',
+                             'Pos_EddyDist','Neg_EddyDist','log10_HYCOM_MAG_0',
                              'HYCOM_UPVEL_50','HYCOM_SALIN_0','log10_HYCOM_MLD')  
   cat(paste0("done with month ", iM, "\n", collapse = ""))
   
