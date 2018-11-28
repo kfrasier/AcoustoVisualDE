@@ -2,6 +2,7 @@
 
 # Species name
 SP <- "Pm" 
+SPLong <- 'Sperm whale'
 
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))

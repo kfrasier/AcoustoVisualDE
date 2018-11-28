@@ -2,6 +2,7 @@
 
 # Species name
 SP <- "Kspp" 
+SPLong <- 'Kogia spp.'
 
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))

@@ -44,7 +44,7 @@ options(stringsAsFactors = FALSE)
 load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
 load('E:/NASData/ModelData/Zc/ZcMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
-
+SPLong <- "Cuvier''s beaked whale"
 ```
 <br>
 
@@ -217,9 +217,11 @@ Covariates have different distributions across the observations.
 **Distributions of covariates from acoustic observations:**
 
 ```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
-plot.cleveland(Train_Joint.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP))
-plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP))
-plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
+plotCols1 <-c(4:7,10,12,16,17,19,20)
+  
+plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
+plot.cleveland(Train_AcOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticOnly_',SP))
+plot.cleveland(Train_VisOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
 ![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_clevelandDots_noTransform.png)
@@ -324,7 +326,7 @@ dev.off()
 
 ```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
-plotCols = colnames(transformedCovars.train)[1:(length(covarList2)-2)]
+plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
                plotCols,TRUE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(transformedCovars_AcOnly.train,
@@ -376,14 +378,18 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ### 1.2.4 Estimate Relative Weights
 
+```{r load detection prob, echo = FALSE} 
+load("E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.Rdata")
+visDetProb <- detFun[[bestModelIdx]]$fitted[1]
+```
 To train the model, we need to know how much power the various data points have relative to one another. If an animal is sighted or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. For each data type, we estimated the probability of a missed detection to downweight zeros in the presence absence data.
 
-The visual data represent wether or not  Cuvier's beaked whales were seen during each transect segment. The probability of missing a sighting of risso's dolphin was estimated as 
-\[P_{V}(detect|present) = \mu_{det} * g0\ = 0.29 * 0.81 = 0.23\] 
+The visual data represent wether or not `r I(SPLong)` were seen during each transect segment. The probability of missing a sighting of `r I(SPLong)` was estimated as 
+\[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences X % of the time, therefore zeros are given a wieght of X on a scale of [0,1].
 
-The acoustic data represent presence or absence of Cuvier's beaked whale detections in one day bins. Given that a group of Cuvier's is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
+The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
 \[P_{A}(detect|present) = 1-(1-0.65)^{225}) \approx 1\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all observations are given weight = 1.
@@ -395,8 +401,6 @@ Therefore we assume that there are no false negative days in the passive acousti
 ![](E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.png)
 
 <br>
-
-<br> 
 
 # 2. Model Fitting
 
@@ -411,7 +415,6 @@ yAcOnly <- transformedCovars_AcOnly.train$Density
 yVisOnly <- transformedCovars_VisOnly.train$Density
 y <- transformedCovars.train$Density
 
-load("E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.Rdata")
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
 transformedCovars_AcOnly.train$yAcOnly_TF<-(transformedCovars_AcOnly.train$Density >0)*1
@@ -499,6 +502,7 @@ covars_Joint_min.train <- apply(Joint.train.NoNa, 2, min, na.rm = TRUE)
 Joint_train_scaled <- as.data.frame(scale(Joint.train.NoNa, 
                         center = covars_Joint_min.train, 
                         scale = covars_Joint_max.train-covars_Joint_min.train))
+Joint_train_scaled$weightsG0<-joint_train_weightsG0[goodData_Joint]
 
 # Scale Ac only training data for the NN
 covars_AcOnly_max.train <- apply(AcOnly.train.NoNa, 2, max, na.rm = TRUE) 
@@ -515,7 +519,6 @@ VisOnly_train_scaled <- as.data.frame(scale(VisOnly.train.NoNa,
                           scale = covars_Joint_max.train-covars_Joint_min.train))
 VisOnly_train_scaled$weightsG0<-VisOnly.train_weightsG0[goodData_Vis]
 
-Joint_train_scaled$weightsG0<-joint_train_weightsG0[goodData_Joint]
 
 # Scale Ac only test data for the NN
 covars_AcOnly_max.test <- apply(AcOnly.test.NoNa, 2, max, na.rm = TRUE) 
@@ -567,28 +570,33 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 
 ## 2.1 Run Models 
 
+```{r, echo = FALSE}
+# set up model params
+model1.indices <- c(2:6,9,10,13,14)
+nMax1 <- length(model1.indices)
+layerSizeList <- c(4,6,8,10,12,14)
+trainRepeats <- 25
+
+```
+
 Run NNs Acoustic only, Visual only, and joint Acoustic/Visual datasets.
 
 Models have the following characteristics: 
 
-* 50 averaged repeats with random node initalization
+* `R trainRepeats` averaged repeats with random node initalization
 
-* Include 8 covariates 
+* Include `r length(model1.indices)` covariates 
 
 * One hidden layer 
 
 * Weighted training data 
 
-* Hidden node layer sizes from 2 to 14 were tested in 2 node increments to search for optimal network size. 
+* Hidden node layer sizes from `r min(layerSizeList)` to `r max(layerSizeList)` were tested in 2 node increments to search for optimal network size. 
  
 <br>
 
 
 ```{r, echo = FALSE}
-model1.indices <- c(2:6,9,10,13,14)
-nMax1 <- length(model1.indices)
-paste(n[model1.indices])
-layerSizeList <- c(4,6,8,10,12,14)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -610,7 +618,6 @@ pr.nn_AcOnly_test <- NULL
 pr.nn_VisOnly_test<- NULL
 pr.nn_Joint_test <- NULL
 
-trainRepeats <- 25
 
 ```
 
@@ -946,21 +953,21 @@ AcOnly_predictionSet$predSd_MC <- NA
 MC_times <- Test_AcOnly.set$date[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
-AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))/trainRepeats
 
 AcOnly_predictionSet$GC <- NA
 AcOnly_predictionSet$predSd_GC <- NA
 GC_times <- Test_AcOnly.set$date[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
-AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))/trainRepeats
 
 AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
 DT_times <- Test_AcOnly.set$date[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
-AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))/trainRepeats
 
 
 AcOnly_predictionSet$Legend <- "Predictions"
@@ -982,7 +989,7 @@ p1_Ac <- ggplot() +
             aes(x= date, y=MC, color = Legend)) +
   geom_line(data = pOccur[occurIdx,],
              aes(x = as.POSIXct(dateStr), y = MC, color = Legend)) +
-  labs(y = "", x = "")+
+  labs(y = "Encounter probability", x = "")+
   scale_color_manual("",values= c("gray48","#009999"))+
   theme_bw()+theme(legend.position = c(0.9, 0.7))#+ylim(c(0,.6))
 
@@ -996,7 +1003,7 @@ p2_Ac <- ggplot() +
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=GC, color = Legend))+
   scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "", x = "")+theme_bw()+
+  labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3_Ac <- ggplot() +
@@ -1088,7 +1095,7 @@ p1_Vis <- ggplot() +
              aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  labs(y = "", x = "")+
+  labs(y = "Encounter probability", x = "")+
   scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
   theme(legend.position = c(0.9, 0.7))
 
@@ -1102,7 +1109,7 @@ p2_Vis <- ggplot() +
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "", x = "")+theme_bw()+
+  labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3_Vis <- ggplot() +
@@ -1193,7 +1200,7 @@ p1 <- ggplot() +
              aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = Joint_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  labs(y = "", x = "")+
+  labs(y = "Encounter probability", x = "")+
   scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
   theme(legend.position = c(0.9, 0.7))
 
@@ -1207,7 +1214,7 @@ p2 <- ggplot() +
   geom_line(data = Joint_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "", x = "")+theme_bw()+
+  labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3 <- ggplot() +

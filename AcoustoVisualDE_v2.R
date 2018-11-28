@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('E:/NASData/ModelData/Pm/setup_info_Pm.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -383,7 +383,7 @@ uSiteYear <- unique((siteYear))
 #   thisSet <- which(as.logical(row.match(siteYear,uSiteYear[uR,])))
 #   thisSet_gt0 <- which(acDensityAll$meanDensity[thisSet]>0)
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
-AcOnlySegments$Density <- acDensityAll$meanDensity*1000/(pi*r_sp^2)#[thisSet]/quant95
+AcOnlySegments$Density <- acDensityAll$meanDensity/(pi*r_sp^2)#[thisSet]/quant95
 
 AcOnlySegments$date <- acDensityAll$xlsDate #date
 AcOnlySegments$Numeric_date <- (as.numeric(acDensityAll$xlsDate)-min(as.numeric(acDensityAll$xlsDate)))/100
@@ -443,7 +443,7 @@ VisOnlySegments$lat <- visSeg_OnEffort$Lat
 VisOnlySegments$long <- visSeg_OnEffort$Long
 VisOnlySegments$Category<- rep(1,length(visSeg_OnEffort$Long))
 # mergedSegments$ESW <- c(acDensityAll$BW_ESW)
-VisOnlySegments$Density <- visSeg_OnEffort$Density#/
+VisOnlySegments$Density <- visSeg_OnEffort$Density/1000#/
   #quantile(visSeg_OnEffort$Density[which(visSeg_OnEffort$Density>0)],probs = .95,na.rm = TRUE)
 VisOnlySegments$SST <- visSeg_OnEffort$SST_daily_CMC_L4_GLOB
 VisOnlySegments$SSH <- visSeg_OnEffort$SSH_daily_aviso_double
