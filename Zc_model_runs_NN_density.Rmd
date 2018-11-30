@@ -1,5 +1,5 @@
 ---
-title: 'Cuvier''s beaked whale habitat models'
+title: 'Cuvier''s beaked whale habitat models:Density'
 output: 
   html_document:
     toc: true
@@ -32,22 +32,30 @@ library(nnet)
 library(caret)
 library(parallel)
 library(MLmetrics)
+library(pracma)
+library(knitr)
+library(matrixStats)
+library(zoo)
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
 load('E:/NASData/ModelData/Zc/ZcMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
-
+SPLong <-"Cuvier''s beaked whale"
 ```
 <br>
 
-# I. Exploratory analysis
+# 1. Exploratory analysis
 
-## Data Inputs
+<br>
 
-The visual data goes back to 1992, but as shown in the figure below, many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses. 
+## 1.1 Data Inputs
+
+NOAA SEFSC visual data goes back to 1992, but as shown in the figure below, many predictor variables are only available starting in 2003, therefore earlier visual data is currently excluded from further analyses. 
 
 Note: Future work could use monthly climatologies (averages) so that older sightings data could be used. Some dynamic drivers like eddy and front locations would not be able to be considered using that approach.
 
@@ -59,12 +67,14 @@ percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticO
 percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
 
-Visual data predictor variable availability: 
+**Visual data predictor variable availability:** 
+
 ![](E:/NASData/ModelData/Zc/VisualOnly_Zc_missingData.png)
+
 <br> 
 
 
-### Testing and Training Sets
+### 1.1.1 Testing and Training Sets
 
 The data are split into training and testing sets. In this case, data from 2009 and 2013 are used for testing. Only observations post-2003 are used for modeling due to covariate limitations.
 
@@ -73,31 +83,42 @@ The data are split into training and testing sets. In this case, data from 2009 
 yearListIdx = as.numeric(format(mergedSegments$date,"%Y"))
 yearListIdx_AcOnly = as.numeric(format(AcOnlySegments$date,"%Y"))
 yearListIdx_VisOnly = as.numeric(format(VisOnlySegments$date,"%Y"))
+isVisual <- mergedSegments$Category
+keepDates.train <- which(yearListIdx != 2009 & 
+                           yearListIdx >= 2003 & 
+                           yearListIdx != 2013)
 
-keepDates.train <- which(yearListIdx != 2009 & yearListIdx >= 2003 & yearListIdx <= 2012)
-keepDates.test <- which(yearListIdx == 2009 | yearListIdx == 2013)
-keepDates_AcOnly.train <- which(yearListIdx_AcOnly != 2009 & yearListIdx_AcOnly >= 2003 & yearListIdx_AcOnly <= 2012)
-keepDates_AcOnly.test <- which(yearListIdx_AcOnly == 2009 | yearListIdx_AcOnly == 2013)
-keepDatesVisOnly.train <- which(yearListIdx_VisOnly != 2009 & yearListIdx_VisOnly >= 2003)
-keepDatesVisOnly.test <- which(yearListIdx_VisOnly == 2009)
+keepDates.test <- which(yearListIdx == 2009 | 
+                          yearListIdx == 2013)
 
-mergedTrain.set<- mergedSegments[keepDates.train,]
+keepDates_AcOnly.train <- which(yearListIdx_AcOnly != 2009 & 
+                  yearListIdx_AcOnly >= 2003 & yearListIdx_AcOnly <= 2012)
+
+keepDates_AcOnly.test <- which(yearListIdx_AcOnly == 2009 |
+                                 yearListIdx_AcOnly == 2013)
+keepDatesVisOnly.train <- which(yearListIdx_VisOnly != 2009 & 
+                                  yearListIdx_VisOnly >= 2003)
+keepDatesVisOnly.test <- which(yearListIdx_VisOnly == 2009 |
+                                 yearListIdx_VisOnly == 2013)
+
+Train_Joint.set<- mergedSegments[keepDates.train,]
 Train_AcOnly.set <- AcOnlySegments[keepDates_AcOnly.train,]
 Train_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.train,]
 
-mergedTest.set<- mergedSegments[keepDates.test,]
+Test_Joint.set<- mergedSegments[keepDates.test,]
 Test_AcOnly.set<- AcOnlySegments[keepDates_AcOnly.test,]
 Test_VisOnly.set<- VisOnlySegments[keepDatesVisOnly.test,]
 ```
 
 
+<br>
 
-### Preliminary Mapping
+### 1.1.2 Preliminary Mapping
 
 The visual data selected for modeling are displayed on the map below. Data from 2009 were held back for testing. Blue markers indicate HARP locations.
 
 ```{r map inputs, warning = FALSE, echo = FALSE}
-#Get test visual sightings
+# Get test visual sightings
 sightingsTrain <- Train_VisOnly.set[Train_VisOnly.set$Density>0,c('lat','long','date')]
 
 sightingsTest <- Test_VisOnly.set[Test_VisOnly.set$Density>0,c('lat','long','date')]
@@ -120,7 +141,9 @@ map1
 
 The time series below show the acoustic data used for modeling. Data from 2011 and 2012 used for training, and 2013 data is held back for testing. These density magnitudes are very preliminary,and models only used presence absence data.
 
+<br> 
 
+**Acoustic Timeseries:**
 ```{r plot timeseries, message = FALSE, echo = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
 ```
@@ -133,42 +156,72 @@ plot.timeseries(siteList,outDir,AcOnlySegments)
 
 <br> 
 
-## Examine Covariates
+## 1.2 Examine Covariates
 
+### Identify Outliers
+
+Replace extreme outliers (bad data) with NaNs.
 ```{r remove outliers, message = FALSE, results = 'hide', echo = FALSE}
 # Replace extreme outliers (bad data) with NaNs.
-outlierList <-which(mergedSegments$CHL< -10)
-mergedSegments$CHL[outlierList] <- NaN 
-outlierList <-which(mergedSegments$FrontDist_Cayula>800000)
-mergedSegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(mergedSegments$Density>10000)
-mergedSegments$Density[outlierList] <- NaN 
+outlierList <-which(Train_Joint.set$CHL< -10)
+Train_Joint.set$CHL[outlierList] <- NaN 
+outlierList <-which(Train_Joint.set$FrontDist_Cayula>800000)
+Train_Joint.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Train_Joint.set$Density>10000)
+Train_Joint.set$Density[outlierList] <- NaN 
 
-outlierList <-which(AcOnlySegments$CHL< -10)
-AcOnlySegments$CHL[outlierList] <- NaN 
-outlierList <-which(AcOnlySegments$FrontDist_Cayula>800000)
-AcOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(AcOnlySegments$Density>10000)
-AcOnlySegments$Density[outlierList] <- NaN 
+outlierList <-which(Test_Joint.set$CHL< -10)
+Test_Joint.set$CHL[outlierList] <- NaN 
+outlierList <-which(Test_Joint.set$FrontDist_Cayula > 800000)
+Test_Joint.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Test_Joint.set$Density>10000)
+Test_Joint.set$Density[outlierList] <- NaN 
 
-outlierList <-which(VisOnlySegments$CHL<  -10)
-VisOnlySegments$CHL[outlierList] <- NaN 
-outlierList <-which(VisOnlySegments$FrontDist_Cayula>800000)
-VisOnlySegments$FrontDist_Cayula[outlierList] <- NaN 
-outlierList <-which(VisOnlySegments$Density>10000)
-VisOnlySegments$Density[outlierList] <- NaN 
+
+outlierList <-which(Train_AcOnly.set$CHL< -10)
+Train_AcOnly.set$CHL[outlierList] <- NaN 
+outlierList <-which(Train_AcOnly.set$FrontDist_Cayula > 800000)
+Train_AcOnly.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Train_AcOnly.set$Density > 10000)
+Train_AcOnly.set$Density[outlierList] <- NaN 
+
+outlierList <-which(Test_AcOnly.set$CHL< -10)
+Test_AcOnly.set$CHL[outlierList] <- NaN 
+outlierList <-which(Test_AcOnly.set$FrontDist_Cayula>800000)
+Test_AcOnly.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Test_AcOnly.set$Density>10000)
+Test_AcOnly.set$Density[outlierList] <- NaN 
+
+outlierList <-which(Train_VisOnly.set$CHL< -10)
+Train_VisOnly.set$CHL[outlierList] <- NaN 
+outlierList <-which(Train_VisOnly.set$FrontDist_Cayula>800000)
+Train_VisOnly.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Train_VisOnly.set$Density>10000)
+Train_VisOnly.set$Density[outlierList] <- NaN 
+
+outlierList <-which(Test_VisOnly.set$CHL<  -10)
+Test_VisOnly.set$CHL[outlierList] <- NaN 
+outlierList <-which(Test_VisOnly.set$FrontDist_Cayula>800000)
+Test_VisOnly.set$FrontDist_Cayula[outlierList] <- NaN 
+outlierList <-which(Test_VisOnly.set$Density>10000)
+Test_VisOnly.set$Density[outlierList] <- NaN 
 ```
 
+<br>
 
-### Check Covariate Distributions
+### 1.2.1 Check Covariate Distributions
 
 Covariates have different distributions across the observations. 
-Here are the distributions of covariates from the acoustic observations:
+<br> 
 
-```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
-plot.cleveland(mergedTrain.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP))
-plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP))
-plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP))
+**Distributions of covariates from acoustic observations:**
+
+```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+plotCols1 <-c(3,4:7,10,12,16,17,19,20)
+  
+plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
+plot.cleveland(Train_AcOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticOnly_',SP))
+plot.cleveland(Train_VisOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'VisualOnly_',SP))
 ```
 
 ![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_clevelandDots_noTransform.png)
@@ -176,8 +229,8 @@ plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP)
 
 <br>
 
+**Distributions of covariates from the visual observations:**
 
-Here are the distributions of covariates from the visual observations:
 ![](E:/NASData/ModelData/Zc/VisualOnly_Zc_clevelandDots_noTransform.png)
 
 <br>
@@ -188,16 +241,16 @@ Some of these covariates are more or less interrelated. HYCOM estimates of salin
 Remaining correlations are examined in the figure below. Numbers closer to 1 above the diagonal in the figure below represent correlation coefficients. Highly correlated covariates should not be used together in the same model. Day of year was excluded to avoid artifacts associated with the temporal differences of the datasets (Acoustic data are year-round, and visual data are collected in spring/summer).
 
 ```{r correlation plots, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE}
-covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
-                "HYCOM_SALIN_0","HYCOM_DIR_0",
-                "HYCOM_MAG_0",
+covarList2 <- c("Density","SST","SSH","CHL","HYCOM_MLD",
+                "HYCOM_SALIN_0","HYCOM_SALIN_100",
+                "HYCOM_DIR_0","HYCOM_MAG_0",
                 "HYCOM_UPVEL_50","FrontDist_Cayula",
                 "EddyDist","Neg_EddyDist","Pos_EddyDist",
                 "DayOfYear","fac1","fac2")
 
 # restrict covariates again to limited set
-mergedTrain.set2<- mergedTrain.set[,covarList2]
-mergedTest.set2<- mergedTest.set[,covarList2]
+Train_Joint.set2<- Train_Joint.set[,covarList2]
+Test_Joint.set2<- Test_Joint.set[,covarList2]
 Train_AcOnly.set2<- Train_AcOnly.set[,covarList2]
 Test_AcOnly.set2<- Test_AcOnly.set[,covarList2]
 Train_VisOnly.set2<- Train_VisOnly.set[,covarList2]
@@ -205,7 +258,7 @@ Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
 
 # without transform
 png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(mergedTrain.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_Joint.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
 pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
@@ -215,33 +268,37 @@ pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, meth
 dev.off()
 
 ```
+<br> 
+
+**Covariate Correlations:**
+
 ![](E:/NASData/ModelData/Zc/Zc_correlations_noTransform.png)
 
 <br>
 
-### Transform Predictor Variables
+### 1.2.2 Transform Predictor Variables
 
-Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and were be log-transformed.
+Some variables, including chlorophyll, current magnitude, mixed layer depth and distance to fronts are highly skewed and were log-transformed.
 
-```{r transform covars, message = FALSE, results = 'hide', echo = FALSE}
-# covarList2 <- c("SST","SSH","CHL","HYCOM_MLD",
-#                 "HYCOM_SALIN_0","HYCOM_DIR_0",
-#                 "HYCOM_MAG_0",
+```{r transform covars, message = FALSE, results = 'hide', echo = FALSE, warning = FALSE}
+# covarList2 <- c("Density","SST","SSH","CHL","HYCOM_MLD",
+#                 "HYCOM_SALIN_0","HYCOM_SALIN_100",
+#                 "HYCOM_DIR_0","HYCOM_MAG_0",
 #                 "HYCOM_UPVEL_50","FrontDist_Cayula",
 #                 "EddyDist","Neg_EddyDist", "PosEddyDist",
 #                 "DayOfYear","fac1","fac2")
 
-transformList <- c("none","none","log10","log10",
+transformList <- c("none","none","none","log10","log10",
                    "none","none",
-                   "log10",
+                   "none","log10",
                    "none","log10",
                    "none","none","none",
                    "none","none","none")
 
 transformedCovars.train <-
-  transform.covars(mergedTrain.set2,covarList2,transformList)
+  transform.covars(Train_Joint.set2,covarList2,transformList)
 transformedCovars.test <- 
-  transform.covars(mergedTest.set2,covarList2,transformList)
+  transform.covars(Test_Joint.set2,covarList2,transformList)
 
 transformedCovars_AcOnly.train <-
   transform.covars(Train_AcOnly.set2,covarList2,transformList)
@@ -264,11 +321,12 @@ pairs.panels(transformedCovars_VisOnly.train[,1:(length(covarList2)-2)], ellipse
 dev.off() 
 
 ```
+<br>
 
 
-```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
-plotCols = colnames(transformedCovars.train)[1:(length(covarList2)-2)]
+plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
                plotCols,TRUE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(transformedCovars_AcOnly.train,
@@ -279,141 +337,144 @@ plot.cleveland(transformedCovars_VisOnly.train,
 ```
 <br>
 
-Below, the two sets of covariates have been combined and transformed. 
+Below, the two sets of covariates have been combined and transformed: 
+
 ![](E:/NASData/ModelData/Zc/AcousticAndVisual_Zc_clevelandDots_withTransform.png)
 
 <br>
 
-### Check Predictors
+### 1.2.3 Check Predictors
 
 To get an idea of the basic predictive power of these covariates, we can look at presence/absence relative to each variable. This also provides an opportunity to look at the range of values observed for each covariate in the visual and acoustic datasets. In the plots below dotted lines indicate the distribution of each covariate when animals were present, and solid lines indicate the distribution when animals were absent. Note that these plots do not account for effort.
 
 ```{r presence absence histograms, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
-plot.covarDensity(transformedCovars.train[,1:(length(transformedCovars.train)-2)],
-                  colnames(transformedCovars.train[,1:(length(transformedCovars.train)-2)]),
-                  mergedTrain.set$Density,paste0(outDir,'Both_',SP))
+plot.covarDensity(transformedCovars.train[,2:(length(transformedCovars.train)-2)],
+                  colnames(transformedCovars.train[,2:(length(transformedCovars.train)-2)]),
+                  transformedCovars.train$Density,paste0(outDir,'Both_',SP))
 
-plot.covarDensity(transformedCovars_AcOnly.train[,1:(length(transformedCovars_AcOnly.train)-2)],
-                   colnames(transformedCovars_AcOnly.train[1:(length(transformedCovars_AcOnly.train)-2)]),
-                  Train_AcOnly.set$Density,paste0(outDir,'AcousticOnly_',SP))		
+plot.covarDensity(transformedCovars_AcOnly.train[,2:(length(transformedCovars_AcOnly.train)-2)],
+                   colnames(transformedCovars_AcOnly.train[2:(length(transformedCovars_AcOnly.train)-2)]),
+                  transformedCovars_AcOnly.train$Density,paste0(outDir,'AcousticOnly_',SP))		
 
-plot.covarDensity(transformedCovars_VisOnly.train[,1:(length(transformedCovars_VisOnly.train)-2)],
-                  colnames(transformedCovars_VisOnly.train[,1:(length(transformedCovars_VisOnly.train)-2)]),
-                  Train_VisOnly.set$Density,paste0(outDir,'VisualOnly_',SP))
+plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_VisOnly.train)-2)],
+                  colnames(transformedCovars_VisOnly.train[,2:(length(transformedCovars_VisOnly.train)-2)]),
+                  transformedCovars_VisOnly.train$Density,paste0(outDir,'VisualOnly_',SP))
 ```
 
 <br> 
-Acoustic kernel densities:
+**Acoustic kernel densities:**
 
 ![](E:/NASData/ModelData/Zc/AcousticOnly_Zc_density_pres_abs.png)
 
 <br>  
-Visual kernel densities:
+**Visual kernel densities:**
 
 ![](E:/NASData/ModelData/Zc/VisualOnly_Zc_density_pres_abs.png)
 
-<br> 
+<br>   
 
+### 1.2.4 Estimate Relative Weights
 
-### Estimate Relative Weights
+```{r load detection prob, echo = FALSE} 
+load("E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.Rdata")
+visDetProb <- detFun[[bestModelIdx]]$fitted[1]
+```
+To train the model, we need to know how much power the various data points have relative to one another. If an animal is sighted or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. For each data type, we estimated the probability of a missed detection to downweight zeros in the presence absence data.
 
+The visual data represent wether or not `r I(SPLong)` were seen during each transect segment. The probability of missing a sighting of `r I(SPLong)` was estimated as 
+\[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
-<br>
+where \mu_{det} is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences X % of the time, therefore zeros are given a wieght of X on a scale of [0,1].
 
-Currently, weights are based on the following logic: 
+The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
+\[P_{A}(detect|present) = 1-(1-0.65)^{225}) \approx 1\]
 
-* Acoustic data represent presence in 1 day bins, 
-
-* Acoustic data have a trucation distance  of 1.3 km for Cuvier's beaked whale (95% of group detections occur within this range), for a total monitoring area of $(1.3 km)^{2} \pi$, 
-
-* Visual data represent presence during ~10 km transect segments traveling at ~10 knots or ~18.5 km/hr. Therefore each visual datapoint represents ~0.54 hours of effort. 
-
-* Visual trucation distance for Cuvier's beaked whale is estimated as 5.4 km (see figure below) from these data. ESW is multiplied by transect segment length (usually ~10 km) and doubled to estimate total area swept.
-
-
-<br>  
-
-\[\text{Acoustic to Visual ratio} = \frac{24 hrs \cdot (1.3 km)^{2} \pi}{(\text{Segment length}/18.52 km/hr) \cdot 5.4 km \cdot \text{Segment length} \cdot 2} = 127.42/58.32 \approx 2.18:1
-\]
+Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all observations are given weight = 1.
 
 <br> 
 
-Best visual detection probability model:
+**Best visual detection probability model:**
 
 ![](E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.png)
 
-<br> 
+<br>
 
-Zeros in visual dataset are down-weighted by g0 for this species, as estimated by Palka 2007.
-
-
-```{r Calculate weights, echo = FALSE, eval = TRUE}
-
-cat(paste0('Mean visual data point weight: ', 
-           round(mean(Train_VisOnly.set$Weight)), 
-           '\nAcoustic data point weight: ',
-           round(mean(Train_AcOnly.set$Weight))))
-```
-
-<br> 
-
-# II. Model Fitting
+# 2. Model Fitting
 
 Models were fit using avNNet from the caret package in R. 
 
 ```{r load starting data, echo = FALSE} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
-<br>
-
-
 
 ```{r model setup, echo = FALSE} 
-yAcOnly <- Train_AcOnly.set$Density
-yVisOnly <- Train_VisOnly.set$Density
-y <- mergedTrain.set$Density
+yAcOnly <- transformedCovars_AcOnly.train$Density
+yVisOnly <- transformedCovars_VisOnly.train$Density
+y <- transformedCovars.train$Density
+yAcOnlySqrt <- sqrt(yAcOnly)
 
+visDetProb <- detFun[[bestModelIdx]]$fitted[1]
+
+transformedCovars_AcOnly.train$yAcOnly<- transformedCovars_AcOnly.train$Density
+transformedCovars_VisOnly.train$yVisOnly<-transformedCovars_VisOnly.train$Density
+transformedCovars.train$y <- transformedCovars.train$Density
+transformedCovars_AcOnly.train$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.train$Density)
+transformedCovars_VisOnly.train$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.train$Density)
+transformedCovars.train$ySqrt <-sqrt(transformedCovars.train$Density)
+
+transformedCovars_AcOnly.test$yAcOnly <-  transformedCovars_AcOnly.test$Density
+transformedCovars_VisOnly.test$yVisOnly <- transformedCovars_VisOnly.test$Density
+transformedCovars.test$y <- transformedCovars.test$Density
+transformedCovars_AcOnly.test$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.test$Density)
+transformedCovars_VisOnly.test$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.test$Density)
+transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
-  if (!is.na(transformedCovars.train$fac1[iFac])){
+  if (!is.na(transformedCovars.train$fac1[iFac]) & !is.na(transformedCovars.train$Density[iFac])){
     if (transformedCovars.train$fac1[iFac]>5) {
-       if (mergedTrain.set$Density[iFac]==0){
+      if (transformedCovars.train$Density[iFac]==0){
         # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
-        joint_train_weightsG0[iFac,1] <- visG0
+        joint_train_weightsG0[iFac,1] <- visG0*visDetProb
       }
     }
   }
 }
 
 
-VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
-for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
-  if (Train_VisOnly.set$Density[iFac]==0){
-    # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
-    VisOnly.train_weightsG0[iFac,1] <- visG0
+for (iFac in 1:length(transformedCovars.test$fac1)) {
+  if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
+    if (transformedCovars.test$fac1[iFac]>5) {
+       if (transformedCovars.test$Density[iFac]==0){
+        # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
+        joint_test_weightsG0[iFac,1] <- visG0*visDetProb
+      }
+    }
   }
 }
 
+VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
+VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
 
-transformedCovars_AcOnly.train$yAcOnly <- Train_AcOnly.set$Density
-transformedCovars_VisOnly.train$yVisOnly <- Train_VisOnly.set$Density
-# transformedCovars.train$y<-mergedTrain.set$Density
-# these are going to be scaled, but in case density ranges are very different between the two methods, I want them to be scaled separately by method.
-transformedCovars.train$y <-c(scale(transformedCovars_AcOnly.train$yAcOnly,
-                              center = TRUE, scale = TRUE),
-                              scale(transformedCovars_VisOnly.train$yVisOnly, 
-                              center = TRUE, scale = TRUE))
+for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
+  if (!is.na(transformedCovars_VisOnly.train$Density[iFac]) & 
+       transformedCovars_VisOnly.train$Density[iFac]==0){
+    # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
+    VisOnly.train_weightsG0[iFac,1] <- visG0*visDetProb
+  }
+}
 
-transformedCovars_AcOnly.test$yAcOnly <- Test_AcOnly.set$Density
-transformedCovars_VisOnly.test$yVisOnly <- Test_VisOnly.set$Density
-# transformedCovars.test$y <- mergedTest.set$Density
-transformedCovars.test$y <-c(scale(transformedCovars_AcOnly.test$yAcOnly,
-                              center = TRUE, scale = TRUE),
-                              scale(transformedCovars_VisOnly.test$yVisOnly, 
-                              center = TRUE, scale = TRUE))
+for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
+  if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
+      transformedCovars_VisOnly.test$Density[iFac]==0){
+    # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
+    VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
+  }
+}
 
 # Remove NaNs
 goodData_Ac <- which(!is.na(rowSums(transformedCovars_AcOnly.train)))
@@ -440,84 +501,107 @@ Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 ```{r Scale all the data, echo = FALSE}
 # NNs don't do well with unscaled data. Scale it and then unscale it at the end.
 
-# Scale Ac only training data for the NN
-covars_AcOnly_max.train <- apply(AcOnly.train.NoNa, 2, max, na.rm = TRUE) 
-covars_AcOnly_min.train <- apply(AcOnly.train.NoNa, 2, min, na.rm = TRUE)
-AcOnly_train_scaled <- as.data.frame(scale(AcOnly.train.NoNa, 
-                          center = covars_AcOnly_min.train, 
-                          scale = covars_AcOnly_max.train-covars_AcOnly_min.train))
-
-# Scale Vis only training data for the NN
-covars_VisOnly_max.train <- apply(VisOnly.train.NoNa, 2, max, na.rm = TRUE) 
-covars_VisOnly_min.train <- apply(VisOnly.train.NoNa, 2, min, na.rm = TRUE)
-VisOnly_train_scaled <- as.data.frame(scale(VisOnly.train.NoNa, 
-                            center = covars_VisOnly_min.train, 
-                            scale = covars_VisOnly_max.train-covars_VisOnly_min.train))
-VisOnly_train_scaled$weightsG0<-VisOnly.train_weightsG0[goodData_Vis]*
-      (Train_VisOnly.set$Weight[goodData_Vis]/
-      max(Train_VisOnly.set$Weight[goodData_Vis]))
-
 # Scale Joint training data for the NN
 covars_Joint_max.train <- apply(Joint.train.NoNa, 2, max, na.rm = TRUE) 
 covars_Joint_min.train <- apply(Joint.train.NoNa, 2, min, na.rm = TRUE)
 Joint_train_scaled <- as.data.frame(scale(Joint.train.NoNa, 
                         center = covars_Joint_min.train, 
                         scale = covars_Joint_max.train-covars_Joint_min.train))
-Joint_train_scaled$weightsG0<-joint_train_weightsG0[goodData_Joint]*
-                                (mergedTrain.set$Weight[goodData_Joint]/
-                                max(mergedTrain.set$Weight[goodData_Joint]))
+Joint_train_scaled$y <- Joint.train.NoNa$y/covars_Joint_max.train['y']
+Joint_train_scaled$ySqrt <- Joint.train.NoNa$ySqrt
+Joint_train_scaled$weightsG0<-joint_train_weightsG0[goodData_Joint]
+
+# Scale Ac only training data for the NN
+AcOnly_train_scaled <- as.data.frame(scale(AcOnly.train.NoNa, 
+                          center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+AcOnly_train_scaled$yAcOnly <- AcOnly.train.NoNa$yAcOnly/covars_Joint_max.train['y']
+AcOnly_train_scaled$yAcOnlySqrt <- AcOnly.train.NoNa$yAcOnlySqrt
+
+# Scale Vis only training data for the NN
+VisOnly_train_scaled <- as.data.frame(scale(VisOnly.train.NoNa, 
+                          center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+VisOnly_train_scaled$yVisOnly <- VisOnly.train.NoNa$yVisOnly/covars_Joint_max.train['y']
+VisOnly_train_scaled$yVisOnlySqrt <- VisOnly.train.NoNa$yVisOnlySqrt
+VisOnly_train_scaled$weightsG0<-VisOnly.train_weightsG0[goodData_Vis]
+
 
 # Scale Ac only test data for the NN
-covars_AcOnly_max.test <- apply(AcOnly.test.NoNa, 2, max, na.rm = TRUE) 
-covars_AcOnly_min.test <- apply(AcOnly.test.NoNa, 2, min, na.rm = TRUE)
 AcOnly_test_scaled <- as.data.frame(scale(AcOnly.test.NoNa, 
-                       center = covars_AcOnly_min.test,
-                       scale = covars_AcOnly_max.test-covars_AcOnly_min.test))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+AcOnly_test_scaled$yAcOnly <- AcOnly.test.NoNa$yAcOnly/covars_Joint_max.train['y']
+AcOnly_test_scaled$yAcOnlySqrt <- AcOnly.test.NoNa$yAcOnlySqrt
 
 # Scale Vis only test data for the NN
-covars_VisOnly_max.test <- apply(VisOnly.test.NoNa, 2, max, na.rm = TRUE) 
-covars_VisOnly_min.test <- apply(VisOnly.test.NoNa, 2, min, na.rm = TRUE)
 VisOnly_test_scaled <- as.data.frame(scale(VisOnly.test.NoNa, 
-                         center = covars_VisOnly_min.test, 
-                         scale = covars_VisOnly_max.test-covars_VisOnly_min.test))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+VisOnly_test_scaled$yVisOnly <- VisOnly.test.NoNa$yVisOnly/covars_Joint_max.train['y']
+VisOnly_test_scaled$yVisOnlySqrt <- VisOnly.test.NoNa$yVisOnlySqrt
+VisOnly_test_scaled$weightsG0<-VisOnly.test_weightsG0[goodData_Vis_test]
+
 
 # Scale Joint test data for the NN
-covars_Joint_max.test <- apply(Joint.test.NoNa, 2, max, na.rm = TRUE) 
-covars_Joint_min.test <- apply(Joint.test.NoNa, 2, min, na.rm = TRUE)
 Joint_test_scaled <- as.data.frame(scale(Joint.test.NoNa, 
-                        center = covars_Joint_min.test, 
-                        scale = covars_Joint_max.test-covars_Joint_min.test))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+Joint_test_scaled$y <- Joint.test.NoNa$y/covars_Joint_max.train['y']
+Joint_test_scaled$ySqrt <- Joint.test.NoNa$ySqrt
+Joint_test_scaled$weightsG0<-joint_test_weightsG0[goodData_Joint_test]
 
 n <- names(Joint_test_scaled)
 
+
+# save ranges of each scaled covariate in training set (max and min)
+JointRangesMax <- apply(Joint_train_scaled, MARGIN = 2, 
+                        function(x) max(x, na.rm =TRUE))
+JointRangesMin <- apply(Joint_train_scaled, MARGIN = 2, 
+                        function(x) min(x, na.rm =TRUE))
+
+AcOnlyRangesMax <- apply(AcOnly_train_scaled, MARGIN = 2,
+                         function(x) max(x, na.rm =TRUE))
+AcOnlyRangesMin <- apply(AcOnly_train_scaled, MARGIN = 2,
+                         function(x) min(x, na.rm =TRUE))
+
+VisOnlyRangesMax <- apply(VisOnly_train_scaled, MARGIN = 2,
+                          function(x) max(x, na.rm =TRUE))
+VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
+                          function(x) min(x, na.rm =TRUE))
 ```
 
 <br> 
 
-## Run Models 
+## 2.1 Run Models 
+
+```{r, echo = FALSE}
+# set up model params
+model1.indices <- c(2:6,9,10,13,14)
+nMax1 <- length(model1.indices)
+layerSizeList <- c(4,6,8,10,12,14)
+trainRepeats <- 25
+
+```
 
 Run NNs Acoustic only, Visual only, and joint Acoustic/Visual datasets.
 
 Models have the following characteristics: 
 
-* 50 averaged repeats with random node initalization
+* `R trainRepeats` averaged repeats with random node initalization
 
-* Include 8 covariates 
+* Include `r length(model1.indices)` covariates 
 
 * One hidden layer 
 
 * Weighted training data 
 
-* Tested 2 to 14 node hidden layers in 2 node increments to search for optimal size based on MSE. 
+* Hidden node layer sizes from `r min(layerSizeList)` to `r max(layerSizeList)` were tested in 2 node increments to search for optimal network size. 
  
 <br>
 
 
 ```{r, echo = FALSE}
-model1.indices <- c(1:5,7,8,10)
-nMax1 <- length(model1.indices)
-
-layerSizeList <- seq(2,14,2)
 
 # initialize empty structure for model storage
 nn_AcOnly<-NULL
@@ -538,17 +622,20 @@ pr.nn_Joint_train <- NULL
 pr.nn_AcOnly_test <- NULL
 pr.nn_VisOnly_test<- NULL
 pr.nn_Joint_test <- NULL
+
+
 ```
-Iterate over a range of hidden layer sizes between 2 and 14 nodes.
 
 ```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
-numCores <- detectCores() - 1
+numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+## ACOUSTIC ONLY
 AcCounter <- 0
-f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
+f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
+# Iterate over a range of hidden layer sizes between 2 and 14 nodes.
 
 for (layerSize in layerSizeList){
   AcCounter <- AcCounter + 1  
@@ -556,29 +643,37 @@ for (layerSize in layerSizeList){
   # train network
   nn_AcOnly[[AcCounter]] <- avNNet(f.AcOnly_NN1, data=AcOnly_train_scaled, 
                                  size = layerSize, 
-                                 repeats = 50,
-                                 na.action = na.omit,
+                                 repeats = trainRepeats,
+                                 na.action = na.omit,linout = TRUE,
                                  rang = 0.7, 
                                  decay = 0.0001, 
-                                 maxit = 1000, bag = TRUE,
-                                 trace = FALSE, entropy = TRUE)
+                                 maxit = 1000,
+                                 trace = FALSE)
   
   # predict on train data and estimate Mean Squared Error (MSE)
-  pr.nn_AcOnly_train[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],AcOnly_train_scaled[,model1.indices])
-  MSE.nn_AcOnly_train[[AcCounter]] <- sum((AcOnly_train_scaled$yAcOnly_TF - 
-                                    round(pr.nn_AcOnly_train[[AcCounter]]))^2)/nrow(AcOnly_train_scaled[model1.indices])
+  pr.nn_AcOnly_train[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],
+                                      AcOnly_train_scaled[,model1.indices])
+  
+  MSE.nn_AcOnly_train[[AcCounter]] <- sum((AcOnly_train_scaled$yAcOnly - 
+                                    pr.nn_AcOnly_train[[AcCounter]])^2)/
+                                    nrow(AcOnly_train_scaled[model1.indices])
   # predict on test data and estimate MSE
-  pr.nn_AcOnly_test[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],AcOnly_test_scaled[,model1.indices])
-  MSE.nn_AcOnly_test[[AcCounter]] <- sum((AcOnly_test_scaled$yAcOnly_TF - 
-                                   round(pr.nn_AcOnly_test[[AcCounter]]))^2)/nrow(AcOnly_test_scaled[model1.indices])
-  cat(paste("Done with AcOnly model iteration ",AcCounter, " of ", length(layerSizeList),": Layer Size = ", layerSize, "\n"))
+  pr.nn_AcOnly_test[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],
+                                     AcOnly_test_scaled[,model1.indices])
+  
+  MSE.nn_AcOnly_test[[AcCounter]] <- sum((AcOnly_test_scaled$yAcOnly - 
+                         pr.nn_AcOnly_test[[AcCounter]])^2)/
+                         nrow(AcOnly_test_scaled[model1.indices])
+  cat(paste("Done with AcOnly model iteration ",
+            AcCounter, " of ", length(layerSizeList),
+            ": Layer Size = ", layerSize, "\n"))
 
 }
 ```
 
 
 
-```{r other models 1, eval = TRUE, echo = FALSE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -587,56 +682,67 @@ f.Joint_NN1 <- as.formula(paste("y ~", paste(n[model1.indices], collapse = " + "
 for (layerSize in layerSizeList){
   modelCounter <- modelCounter + 1  
   # train network
-  nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, 
-                                       data = VisOnly_train_scaled, 
+  nn_VisOnly[[modelCounter]] <- avNNet(f.VisOnly_NN1, VisOnly_train_scaled,
+                                       weights = VisOnly_train_scaled$weightsG0,  
                                        size = layerSize, 
-                                       repeats = 50,
+                                       repeats = trainRepeats,linout = TRUE,
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
-                                       maxit = 10000, bag = TRUE,
-                                       weights = VisOnly_train_scaled$weightsG0, 
-                                       trace=FALSE, entropy=TRUE)
+                                       maxit = 10000,
+                                       trace = FALSE)
+                                       # weights = 
   
   # predict on train data and estimate MSE
-  pr.nn_VisOnly_train[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],VisOnly_train_scaled[,model1.indices])
+  pr.nn_VisOnly_train[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
+                                                VisOnly_train_scaled[,model1.indices])
+  
   MSE.nn_VisOnly_train[[modelCounter]] <- sum(VisOnly_train_scaled$weightsG0*
-                                                (VisOnly_train_scaled$yVisOnly_TF - 
-                                                round(pr.nn_VisOnly_train[[modelCounter]]))^2)/
+                                                (VisOnly_train_scaled$yVisOnly - 
+                                                pr.nn_VisOnly_train[[modelCounter]])^2)/
                                                 nrow(VisOnly_train_scaled[model1.indices])
   
   # predict on test data and estimate MSE
-  pr.nn_VisOnly_test[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],VisOnly_test_scaled[,model1.indices])
+  pr.nn_VisOnly_test[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
+                                                VisOnly_test_scaled[,model1.indices])
+  
   MSE.nn_VisOnly_test[[modelCounter]] <- sum(VisOnly_test_scaled$weightsG0*
-                                               (VisOnly_test_scaled$yVisOnly_TF - 
-                                                round(pr.nn_VisOnly_test[[modelCounter]]))^2)/
+                                               (VisOnly_test_scaled$yVisOnly - 
+                                                pr.nn_VisOnly_test[[modelCounter]])^2)/
                                                 nrow(VisOnly_test_scaled[model1.indices])
   
-  
   ## JOINT
-  nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, data=Joint_train_scaled, 
+  nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, Joint_train_scaled,
+                                      weights = Joint_train_scaled$weightsG0,
                                       size = layerSize, 
-                                      repeats = 50, 
+                                      repeats = trainRepeats, linout = TRUE,
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
-                                      maxit = 10000, bag = TRUE,
-                                      weights = Joint_train_scaled$weightsG0, 
-                                      trace=FALSE, entropy=TRUE)
+                                      maxit = 10000,
+                                      trace = FALSE)                                     
+
   
-  pr.nn_Joint_train[[modelCounter]]  <- predict(nn_Joint[[modelCounter]] ,Joint_train_scaled[,model1.indices],na.action=na.omit)
-  MSE.nn_Joint_train[[modelCounter]]  <- sum(Joint_train_scaled$weightsG0*(Joint_train_scaled$y_TF - 
-                                                round(pr.nn_Joint_train[[modelCounter]]))^2)/
-                                                nrow(Joint_train_scaled[model1.indices])
+  pr.nn_Joint_train[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],
+                                         Joint_train_scaled[,model1.indices],
+                                         na.action=na.omit)
+  MSE.nn_Joint_train[[modelCounter]]  <- sum(Joint_train_scaled$weightsG0*(Joint_train_scaled$y - 
+                                         pr.nn_Joint_train[[modelCounter]])^2)/
+                                         nrow(Joint_train_scaled[model1.indices])
   
-  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],Joint_test_scaled[,model1.indices],na.action=na.omit)
-  MSE.nn_Joint_test[[modelCounter]]  <- sum(Joint_test_scaled$weightsG0*(Joint_test_scaled$y_TF - 
-                                               round(pr.nn_Joint_test[[modelCounter]] ))^2)/
-                                               nrow(Joint_test_scaled[model1.indices])
-  cat(paste("Done with VisOnly and Joint model iteration ",modelCounter, " of ", length(layerSizeList),": Layer Size = ", layerSize, "\n"))
+  pr.nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],
+                                        Joint_test_scaled[,model1.indices],
+                                        na.action=na.omit)
+  MSE.nn_Joint_test[[modelCounter]]  <- sum(Joint_test_scaled$weightsG0*
+                                        (Joint_test_scaled$y - 
+                                        pr.nn_Joint_test[[modelCounter]])^2)/
+                                        nrow(Joint_test_scaled[model1.indices])
+  
+  cat(paste("Done with VisOnly and Joint model iteration ",
+            modelCounter, " of ", length(layerSizeList),
+            ": Layer Size = ", layerSize, "\n"))
 }
 ```
-
 
 ```{r Turn off parallel cluster, eval = FALSE, echo = FALSE}
 stopCluster(cl)
@@ -666,10 +772,12 @@ load(paste(outDir,SP,'_Joint_NN_density.Rdata',sep=''))
 
 <br>
 
-## Model Comparisons
+## 2.2 Model Comparisons
 
-Compare models:
-```{r}
+Models were compared using mean squared error to compare predicted and observed presence/absence in the test data.
+
+
+```{r Model comparison, echo = FALSE}
 
 XEntropy.AcOnly_train <- NULL
 XEntropy.AcOnly_test <- NULL
@@ -678,16 +786,20 @@ XEntropy.VisOnly_test <- NULL
 XEntropy.Joint_train <- NULL
 XEntropy.Joint_test <- NULL
 for (iM in 1: length(nn_AcOnly)){
-  XEntropy.AcOnly_train[[iM]] <- LogLoss(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
-  XEntropy.AcOnly_test[[iM]] <- LogLoss(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
-  XEntropy.VisOnly_train[[iM]] <- weighted_logloss(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF,
+  XEntropy.AcOnly_train[[iM]] <- LogLoss(round(pr.nn_AcOnly_train[[iM]],digits = 0),AcOnly_train_scaled$yAcOnly)
+  XEntropy.AcOnly_test[[iM]] <- LogLoss(round(pr.nn_AcOnly_test[[iM]],digits = 0),AcOnly_test_scaled$yAcOnly)
+  XEntropy.VisOnly_train[[iM]] <- weighted_logloss(round(pr.nn_VisOnly_train[[iM]],
+                                         digits = 0),VisOnly_train_scaled$yVisOnly,
                                          VisOnly_train_scaled$weightsG0)
-  XEntropy.VisOnly_test[[iM]] <- weighted_logloss(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF,
+  XEntropy.VisOnly_test[[iM]] <- weighted_logloss(round(pr.nn_VisOnly_test[[iM]],digits = 0),
+                                         VisOnly_test_scaled$yVisOnly,
                                          VisOnly_test_scaled$weightsG0)
-  XEntropy.Joint_train[[iM]] <- weighted_logloss(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF,
+  XEntropy.Joint_train[[iM]] <- weighted_logloss(round(pr.nn_Joint_train[[iM]], digits = 0),
+                                         Joint_train_scaled$y,
                                          Joint_train_scaled$weightsG0)
-  XEntropy.Joint_test[[iM]] <- weighted_logloss(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF,
-                                         Joint_test_scaled$weightsG0)  
+  XEntropy.Joint_test[[iM]] <- weighted_logloss(round(pr.nn_Joint_test[[iM]], digits = 0),
+                                         Joint_test_scaled$y,
+                                         Joint_test_scaled$weightsG0)
 }
 
 KSStat.AcOnly_train <- NULL
@@ -697,14 +809,13 @@ KSStat.VisOnly_test <- NULL
 KSStat.Joint_train <- NULL
 KSStat.Joint_test <- NULL
 for (iM in 1: length(nn_AcOnly)){
-  KSStat.AcOnly_train[[iM]] <- KS_Stat(pr.nn_AcOnly_train[[iM]],AcOnly_train_scaled$yAcOnly_TF)
-  KSStat.AcOnly_test[[iM]] <- KS_Stat(pr.nn_AcOnly_test[[iM]],AcOnly_test_scaled$yAcOnly_TF)
-  KSStat.VisOnly_train[[iM]] <- KS_Stat(pr.nn_VisOnly_train[[iM]],VisOnly_train_scaled$yVisOnly_TF)
-  KSStat.VisOnly_test[[iM]] <- KS_Stat(pr.nn_VisOnly_test[[iM]],VisOnly_test_scaled$yVisOnly_TF)
-  KSStat.Joint_train[[iM]] <- KS_Stat(pr.nn_Joint_train[[iM]],Joint_train_scaled$y_TF)
-  KSStat.Joint_test[[iM]] <- KS_Stat(pr.nn_Joint_test[[iM]],Joint_test_scaled$y_TF)
+  KSStat.AcOnly_train[[iM]] <- KS_Stat(round(pr.nn_AcOnly_train[[iM]],digits = 0),AcOnly_train_scaled$yAcOnly)
+  KSStat.AcOnly_test[[iM]] <- KS_Stat(round(pr.nn_AcOnly_test[[iM]],digits = 0),AcOnly_test_scaled$yAcOnly)
+  KSStat.VisOnly_train[[iM]] <- KS_Stat(round(pr.nn_VisOnly_train[[iM]],digits = 0),VisOnly_train_scaled$yVisOnly)
+  KSStat.VisOnly_test[[iM]] <- KS_Stat(round(pr.nn_VisOnly_test[[iM]],digits = 0),VisOnly_test_scaled$yVisOnly)
+  KSStat.Joint_train[[iM]] <- KS_Stat(round(pr.nn_Joint_train[[iM]],digits = 0),Joint_train_scaled$y)
+  KSStat.Joint_test[[iM]] <- KS_Stat(round(pr.nn_Joint_test[[iM]],digits = 0),Joint_test_scaled$y)
 }
-
 
 MSEtable<- rbind(MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,MSE.nn_VisOnly_train,
                  MSE.nn_VisOnly_test,MSE.nn_Joint_train,MSE.nn_Joint_test)
@@ -717,55 +828,107 @@ print('mean squared error scores (lower is better)')
 print(MSEtable, digits = 2)
 
 
-XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
-                 XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
 
-colnames(XEntropyTable)<- layerSizeList
-rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
-                       "Visual - Train","Visual - Test",
-                       "Joint - Train","Joint - Test")
-print('cross entropy scores (lower is better)')
-print(XEntropyTable, digits = 2)
+# XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
+#                  XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
+# 
+# colnames(XEntropyTable)<- layerSizeList
+# rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
+#                        "Visual - Train","Visual - Test",
+#                        "Joint - Train","Joint - Test")
+# print('cross entropy scores (lower is better)')
+# print(round(XEntropyTable, digits = 3))
 
 
-KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
-                 KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
-
-colnames(KSStatTable)<- layerSizeList
-rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
-                       "Visual - Train","Visual - Test",
-                       "Joint - Train","Joint - Test")
-print('KS statistic (higher is better)')
-print(KSStatTable, digits = 2)
+# KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
+#                  KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
+# 
+# colnames(KSStatTable)<- layerSizeList
+# rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
+#                        "Visual - Train","Visual - Test",
+#                        "Joint - Train","Joint - Test")
+# print('KS statistic (higher is better)')
+# print(KSStatTable, digits = 2)
 ```
 
 
-
-```{r best model index, echo = FALSE,}
-best_AcOnly_ModelIndex <-1
-best_VisOnly_ModelIndex <-6
+```{r best model index, echo = FALSE}
+best_AcOnly_ModelIndex <-2
+best_VisOnly_ModelIndex <-2
 best_Joint_ModelIndex <-1
 ```
 
-# III. Predict on Test Data
+<br> 
 
-## Temporal prediction
+## 2.3 Variable Importance
 
-Predict on acoustic test data, and compare with actual observations for 2013. We are comparing the predicted probability of encountering animals with the actual weekly rate of occurrence of animals at a site. 
+For the best model in each category, the importance of each input variable was calculated across the 50 model iterations.
 
-CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which this species was detected. This results in a pretty coarse estimate.
-Alternatively we could compare to daily densities or something, but then the y-axis scales are completely different and it may be an apples to oranges comparison. An earlier version used densities, and seemed to suggest that lagging variables might be appropriate.
+```{r, Variable Importance, echo = FALSE, eval = TRUE}
+Ac_importance_avg <-varImp(nn_AcOnly[[best_AcOnly_ModelIndex]])
+Vis_importance_avg <-varImp(nn_VisOnly[[best_VisOnly_ModelIndex]])
+Joint_importance_avg <-varImp(nn_Joint[[best_Joint_ModelIndex]])
+
+AcOnly_node_mean<-NULL
+AcOnly_node_cv<-NULL
+VisOnly_node_mean<-NULL
+VisOnly_node_cv<-NULL
+Joint_node_mean<-NULL
+Joint_node_cv<-NULL
+
+for (iNode in 1:length(model1.indices)) {
+  thisSet <- (1:trainRepeats)+(trainRepeats*(iNode-1))
+  
+  AcOnly_node_mean[iNode] <- mean(Ac_importance_avg$Overall[thisSet])
+  AcOnly_node_cv[iNode] <- std(Ac_importance_avg$Overall[thisSet])/mean(Ac_importance_avg$Overall[thisSet])
+
+  VisOnly_node_mean[iNode] <- mean(Vis_importance_avg$Overall[thisSet])
+  VisOnly_node_cv[iNode] <- std(Vis_importance_avg$Overall[thisSet])/mean(Vis_importance_avg$Overall[thisSet])
+  
+  Joint_node_mean[iNode] <- mean(Joint_importance_avg$Overall[thisSet])
+  Joint_node_cv[iNode] <- std(Joint_importance_avg$Overall[thisSet])/mean(Joint_importance_avg$Overall[thisSet])
+}
+mean_var_importance<-NULL
+mean_var_importance$AcOnly <- AcOnly_node_mean
+mean_var_importance$VisOnly <- VisOnly_node_mean
+mean_var_importance$Joint <- Joint_node_mean
+mean_var_importance<-as.data.frame(mean_var_importance)
+row.names(mean_var_importance)<-n[model1.indices]
+
+kable(mean_var_importance,'markdown',digits = 1)
+```
+
+```{r plot network, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE, fig.width = 14, fig.height = 8}
+
+n2 = n[model1.indices]
+  png(paste(outDir,SP,'_exampleNetwork.png',sep=''), width = 1400, height = 800)
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=2)
+dev.off()
+```
+***Example network:***
+
+![](E:/NASData/ModelData/Zc/Zc_exampleNetwork.png)
+
+<br> 
+
+# 3. Predict on Test Data
+
+## 3.1 Temporal prediction
+
+Predictions were made on the acoustic test dataset, and compared with actual observations for 2013. The predicted probabliity of encountering animals was compared with the actual weekly rate of occurrence of animals at a site. 
 
 
 <br>
 
-### Acoustic Only Prediction
-```{r Ac Temporal Predict, echo = FALSE, warning = FALSE}
+### 3.1.1 Acoustic Only Prediction
+
+
+```{r Ac Temporal Predict, echo = FALSE, warning = FALSE, message = FALSE}
 # Predict on acoustic test data, using acoustic only model for comparison...
-compAcSet_MC <- which((Test_AcOnly.set$fac2)==5)
-compAcSet_GC <- which((Test_AcOnly.set$fac2)==10)
-compAcSet_DT <- which((Test_AcOnly.set$fac2)==15 |
-                        (Test_AcOnly.set$fac2)==16)
+compAcSet_MC <- which((AcOnly.test.NoNa$fac2)==5)
+compAcSet_GC <- which((AcOnly.test.NoNa$fac2)==10)
+compAcSet_DT <- which((AcOnly.test.NoNa$fac2)==15 |
+                        (AcOnly.test.NoNa$fac2)==16)
 
 # Predict in time
 dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
@@ -773,61 +936,126 @@ dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
                          '2014-01-01 GMT'))
 dateLabels = c('Jan. 2013','Apr. 2013','Jul. 2013','Oct 2013','Jan. 2014')
 
-predAcOnly_MC <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_MC,model1.indices])
-predAcOnly_GC <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_GC,model1.indices])
-predAcOnly_DT <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_DT,model1.indices])
+predAcOnly_MC <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],
+                         AcOnly_test_scaled[compAcSet_MC,model1.indices])*covars_Joint_max.train['y']
+predAcOnly_GC <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],
+                         AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
+predAcOnly_DT <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]],
+                         AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
+occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
+
+predVar_MC <- NULL
+predVar_GC <- NULL
+predVar_DT <- NULL
+predVar_DC <- NULL
+predVar_MP <- NULL
+for (iMod in c(1:trainRepeats)){
+  predVar_MC[[iMod]] <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_MC,model1.indices])*
+    covars_Joint_max.train['y']
+  predVar_GC[[iMod]] <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_GC,model1.indices])*
+    covars_Joint_max.train['y']
+  predVar_DT[[iMod]] <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_DT,model1.indices])*
+covars_Joint_max.train['y']
+  
+}
+
+AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+colnames(AcOnly_predictionSet) <-"date"
+
+n1MC <- length(predVar_MC[[1]])
+predVar_MC_DF <- structure(predVar_MC, row.names = c(NA, -n1MC), class = "data.frame")
+
+n1GC <- length(predVar_GC[[1]])
+predVar_GC_DF <- structure(predVar_GC, row.names = c(NA, -n1GC), class = "data.frame")
+
+n1DT <- length(predVar_DT[[1]])
+predVar_DT_DF <- structure(predVar_DT, row.names = c(NA, -n1DT), class = "data.frame")
+
 
 
 AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(AcOnly_predictionSet) <-"date"
 AcOnly_predictionSet$MC <- NA
+AcOnly_predictionSet$predSd_MC <- NA
+AcOnly_predictionSet$testObs_MC <-NA
+AcOnly_predictionSet$testObs_MC_smooth <- NA
 MC_times <- Test_AcOnly.set$date[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
+AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+AcOnly_predictionSet$testObs_MC[m1] <- Test_AcOnly.set$Density[compAcSet_MC]
+AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_MC,k = 7,fill=NA)
 
 AcOnly_predictionSet$GC <- NA
+AcOnly_predictionSet$predSd_GC <- NA
+AcOnly_predictionSet$testObs_GC <-NA
 GC_times <- Test_AcOnly.set$date[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
+AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+AcOnly_predictionSet$testObs_GC[m2] <- Test_AcOnly.set$Density[compAcSet_GC]
+AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_GC,k=7,fill=NA)
 
 AcOnly_predictionSet$DT <- NA
+AcOnly_predictionSet$predSd_DT <- NA
+AcOnly_predictionSet$testObs_DT <-NA
 DT_times <- Test_AcOnly.set$date[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
+AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+AcOnly_predictionSet$testObs_DT[m3] <- Test_AcOnly.set$Density[compAcSet_DT]
+AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_DT,k=7,fill=NA)
 
+AcOnly_predictionSet$Legend1 <- "Observations"
+AcOnly_predictionSet$StDev <- "Std. Error"
 AcOnly_predictionSet$Legend <- "Predictions"
 
-pOccur$Legend <- "Observations"
 ```
 
+**Predicted and observed densities at passive acoustic sites using the acoustic-only model (Site order: MC, GC, DT):**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Ac <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
+  geom_ribbon(data = AcOnly_predictionSet,
+            aes(x = date, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_area(data = AcOnly_predictionSet, 
+            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MC, color = Legend)) +
-  labs(y = "", x = "")+
+             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y = MC, color = Legend))+
+  labs(y = "Density (/1000km^2)", x = "")+
   scale_color_manual("",values= c("gray48","#009999"))+
-  theme(legend.position = c(0.9, 0.7))
+  theme_bw()+theme(legend.position = c(0.9, 0.7))#+ylim(c(0,.6))
 
 p2_Ac <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
+  geom_ribbon(data = AcOnly_predictionSet, 
+            aes(x = date, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+  geom_area(data = AcOnly_predictionSet, 
+            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=GC, color = Legend))+
   scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "", x = "")+
+  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3_Ac <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
+  geom_ribbon(data = AcOnly_predictionSet, 
+            aes(x = date, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+  geom_area(data = AcOnly_predictionSet, 
+            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=DT, color = Legend)) +
   scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Encounter probability", x = "")+
+  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
   theme(legend.position="none")
 
 
@@ -836,60 +1064,107 @@ multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
 ```
 <br>
 
-### Visual Only Prediction
+### 3.1.2 Visual Only Prediction
 
 ```{r Vis Temporal Predict, warning = FALSE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since
 # we're predicting on the acoustic timeseries.
-predVisOnly_MC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_MC,model1.indices])
-predVisOnly_GC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_GC,model1.indices])
-predVisOnly_DT <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],AcOnly_test_scaled[compAcSet_DT,model1.indices])
+predVisOnly_MC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
+                          AcOnly_test_scaled[compAcSet_MC,model1.indices])*covars_Joint_max.train['y']
+predVisOnly_GC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
+                          AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
+predVisOnly_DT <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
+                          AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
+
+
+
+predVar_MC <- NULL
+predVar_GC <- NULL
+predVar_DT <- NULL
+predVar_DC <- NULL
+predVar_MP <- NULL
+for (iMod in c(1:trainRepeats)){
+  predVar_MC[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_MC,model1.indices])*covars_Joint_max.train['y']
+  predVar_GC[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
+  predVar_DT[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
+
+}
+n1MC <- length(predVar_MC[[1]])
+predVar_MC_DF <- structure(predVar_MC, row.names = c(NA, -n1MC), class = "data.frame")
+
+n1GC <- length(predVar_GC[[1]])
+predVar_GC_DF <- structure(predVar_GC, row.names = c(NA, -n1GC), class = "data.frame")
+
+n1DT <- length(predVar_DT[[1]])
+predVar_DT_DF <- structure(predVar_DT, row.names = c(NA, -n1DT), class = "data.frame")
 
 VisOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(VisOnly_predictionSet) <-"date"
+
 VisOnly_predictionSet$MC <- NA
+VisOnly_predictionSet$predSd_MC <- NA
 m1 <- match(MC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$MC[m1] <-predVisOnly_MC
+VisOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
 
 VisOnly_predictionSet$GC <- NA
+VisOnly_predictionSet$predSd_GC <- NA
 m2 <- match(GC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$GC[m2] <-predVisOnly_GC
+VisOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
 
 VisOnly_predictionSet$DT <- NA
+VisOnly_predictionSet$predSd_DT <- NA
 m3 <- match(DT_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
 
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
+**Predicted and observed encounter probabilities at passive acoustic sites using the visual-only model (Site order: MC, GC, DT, DC, MP):**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Vis <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
+  geom_ribbon(data = VisOnly_predictionSet, 
+            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_area(data = VisOnly_predictionSet, 
+            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  labs(y = "", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+
+  labs(y = "Density (/1000km^2)", x = "")+
+  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
   theme(legend.position = c(0.9, 0.7))
 
 p2_Vis <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
+  geom_ribbon(data = VisOnly_predictionSet, 
+            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+  geom_area(data = VisOnly_predictionSet, 
+            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
   geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "", x = "")+
+  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3_Vis <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
-    geom_line(data = VisOnly_predictionSet,
+  geom_ribbon(data = VisOnly_predictionSet, 
+            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+  geom_area(data = VisOnly_predictionSet, 
+            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
+  geom_line(data = VisOnly_predictionSet,
             aes(x=date, y=DT, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Encounter probability", x = "")+
+  labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
   theme(legend.position="none")
 
 
@@ -899,59 +1174,106 @@ multiplot(p1_Vis, p2_Vis, p3_Vis, cols=1)
 
 <br>
 
-### Joint Prediction
+### 3.1.3 Joint Prediction
 
 ```{r Combo Temporal Predict,fig.height = 10, fig.width = 7, warning = FALSE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since we're predicting on the acoustic timeseries.
-pred_MC <- predict(nn_Joint[[best_Joint_ModelIndex]],AcOnly_test_scaled[compAcSet_MC,model1.indices])
-pred_GC <- predict(nn_Joint[[best_Joint_ModelIndex]],AcOnly_test_scaled[compAcSet_GC,model1.indices])
-pred_DT <- predict(nn_Joint[[best_Joint_ModelIndex]],AcOnly_test_scaled[compAcSet_DT,model1.indices])
+pred_MC <- predict(nn_Joint[[best_Joint_ModelIndex]],
+                   AcOnly_test_scaled[compAcSet_MC,model1.indices])*
+                   covars_Joint_max.train['y']
+pred_GC <- predict(nn_Joint[[best_Joint_ModelIndex]],
+                   AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
+pred_DT <- predict(nn_Joint[[best_Joint_ModelIndex]],
+                   AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
 
-Both_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
-colnames(Both_predictionSet) <-"date"
-Both_predictionSet$MC <- NA
-m1 <- match(MC_times,Both_predictionSet$date)
-Both_predictionSet$MC[m1] <-pred_MC
 
-Both_predictionSet$GC <- NA
-m2 <- match(GC_times,Both_predictionSet$date)
-Both_predictionSet$GC[m2] <-pred_GC
+predVar_MC <- NULL
+predVar_GC <- NULL
+predVar_DT <- NULL
+for (iMod in c(1:trainRepeats)){
+  predVar_MC[[iMod]] <- predict(nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_MC,model1.indices])
+  predVar_GC[[iMod]] <- predict(nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_GC,model1.indices])
+  predVar_DT[[iMod]] <- predict(nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
+                             AcOnly_test_scaled[compAcSet_DT,model1.indices])
+  
+}
 
-Both_predictionSet$DT <- NA
-m3 <- match(DT_times,Both_predictionSet$date)
-Both_predictionSet$DT[m3] <-pred_DT
+n1MC <- length(predVar_MC[[1]])
+predVar_MC_DF <- structure(predVar_MC, row.names = c(NA, -n1MC), class = "data.frame")
 
-Both_predictionSet$Legend <- "Predictions"
+n1GC <- length(predVar_GC[[1]])
+predVar_GC_DF <- structure(predVar_GC, row.names = c(NA, -n1GC), class = "data.frame")
+
+n1DT <- length(predVar_DT[[1]])
+predVar_DT_DF <- structure(predVar_DT, row.names = c(NA, -n1DT), class = "data.frame")
+
+
+Joint_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+colnames(Joint_predictionSet) <-"date"
+Joint_predictionSet$MC <- NA
+Joint_predictionSet$predSd_MC <- NA
+m1 <- match(MC_times,Joint_predictionSet$date)
+Joint_predictionSet$MC[m1] <-pred_MC
+Joint_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+
+Joint_predictionSet$GC <- NA
+Joint_predictionSet$predSd_GC <- NA
+m2 <- match(GC_times,Joint_predictionSet$date)
+Joint_predictionSet$GC[m2] <-pred_GC
+Joint_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+
+Joint_predictionSet$DT <- NA
+Joint_predictionSet$predSd_DT <- NA
+m3 <- match(DT_times,Joint_predictionSet$date)
+Joint_predictionSet$DT[m3] <-pred_DT
+Joint_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+
+Joint_predictionSet$Legend <- "Predictions"
 ```
 
+**Predicted and observed encounter probabilities at passive acoustic sites using the joint model (Site order: MC, GC, DT, DC, MP):**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1 <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
-  geom_line(data = Both_predictionSet,
+  geom_ribbon(data = Joint_predictionSet, 
+            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_area(data = Joint_predictionSet, 
+            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
+  geom_line(data = Joint_predictionSet,
             aes(x=date, y=MC, color = Legend)) +
-  labs(y = "", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+
+  labs(y = "Density (/1000km^2)", x = "")+
+  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
   theme(legend.position = c(0.9, 0.7))
 
 p2 <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
-  geom_line(data = Both_predictionSet,
+  geom_ribbon(data = Joint_predictionSet, 
+            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+  geom_area(data = Joint_predictionSet, 
+            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
+  geom_line(data = Joint_predictionSet,
             aes(x=date, y=GC, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "", x = "")+
+  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3 <- ggplot() +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
-  geom_line(data = Both_predictionSet,
+  geom_ribbon(data = Joint_predictionSet, 
+            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+  geom_area(data = Joint_predictionSet, 
+            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
+  geom_line(data = AcOnly_predictionSet,
+             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
+  geom_line(data = Joint_predictionSet,
             aes(x=date, y=DT, color = Legend)) +
   scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Encounter probability", x = "")+
+  labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
   theme(legend.position="none")
 
 multiplot(p1, p2, p3, cols=1)
@@ -959,108 +1281,224 @@ multiplot(p1, p2, p3, cols=1)
 ```
 <br>
 
-## Spatial Prediction
+## 3.2 Spatial Prediction
 
 ```{r load raster bricks, echo = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters_scaled.Rdata') 
 ```
 
+Models were evaluated for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
 
-Evaluate the models for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
 ```{r Ac Spatial Predict, warning = FALSE, echo = FALSE}
 ### Acoustic Only spatial prediction
 
-dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+# dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+# set out of range values in rasters to NA
+jan2009_rastersAc <- jan2009_rasters
+july2009_rastersAc <- july2009_rasters
 
-jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,nn_AcOnly[[best_AcOnly_ModelIndex]],
-                                             na.action = na.pass)
+for (iR in model1.indices){
+  paste(iR)
+  thisVarName <- n[iR]
+  paste(thisVarName)
+  jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]<
+                              AcOnlyRangesMin[thisVarName]]<- NA
+  jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]>
+                              AcOnlyRangesMax[thisVarName]]<- NA
+  
+  july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]<
+                              AcOnlyRangesMin[thisVarName]]<- NA
+  july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]>
+                              AcOnlyRangesMax[thisVarName]]<- NA
+}
+
+
+jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
             
-july2009_AcOnly_prediction <- raster::predict(july2009_rasters,nn_AcOnly[[best_AcOnly_ModelIndex]],na.action = na.pass)    
+july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
+                                              na.action = na.pass)*covars_Joint_max.train['y']
+
+# jan2009_AcOnly_prediction_probSee <- jan2009_AcOnly_prediction*visG0*visDetProb
+# july2009_AcOnly_prediction_probSee <- july2009_AcOnly_prediction*visG0*visDetProb
+
+perModel_jan2009_AcOnly <- vector('list',length = trainRepeats)
+perModel_july2009_AcOnly <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_AcOnly[iMod] <- raster::predict(jan2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+  perModel_july2009_AcOnly[iMod] <- raster::predict(july2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+}
 ```
 
 
 ```{r Vis Spatial Predict, warning = FALSE, echo = FALSE}
 ### Visual Only spatial prediction
-dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+#dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
 
-jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)
+jan2009_rastersVis <- jan2009_rasters
+july2009_rastersVis <- july2009_rasters
+
+for (iR in model1.indices){
+  thisVarName <- n[iR]
+  jan2009_rastersVis[[thisVarName]][jan2009_rastersVis[[thisVarName]]<
+                              VisOnlyRangesMin[thisVarName]]<- NA
+  jan2009_rastersVis[[thisVarName]][jan2009_rastersVis[[thisVarName]]>
+                              VisOnlyRangesMax[thisVarName]]<- NA
+  
+  july2009_rastersVis[[thisVarName]][july2009_rastersVis[[thisVarName]]<
+                              VisOnlyRangesMin[thisVarName]]<- NA
+  july2009_rastersVis[[thisVarName]][july2009_rastersVis[[thisVarName]]>
+                              VisOnlyRangesMax[thisVarName]]<- NA
+}
+
+jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']
             
-july2009_VisOnly_prediction <- raster::predict(july2009_rasters,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)    
+july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']  
+
+#jan2009_VisOnly_prediction_probSee <- jan2009_VisOnly_prediction*visG0*visDetProb
+#july2009_VisOnly_prediction_probSee <- july2009_VisOnly_prediction*visG0*visDetProb
+
+perModel_jan2009_VisOnly <- vector('list',length = trainRepeats)
+perModel_july2009_VisOnly <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_VisOnly[iMod] <- raster::predict(jan2009_rastersVis,
+                             nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+  perModel_july2009_VisOnly[iMod] <- raster::predict(july2009_rastersVis,
+                 nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+}
 ```
 
 
-```{r Combo Spatial Predict, warning = FALSE, echo = FALSE}
+```{r Joint Spatial Predict, warning = FALSE, echo = FALSE}
 ### Joint Visual and Acoustic spatial prediction
 
-dt1 <- as.data.frame(jan2009_rasters,xy=TRUE)
+jan2009_rastersJoint <- jan2009_rasters
+july2009_rastersJoint <- july2009_rasters
 
-jan2009_prediction <- raster::predict(jan2009_rasters,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)
+for (iR in model1.indices){
+  thisVarName <- n[iR]
+  jan2009_rastersJoint[[thisVarName]][jan2009_rastersJoint[[thisVarName]]<
+                              JointRangesMin[thisVarName]]<- NA
+  jan2009_rastersJoint[[thisVarName]][jan2009_rastersJoint[[thisVarName]]>
+                              JointRangesMax[thisVarName]]<- NA
+  
+  july2009_rastersJoint[[thisVarName]][july2009_rastersJoint[[thisVarName]]<
+                              JointRangesMin[thisVarName]]<- NA
+  july2009_rastersJoint[[thisVarName]][july2009_rastersJoint[[thisVarName]]>
+                              JointRangesMax[thisVarName]]<- NA
+}
+
+jan2009_prediction <- raster::predict(jan2009_rastersJoint,
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']
             
-july2009_prediction <- raster::predict(july2009_rasters,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)    
+july2009_prediction <- raster::predict(july2009_rastersJoint,
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y'] 
+
+
+perModel_jan2009_Joint <- vector('list',length = trainRepeats)
+perModel_july2009_Joint <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_Joint[iMod] <- raster::predict(jan2009_rastersJoint,
+                                             nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+  perModel_july2009_Joint[iMod] <- raster::predict(july2009_rastersJoint,
+                                             nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
+                                             na.action = na.pass)*covars_Joint_max.train['y']
+}
 ```
 
 
 ```{r wrangle projections, message = FALSE, warning = FALSE, echo = FALSE, results = 'hide'}
 # Wrangle projections for mapping:
 
-predict_template <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
-map_proj <- sp::CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-predict_template_proj <- spTransform(predict_template, CRSobj = map_proj)
+predTemplate <-raster('E:/NASData/Eddy/RefRaster.tif')
+map_proj <- crs(predTemplate)
+crop_limits <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
+crop_limits_proj <- spTransform(crop_limits, CRSobj = map_proj)
 
 # Acoustic
-jan2009_AcOnly_prediction_proj <- projectRaster(jan2009_AcOnly_prediction, crs=map_proj)
-july2009_AcOnly_prediction_proj <- projectRaster(july2009_AcOnly_prediction, crs=map_proj)
-jan2009_AcOnly_prediction_crop <- mask(jan2009_AcOnly_prediction_proj,predict_template_proj)
+jan2009_AcOnly_prediction_crop <- mask(jan2009_AcOnly_prediction,crop_limits_proj)
 july2009_AcOnly_prediction_crop <-
-  mask(july2009_AcOnly_prediction_proj,predict_template_proj)
+  mask(july2009_AcOnly_prediction,crop_limits_proj)
+jan2009_AcOnly_map_probSee <- jan2009_AcOnly_prediction_crop*visG0*visDetProb
+july2009_AcOnly_map_probSee <- july2009_AcOnly_prediction_crop*visG0*visDetProb
+
+perModel_jan2009_AcOnly_crop <- vector('list',length = trainRepeats)
+perModel_july2009_AcOnly_crop <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_AcOnly_crop[[iMod]]  <- mask(perModel_jan2009_AcOnly[[iMod]],crop_limits_proj)
+  perModel_july2009_AcOnly_crop[[iMod]]  <- mask(perModel_july2009_AcOnly[[iMod]],crop_limits_proj)
+}
+
+predSTD_jan2009_AcOnly_crop <- calc(stack(perModel_jan2009_AcOnly_crop),fun=sd)/100
+predSTD_july2009_AcOnly_crop <- calc(stack(perModel_july2009_AcOnly_crop),fun=sd)/100
 
 # Visual
-jan2009_VisOnly_prediction_proj <- 
-  projectRaster(jan2009_VisOnly_prediction, crs=map_proj)
-july2009_VisOnly_prediction_proj <- 
-  projectRaster(july2009_VisOnly_prediction, crs=map_proj)
-#jan2009_VisOnly_prediction_SE_proj <- 
-#  projectRaster(jan2009_VisOnly_prediction_SE, crs=map_proj)
-
 jan2009_VisOnly_prediction_crop <- 
-  mask(jan2009_VisOnly_prediction_proj,predict_template_proj)
-july2009_VisOnly_prediction_crop <- mask(july2009_VisOnly_prediction_proj,predict_template_proj)
-#jan2009_VisOnly_prediction_SE_crop <- mask(jan2009_VisOnly_prediction_SE_proj,predict_template_proj)
+  mask(jan2009_VisOnly_prediction,crop_limits_proj)
+july2009_VisOnly_prediction_crop <- mask(july2009_VisOnly_prediction,crop_limits_proj)
+jan2009_VisOnly_map_probSee <- jan2009_VisOnly_prediction_crop*visG0*visDetProb
+july2009_VisOnly_map_probSee <- july2009_VisOnly_prediction_crop*visG0*visDetProb
 
-#Both
-jan2009_prediction_proj <- projectRaster(jan2009_prediction, crs=map_proj)
-july2009_prediction_proj <- projectRaster(july2009_prediction, crs=map_proj)
-jan2009_prediction_crop <- mask(jan2009_prediction_proj,predict_template_proj)
-july2009_prediction_crop <- mask(july2009_prediction_proj,predict_template_proj)
+perModel_jan2009_VisOnly_crop <- vector('list',length = trainRepeats)
+perModel_july2009_VisOnly_crop <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_VisOnly_crop[[iMod]]  <- mask(perModel_jan2009_VisOnly[[iMod]], crop_limits_proj)
+  perModel_july2009_VisOnly_crop[[iMod]]  <- mask(perModel_july2009_VisOnly[[iMod]], crop_limits_proj)
+}
+predSTD_jan2009_VisOnly_crop <- calc(stack(perModel_jan2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+
+predSTD_july2009_VisOnly_crop <- calc(stack(perModel_july2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+
+# Joint
+jan2009_prediction_crop <- mask(jan2009_prediction,crop_limits_proj)
+july2009_prediction_crop <- mask(july2009_prediction,crop_limits_proj)
+jan2009_map_probSee <- jan2009_prediction_crop*visG0*visDetProb
+july2009_map_probSee <- july2009_prediction_crop*visG0*visDetProb
+
+perModel_jan2009_Joint_crop <- vector('list',length = trainRepeats)
+perModel_july2009_Joint_crop <- vector('list',length = trainRepeats)
+for (iMod in c(1:trainRepeats)){
+  perModel_jan2009_Joint_crop[[iMod]]  <- mask(perModel_jan2009_Joint[[iMod]], crop_limits_proj)
+  perModel_july2009_Joint_crop[[iMod]]  <- mask(perModel_july2009_Joint[[iMod]], crop_limits_proj)
+}
+predSTD_jan2009_Joint_crop <- calc(stack(perModel_jan2009_Joint_crop),fun=sd,na.rm=TRUE)/100
+predSTD_july2009_Joint_crop <- calc(stack(perModel_july2009_Joint_crop),fun=sd,na.rm=TRUE)/100
 ```
 <br>
-
-
 
 ```{r Model Averaging, warning = FALSE, echo = FALSE}
 ### Model averaging 
 
 # Alternatively, the visual and acoustic models could be averaged.
+jan2009mean <- mean(jan2009_AcOnly_prediction_crop,jan2009_VisOnly_prediction_crop,na.rm = TRUE)
+july2009mean <- mean(july2009_AcOnly_prediction_crop,july2009_VisOnly_prediction_crop,na.rm = TRUE)
 
-jan2009mean <- mean(jan2009_AcOnly_prediction_crop,jan2009_VisOnly_prediction_crop)
-july2009mean <- mean(july2009_AcOnly_prediction_crop,july2009_VisOnly_prediction_crop)
-
+jan2009mean_probSee <- july2009mean*visG0*visDetProb
+july2009mean_probSee <- jan2009mean*visG0*visDetProb
 ```
 
 
-Summer 2009 predicted distribution and test sightings:
+**Summer 2009 predicted distribution and test sightings:**
 
 
 ```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
+maxColor <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
+                july2009_VisOnly_prediction_crop@data@max,
+                july2009_prediction_crop@data@max,
+                july2009mean@data@max))*10)/10
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,1), 
+                    domain=c(0,maxColor), 
                     na.color = 'transparent')
-GU2009Effort = shapefile('E:/NASData/GU2009Effort/GU_Effort_Merge_clip.shp')
+GU2009Effort <- readOGR('E:/NASData/GU2009Effort/GU_Effort_Merge_clip_Project.shp')
+GU2009EffortLines <- sp::spTransform(GU2009Effort, CRSobj = CRS('+init=epsg:4326'))
 
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
@@ -1071,31 +1509,72 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addRasterImage(july2009_prediction_crop, colors = pal,
                  opacity = 0.8, group = 'Joint July 2009') %>%
   addRasterImage(july2009mean,colors = pal,
-                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>% 
-  addPolylines(data=GU2009Effort,group ='Visual Effort (Summer 2009)', opacity = 1,
+                 opacity = 0.8, group = 'Vis. & Ac. Mean July 2009') %>%
+  addPolylines(data = GU2009EffortLines,
+               group ='Visual Effort (Summer 2009)', 
+               opacity = 1,
                color = "black", weight = 2)%>%
-  addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,color = "black",
+  addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,
+                 color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
-  addLegend(pal = pal, values = c(0,1),
-    title = 'P(encounter)',position = "bottomleft") %>%
+  addLegend(pal = pal, values = c(0,maxColor),
+    title = 'Estimated Density',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic July 2009','Visual July 2009',
                    'Joint July 2009','Vis. & Ac. Mean July 2009'),
-    overlayGroups = c('Test Sightings (Summer 2009)', 'Visual Effort (Summer 2009)'),
+    overlayGroups = c('Test Sightings (Summer 2009)',
+                      'Visual Effort (Summer 2009)'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
 
 ```
 
-<br>
-Winter 2009 predicted distribution:
+
+**Summer 2009 prediction uncertainty:**
+```{r leaflet summer uncert, message = FALSE, warning = FALSE, echo = FALSE}
+# Display summer (July 2009) map:
+maxColor <- ceiling(max(c(predSTD_july2009_AcOnly_crop@data@max,
+                predSTD_july2009_VisOnly_crop@data@max,
+                predSTD_july2009_Joint_crop@data@max))*100)/100
+pal <- colorNumeric(palette = matlab.like2(5),
+                    domain=c(0,maxColor), 
+                    na.color = 'transparent')
+
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(predSTD_july2009_AcOnly_crop, colors = pal,
+                 opacity = 0.8, group = 'Acoustic July 2009') %>%
+  addRasterImage(predSTD_july2009_VisOnly_crop, colors = pal,
+                 opacity = 0.8, group = 'Visual July 2009') %>%
+  addRasterImage(predSTD_july2009_Joint_crop, colors = pal,
+                 opacity = 0.8, group = 'Joint July 2009') %>%
+  addLegend(pal = pal, values = c(0,maxColor),
+    title = 'STD(Estimated Density)',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('Acoustic July 2009','Visual July 2009',
+                   'Joint July 2009'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+```
+
+<br>  
+
+
+
+**Winter 2009 predicted distribution:**
 
 ```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}
 # Display winter (January 2009) map:
+maxColor <- ceiling(max(c(jan2009_AcOnly_prediction_crop@data@max,
+                jan2009_VisOnly_prediction_crop@data@max,
+                jan2009_prediction_crop@data@max,
+                jan2009mean@data@max))*10)/10
+
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,1), 
+                    domain=c(0,maxColor), 
                     na.color = 'transparent')
 
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1108,8 +1587,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint Jan. 2009') %>%
   addRasterImage(jan2009mean,colors = pal,
                  opacity = 0.8, group = 'Vis. & Ac. Mean Jan. 2009') %>%
-  addLegend(pal = pal, values = c(0,1),
-    title = 'P(encounter)',position = "bottomleft") %>%
+  addLegend(pal = pal, values = c(0,maxColor),
+    title = 'Estimated Density',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic Jan. 2009','Visual Jan. 2009',
                    'Joint Jan. 2009','Vis. & Ac. Mean Jan. 2009'),
@@ -1119,14 +1598,46 @@ map
 
 ```
 
+**Winter 2009 prediction uncertainty:**
+```{r leaflet winter uncert, message = FALSE, warning = FALSE, echo = FALSE}
+# Display summer (July 2009) map:
+maxColor <- ceiling(max(c(predSTD_jan2009_AcOnly_crop@data@max,
+                predSTD_jan2009_VisOnly_crop@data@max,
+                predSTD_jan2009_Joint_crop@data@max))*100)/100
+pal <- colorNumeric(palette = matlab.like2(5),
+                    domain=c(0,maxColor), 
+                    na.color = 'transparent')
+
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(predSTD_jan2009_AcOnly_crop, colors = pal,
+                 opacity = 0.8, group = 'Acoustic Jan. 2009') %>%
+  addRasterImage(predSTD_jan2009_VisOnly_crop, colors = pal,
+                 opacity = 0.8, group = 'Visual Jan. 2009') %>%
+  addRasterImage(predSTD_jan2009_Joint_crop, colors = pal,
+                 opacity = 0.8, group = 'Joint Jan. 2009') %>%
+  addLegend(pal = pal, values = c(0,maxColor),
+    title = 'STD(Estimated Density)',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('Acoustic Jan. 2009','Visual Jan. 2009',
+                   'Joint Jan. 2009'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+```
 
 <br>
 
-# IV. Monthly model predictions
+# 4. Monthly model predictions
 
-Spatial model predictions using oceanographic variables averaged by month between 2003 and 2015.
+Spatial model predictions were generated using oceanographic variables averaged by month between 2003 and 2015.
 
-```{r evaluate climatology-based models, echo = FALSE, message = FALSE, warning = FALSE}
+
+```{r evaluate climatology-based models, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+# to recalculate the climatology raster stack:
+# source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/scaled_climate_raster_stack.R', echo=TRUE)
+# scaled_climate_raster_stack(covars_Joint_max.train,covars_Joint_min.train) 
+
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters_scaled.Rdata') 
 monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
 monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
@@ -1137,21 +1648,28 @@ mapClimatePrediction <- vector('list',length = 12)
 for (iM in 1:length(monthStr)){
   climatePrediction[[iM]] <- raster::predict(raster_set[[iM]],nn_Joint[[best_Joint_ModelIndex]],
            na.action = na.pass)
-  mapClimatePrediction[[iM]] <- mask(projectRaster(climatePrediction[[iM]], crs=map_proj),predict_template_proj)  
+  mapClimatePrediction[[iM]] <- mask(climatePrediction[[iM]], crop_limits_proj)  
   # output raster to geotiff
-  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.tif')
+  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_density.tif')
   writeRaster(mapClimatePrediction[[iM]],filename = rasterImageFileName, format="GTiff",overwrite = TRUE)
   
-  #ouput raster to kml
-  kmlImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.kml')
-  KML(mapClimatePrediction[[iM]],file = kmlImageFileName, col=matlab.like2(32),overwrite = TRUE)
+  # #ouput raster to kml
+  # kmlImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.kml')
+  # KML(mapClimatePrediction[[iM]],file = kmlImageFileName, col=matlab.like2(32),overwrite = TRUE)
 }
   
 ```
 
-```{r plot climatologies, message = FALSE, warning = FALSE, echo = FALSE}
+```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE, echo = FALSE}
+maxColor <- ceiling(max(c(mapClimatePrediction[[1]]@data@max,
+                mapClimatePrediction[[3]]@data@max,
+                mapClimatePrediction[[5]]@data@max,
+                mapClimatePrediction[[7]]@data@max,
+                mapClimatePrediction[[9]]@data@max,
+                mapClimatePrediction[[11]]@data@max))*10)/10
+
 pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,1), 
+                    domain=c(0,maxColor), 
                     na.color = 'transparent')
 
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1171,7 +1689,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat,
              group = "HARP Locations") %>%
   addLegend(pal = pal, values = c(0,1),
-    title = 'P(encounter)',position = "bottomleft") %>%
+    title = 'Estimated Density',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','March','May',
                    'July','Sept.','Nov.'),

@@ -366,14 +366,18 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ### 1.2.4 Estimate Relative Weights
 
+```{r load detection prob, echo = FALSE} 
+load("E:/NASData/ModelData/Zc/ZcsightwTrunc_GU.Rdata")
+visDetProb <- detFun[[bestModelIdx]]$fitted[1]
+```
 To train the model, we need to know how much power the various data points have relative to one another. If an animal is sighted or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. For each data type, we estimated the probability of a missed detection to downweight zeros in the presence absence data.
 
-The visual data represent wether or not  Cuvier's beaked whales were seen during each transect segment. The probability of missing a sighting of risso's dolphin was estimated as 
-\[P_{V}(detect|present) = \mu_{det} * g0\ = 0.29 * 0.81 = 0.23\] 
+The visual data represent wether or not `r I(SPLong)` were seen during each transect segment. The probability of missing a sighting of `r I(SPLong)` was estimated as 
+\[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences X % of the time, therefore zeros are given a wieght of X on a scale of [0,1].
 
-The acoustic data represent presence or absence of Cuvier's beaked whale detections in one day bins. Given that a group of Cuvier's is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
+The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
 \[P_{A}(detect|present) = 1-(1-0.65)^{225}) \approx 1\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all observations are given weight = 1.
@@ -901,13 +905,13 @@ multiplot(p1_Vis, p2_Vis, p3_Vis, cols=1)
 
 ```{r Combo Temporal Predict,fig.height = 10, fig.width = 7, warning = FALSE, echo = FALSE}
 predJoint_MC <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_MC,],
+                             transformedCovars_AcOnly.test[compAcSet_MC,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 predJoint_GC <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_GC,],
+                             transformedCovars_AcOnly.test[compAcSet_GC,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 predJoint_DT <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_DT,],
+                             transformedCovars_AcOnly.test[compAcSet_DT,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 
 
