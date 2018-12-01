@@ -1387,7 +1387,7 @@ for (iM in 1:length(monthStr)){
   
 ```
 
-```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE, echo = FALSE}
+```{r plot climatologies, eval = TRUE, message = FALSE, warning = FALSE, echo = FALSE}
 maxColor <- ceiling(max(c(mapClimatePrediction[[1]]@data@max,
                 mapClimatePrediction[[3]]@data@max,
                 mapClimatePrediction[[5]]@data@max,
