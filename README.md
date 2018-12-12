@@ -15,7 +15,7 @@ Cuvier's beaked whale
 * [GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_gam.html) 
 * [NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html) 
 * [GAM density](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_gam_density.html) 
-* [NN Density](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN_density.html) 
+* [NN density](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN_density.html) 
 
 
 Sperm whale 
@@ -23,7 +23,7 @@ Sperm whale
 * [GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_gam.html) 
 * [NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN.html) 
 * [GAM density](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_gam_density.html) 
-* [NN Density](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN_density.html) 
+* [NN density](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN_density.html) 
 
 
 *Kogia* spp.
@@ -31,7 +31,7 @@ Sperm whale
 * [GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_gam.html) 
 * [NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN.html) 
 * [GAM density](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_gam_density.html) 
-* [NN Density](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN_density.html) 
+* [NN density](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN_density.html) 
 
 
 Risso's dolphin
@@ -39,7 +39,7 @@ Risso's dolphin
 * [GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_gam.html)
 * [NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN.html)
 * [GAM density](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_gam_density.html)
-* [NN Density](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN_density.html)
+* [NN density](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN_density.html)
 
 
 Pelagic Stenellid dolphins (*Stenella spp.*)
@@ -47,4 +47,4 @@ Pelagic Stenellid dolphins (*Stenella spp.*)
 * [GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_gam.html)
 * [NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN.html)
 * [GAM density](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_gam_density.html)
-* [NN Density](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN_density.html)
+* [NN density](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN_density.html)
