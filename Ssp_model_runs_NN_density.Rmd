@@ -217,7 +217,7 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -325,7 +325,7 @@ dev.off()
 <br>
 
 
-```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
 plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
@@ -372,7 +372,7 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ![](E:/NASData/ModelData/Ssp/VisualOnly_Ssp_density_pres_abs.png)
 
-<br>   
+<br>  
 
 ### 1.2.4 Estimate Relative Weights
 
@@ -580,7 +580,7 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 # set up model params
 model1.indices <- c(2:6,9,10,13,14)
 nMax1 <- length(model1.indices)
-layerSizeList <- c(4,6,8,10)#,12,14)
+layerSizeList <- c(4,6,8,10,12,14)
 trainRepeats <- 25
 
 ```
@@ -1538,7 +1538,7 @@ for (iR in model1.indices){
                               AcOnlyRangesMin[thisVarName]]<- NA
   jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]>
                               AcOnlyRangesMax[thisVarName]]<- NA
-  
+
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]<
                               AcOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]>

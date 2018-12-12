@@ -48,6 +48,8 @@ visG0 <- mean(c(0.77,0.84)) # for Gg  from palka 2006 table 5, 2004 survey
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 1.9 # km #(for group model it's 3.7km for Risso's)
 
+r_sp <-5 # radius over which acoustic probability of detection applies
+
 save(file = "setup_info_Gg.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

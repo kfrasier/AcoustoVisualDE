@@ -66,7 +66,6 @@ percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOn
 
 <br> 
 
-<br> 
 
 ### 1.1.1 Testing and Training Sets
 
@@ -211,7 +210,7 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -319,7 +318,7 @@ dev.off()
 <br>
 
 
-```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
 plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
@@ -366,8 +365,6 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 **Visual kernel densities:**
 
 ![](E:/NASData/ModelData/Ssp/VisualOnly_Ssp_density_pres_abs.png)
-
-<br>  
 
 <br>  
 
@@ -516,7 +513,7 @@ VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 Run full binomial GAMs on Acoustic only, Visual only, and joint Acoustic/Visual datasets.
 
 
-```{r AC model 1, eval = TRUE,echo = FALSE}
+```{r AC model 1, eval = TRUE, echo = FALSE}
 
 gam_full_AcOnly[[1]] <- gam(yAcOnly ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -833,11 +830,11 @@ p3_Ac <- ggplot() +
 
 p4_Ac <- ggplot() +
   geom_ribbon(data = AcOnly_predictionSet,
-            aes(x = date, ymax = predSd_DC + DC,  ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet,
-            aes(x = date, y = pmax(DC - predSd_DC,0)),fill = "white") +
+            aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DC_smooth,color = Legend1))+
+             aes(x = date, y = testObs_DC_smooth, color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=DC, color = Legend)) +
   scale_color_manual("",values= c("gray48","#009999"))+
@@ -846,13 +843,13 @@ p4_Ac <- ggplot() +
 
 p5_Ac <- ggplot() +
   geom_ribbon(data = AcOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
              aes(x = date, y = testObs_MP_smooth,color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend))+
+            aes(x=date, y=MP, color = Legend)) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
   theme(legend.position="none")
@@ -1120,7 +1117,7 @@ p5 <- ggplot() +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MP_smooth,color = Legend1))+
+             aes(x = date, y = testObs_MP_smooth, color = Legend1))+
   geom_line(data = Joint_predictionSet,
             aes(x = date, y = MP, color = Legend))+
   scale_color_manual("",values = c("gray48","#009999"))+
@@ -1415,7 +1412,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Nov.') %>%
   addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat,
              group = "HARP Locations") %>%
-  addLegend(pal = pal, values = c(0,1),
+  addLegend(pal = pal, values = c(0,maxColor),
     title = 'Estimated Density',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Jan.','March','May',

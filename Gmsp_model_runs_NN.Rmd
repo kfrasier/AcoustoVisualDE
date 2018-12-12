@@ -72,7 +72,6 @@ percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOn
 
 <br> 
 
-<br> 
 
 ### 1.1.1 Testing and Training Sets
 
@@ -217,8 +216,8 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
-plotCols1 <-c(4:7,10,12,16,17,19,20)
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
+plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(Train_AcOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticOnly_',SP))
@@ -325,7 +324,7 @@ dev.off()
 <br>
 
 
-```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
 plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
@@ -363,7 +362,6 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 ```
 
 <br> 
-
 **Acoustic kernel densities:**
 
 ![](E:/NASData/ModelData/Gmsp/AcousticOnly_Gmsp_density_pres_abs.png)
@@ -372,8 +370,6 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 **Visual kernel densities:**
 
 ![](E:/NASData/ModelData/Gmsp/VisualOnly_Gmsp_density_pres_abs.png)
-
-<br>  
 
 <br>  
 
@@ -432,7 +428,7 @@ joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fa
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
-  if (!is.na(transformedCovars.train$fac1[iFac])){
+  if (!is.na(transformedCovars.train$fac1[iFac]) & !is.na(transformedCovars.train$Density[iFac])){
     if (transformedCovars.train$fac1[iFac]>5) {
       if (transformedCovars.train$Density[iFac]==0){
         # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
@@ -444,7 +440,7 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
 
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
-  if (!is.na(transformedCovars.test$fac1[iFac])){
+  if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
     if (transformedCovars.test$fac1[iFac]>5) {
        if (transformedCovars.test$Density[iFac]==0){
         # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
@@ -458,14 +454,16 @@ VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOn
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
 
 for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
-  if (transformedCovars_VisOnly.train$Density[iFac]==0){
+  if (!is.na(transformedCovars_VisOnly.train$Density[iFac]) & 
+       transformedCovars_VisOnly.train$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
     VisOnly.train_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
 
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
-  if (transformedCovars_VisOnly.test$Density[iFac]==0){
+  if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
+      transformedCovars_VisOnly.test$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
@@ -491,7 +489,6 @@ VisOnly.test.NoNa <- transformedCovars_VisOnly.test[goodData_Vis_test,]
 goodData_Joint_test <- which(!is.na(rowSums(transformedCovars.test)))
 Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 
-
 ```
 
 ```{r Scale all the data, echo = FALSE}
@@ -503,66 +500,68 @@ covars_Joint_min.train <- apply(Joint.train.NoNa, 2, min, na.rm = TRUE)
 Joint_train_scaled <- as.data.frame(scale(Joint.train.NoNa, 
                         center = covars_Joint_min.train, 
                         scale = covars_Joint_max.train-covars_Joint_min.train))
+Joint_train_scaled$y <- Joint.train.NoNa$y
+Joint_train_scaled$ySqrt <- Joint.train.NoNa$ySqrt
 Joint_train_scaled$weightsG0<-joint_train_weightsG0[goodData_Joint]
 
 # Scale Ac only training data for the NN
-covars_AcOnly_max.train <- apply(AcOnly.train.NoNa, 2, max, na.rm = TRUE) 
-covars_AcOnly_min.train <- apply(AcOnly.train.NoNa, 2, min, na.rm = TRUE)
 AcOnly_train_scaled <- as.data.frame(scale(AcOnly.train.NoNa, 
                           center = covars_Joint_min.train, 
-                          scale = covars_Joint_max.train-covars_Joint_min.train))
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+AcOnly_train_scaled$yAcOnly <- AcOnly.train.NoNa$yAcOnly
+AcOnly_train_scaled$yAcOnlySqrt <- AcOnly.train.NoNa$yAcOnlySqrt
 
 # Scale Vis only training data for the NN
 covars_VisOnly_max.train <- apply(VisOnly.train.NoNa, 2, max, na.rm = TRUE) 
 covars_VisOnly_min.train <- apply(VisOnly.train.NoNa, 2, min, na.rm = TRUE)
 VisOnly_train_scaled <- as.data.frame(scale(VisOnly.train.NoNa, 
                           center = covars_Joint_min.train, 
-                          scale = covars_Joint_max.train-covars_Joint_min.train))
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+VisOnly_train_scaled$yVisOnly <- VisOnly.train.NoNa$yVisOnly
+VisOnly_train_scaled$yVisOnlySqrt <- VisOnly.train.NoNa$yVisOnlySqrt
 VisOnly_train_scaled$weightsG0<-VisOnly.train_weightsG0[goodData_Vis]
 
 
 # Scale Ac only test data for the NN
-covars_AcOnly_max.test <- apply(AcOnly.test.NoNa, 2, max, na.rm = TRUE) 
-covars_AcOnly_min.test <- apply(AcOnly.test.NoNa, 2, min, na.rm = TRUE)
 AcOnly_test_scaled <- as.data.frame(scale(AcOnly.test.NoNa, 
-                          center = covars_Joint_min.train, 
-                          scale = covars_Joint_max.train-covars_Joint_min.train))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+AcOnly_test_scaled$yAcOnly <- AcOnly.test.NoNa$yAcOnly
+AcOnly_test_scaled$yAcOnlySqrt <- AcOnly.test.NoNa$yAcOnlySqrt
 
 # Scale Vis only test data for the NN
-covars_VisOnly_max.test <- apply(VisOnly.test.NoNa, 2, max, na.rm = TRUE) 
-covars_VisOnly_min.test <- apply(VisOnly.test.NoNa, 2, min, na.rm = TRUE)
 VisOnly_test_scaled <- as.data.frame(scale(VisOnly.test.NoNa, 
-                          center = covars_Joint_min.train, 
-                          scale = covars_Joint_max.train-covars_Joint_min.train))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+VisOnly_test_scaled$yVisOnly <- VisOnly.test.NoNa$yVisOnly
+VisOnly_test_scaled$yVisOnlySqrt <- VisOnly.test.NoNa$yVisOnlySqrt
 VisOnly_test_scaled$weightsG0<-VisOnly.test_weightsG0[goodData_Vis_test]
 
 
 # Scale Joint test data for the NN
-covars_Joint_max.test <- apply(Joint.test.NoNa, 2, max, na.rm = TRUE) 
-covars_Joint_min.test <- apply(Joint.test.NoNa, 2, min, na.rm = TRUE)
 Joint_test_scaled <- as.data.frame(scale(Joint.test.NoNa, 
-                          center = covars_Joint_min.train, 
-                          scale = covars_Joint_max.train-covars_Joint_min.train))
+                        center = covars_Joint_min.train, 
+                        scale = covars_Joint_max.train-covars_Joint_min.train))
+Joint_test_scaled$y <- Joint.test.NoNa$y
+Joint_test_scaled$ySqrt <- Joint.test.NoNa$ySqrt
 Joint_test_scaled$weightsG0<-joint_test_weightsG0[goodData_Joint_test]
+
 n <- names(Joint_test_scaled)
-
-
-
 
 
 # save ranges of each scaled covariate in training set (max and min)
 JointRangesMax <- apply(Joint_train_scaled, MARGIN = 2, 
-                        function(x) max(x, na.rm=TRUE))
+                        function(x) max(x, na.rm =TRUE))
 JointRangesMin <- apply(Joint_train_scaled, MARGIN = 2, 
-                        function(x) min(x, na.rm=TRUE))
+                        function(x) min(x, na.rm =TRUE))
 
 AcOnlyRangesMax <- apply(AcOnly_train_scaled, MARGIN = 2,
-                         function(x) max(x, na.rm=TRUE))
+                         function(x) max(x, na.rm =TRUE))
 AcOnlyRangesMin <- apply(AcOnly_train_scaled, MARGIN = 2,
-                         function(x) min(x, na.rm=TRUE))
+                         function(x) min(x, na.rm =TRUE))
 
 VisOnlyRangesMax <- apply(VisOnly_train_scaled, MARGIN = 2,
-                          function(x) max(x, na.rm=TRUE))
+                          function(x) max(x, na.rm =TRUE))
 VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
                           function(x) min(x, na.rm=TRUE))
 ```
@@ -622,12 +621,12 @@ pr.nn_Joint_test <- NULL
 
 ```
 
-```{r Set up parallel cluster, eval = TRUE, echo = FALSE}
+```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
 numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -661,7 +660,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -726,7 +725,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -1427,7 +1426,7 @@ for (iR in model1.indices){
                               AcOnlyRangesMin[thisVarName]]<- NA
   jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]>
                               AcOnlyRangesMax[thisVarName]]<- NA
-  
+
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]<
                               AcOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]>
@@ -1473,6 +1472,7 @@ for (iR in model1.indices){
                               VisOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersVis[[thisVarName]][july2009_rastersVis[[thisVarName]]>
                               VisOnlyRangesMax[thisVarName]]<- NA
+  
 }
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,

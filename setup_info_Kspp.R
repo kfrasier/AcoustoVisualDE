@@ -48,6 +48,9 @@ visG0 <- mean(c(0.55,0.29)) # for kogia spp. from palka 2006 table 5, 2004 surve
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- .5 # km
 
+r_sp <-2 # radius over which acoustic probability of detection applies (comes from MC simulation)
+
+
 save(file = "setup_info_Kspp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

@@ -1,5 +1,5 @@
 ---
-title: 'Cuvier''s beaked whale habitat models:Density'
+title: "GoMx Cuvier's beaked whale habitat models: Density"
 output: 
   html_document:
     toc: true
@@ -153,7 +153,6 @@ plot.timeseries(siteList,outDir,AcOnlySegments)
 ![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_MC.png)
 ![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_GC.png)
 ![](E:/NASData/ModelData/Zc/Zc_Timeseries_Site_DT.png)
-
 <br> 
 
 ## 1.2 Examine Covariates
@@ -216,7 +215,7 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -371,7 +370,7 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ![](E:/NASData/ModelData/Zc/VisualOnly_Zc_density_pres_abs.png)
 
-<br>   
+<br>  
 
 ### 1.2.4 Estimate Relative Weights
 
@@ -579,7 +578,7 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 # set up model params
 model1.indices <- c(2:6,9,10,13,14)
 nMax1 <- length(model1.indices)
-layerSizeList <- c(4,6,8,10)#,12,14)
+layerSizeList <- c(4,6,8,10,12,14)
 trainRepeats <- 25
 
 ```
@@ -631,7 +630,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
@@ -673,7 +672,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -750,7 +749,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -953,8 +952,6 @@ occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'
 predVar_MC <- NULL
 predVar_GC <- NULL
 predVar_DT <- NULL
-predVar_DC <- NULL
-predVar_MP <- NULL
 for (iMod in c(1:trainRepeats)){
   predVar_MC[[iMod]] <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
                              AcOnly_test_scaled[compAcSet_MC,model1.indices])*
@@ -1079,27 +1076,37 @@ multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
 # Confusing, but acoustic only predictors are passed in to since
 # we're predicting on the acoustic timeseries.
 predVisOnly_MC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
-                          AcOnly_test_scaled[compAcSet_MC,model1.indices])*covars_Joint_max.train['y']
-predVisOnly_GC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
-                          AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
-predVisOnly_DT <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
-                          AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
+                          AcOnly_test_scaled[compAcSet_MC,model1.indices])*
+                          covars_Joint_max.train['y']
+predVisOnly_MC[predVisOnly_MC<0]=0
 
+predVisOnly_GC <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
+                          AcOnly_test_scaled[compAcSet_GC,model1.indices])*
+                          covars_Joint_max.train['y']
+predVisOnly_GC[predVisOnly_GC<0]=0
+
+predVisOnly_DT <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]],
+                          AcOnly_test_scaled[compAcSet_DT,model1.indices])*
+                          covars_Joint_max.train['y']
+predVisOnly_DT[predVisOnly_DT<0]=0
 
 
 predVar_MC <- NULL
 predVar_GC <- NULL
 predVar_DT <- NULL
-predVar_DC <- NULL
-predVar_MP <- NULL
 for (iMod in c(1:trainRepeats)){
   predVar_MC[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                             AcOnly_test_scaled[compAcSet_MC,model1.indices])*covars_Joint_max.train['y']
+                             AcOnly_test_scaled[compAcSet_MC,model1.indices])*
+                             covars_Joint_max.train['y']
+  predVar_MC[[iMod]][predVar_MC[[iMod]]<0]=0
   predVar_GC[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                             AcOnly_test_scaled[compAcSet_GC,model1.indices])*covars_Joint_max.train['y']
+                             AcOnly_test_scaled[compAcSet_GC,model1.indices])*
+                             covars_Joint_max.train['y']
+  predVar_GC[[iMod]][predVar_GC[[iMod]]<0]=0
   predVar_DT[[iMod]] <- predict(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                             AcOnly_test_scaled[compAcSet_DT,model1.indices])*covars_Joint_max.train['y']
-
+                             AcOnly_test_scaled[compAcSet_DT,model1.indices])*
+                             covars_Joint_max.train['y']
+  predVar_DT[[iMod]][predVar_DT[[iMod]]<0]=0
 }
 n1MC <- length(predVar_MC[[1]])
 predVar_MC_DF <- structure(predVar_MC, row.names = c(NA, -n1MC), class = "data.frame")
@@ -1129,6 +1136,8 @@ VisOnly_predictionSet$DT <- NA
 VisOnly_predictionSet$predSd_DT <- NA
 m3 <- match(DT_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
+VisOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+
 
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
@@ -1175,7 +1184,6 @@ p3_Vis <- ggplot() +
   scale_color_manual(values= c("gray48","#009999"))+
   labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
   theme(legend.position="none")
-
 
 multiplot(p1_Vis, p2_Vis, p3_Vis, cols=1)
 
@@ -1325,7 +1333,7 @@ for (iR in model1.indices){
                               AcOnlyRangesMin[thisVarName]]<- NA
   jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]>
                               AcOnlyRangesMax[thisVarName]]<- NA
-  
+
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]<
                               AcOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]>

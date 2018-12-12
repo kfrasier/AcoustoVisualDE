@@ -216,7 +216,7 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -324,7 +324,7 @@ dev.off()
 <br>
 
 
-```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
 plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
@@ -371,7 +371,7 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ![](E:/NASData/ModelData/Ssp/VisualOnly_Ssp_density_pres_abs.png)
 
-<br>   
+<br>  
 
 ### 1.2.4 Estimate Relative Weights
 
@@ -624,7 +624,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -658,7 +658,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = TRUE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -723,7 +723,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -1425,7 +1425,7 @@ for (iR in model1.indices){
                               AcOnlyRangesMin[thisVarName]]<- NA
   jan2009_rastersAc[[thisVarName]][jan2009_rastersAc[[thisVarName]]>
                               AcOnlyRangesMax[thisVarName]]<- NA
-  
+
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]<
                               AcOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersAc[[thisVarName]][july2009_rastersAc[[thisVarName]]>
@@ -1471,6 +1471,7 @@ for (iR in model1.indices){
                               VisOnlyRangesMin[thisVarName]]<- NA
   july2009_rastersVis[[thisVarName]][july2009_rastersVis[[thisVarName]]>
                               VisOnlyRangesMax[thisVarName]]<- NA
+  
 }
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,

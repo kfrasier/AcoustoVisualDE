@@ -46,6 +46,8 @@ visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 sur
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 1.0 # km
 
+r_sp <- 3
+
 save(file = "setup_info_Me.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

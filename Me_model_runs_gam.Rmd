@@ -58,13 +58,13 @@ percFilled <- plot.missingdata(mergedSegments,covarList,paste0(outDir,'AcousticA
 percFilled <- plot.missingdata(AcOnlySegments,covarList,paste0(outDir,'AcousticOnly_',SP)) 
 percFilled <- plot.missingdata(VisOnlySegments,covarList,paste0(outDir,'VisualOnly_',SP)) 
 ```
+
 **Visual data predictor variable availability:** 
 
 ![](E:/NASData/ModelData/Me/VisualOnly_Me_missingData.png)
 
 <br> 
 
-<br> 
 
 ### 1.1.1 Testing and Training Sets
 
@@ -366,14 +366,18 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ### 1.2.4 Estimate Relative Weights
 
+```{r load detection prob, echo = FALSE} 
+load("E:/NASData/ModelData/Gg/GgsightwTrunc_GU.Rdata")
+visDetProb <- detFun[[bestModelIdx]]$fitted[1]
+```
 To train the model, we need to know how much power the various data points have relative to one another. If an animal is sighted or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. For each data type, we estimated the probability of a missed detection to downweight zeros in the presence absence data.
 
-The visual data represent wether or not  Cuvier's beaked whales were seen during each transect segment. The probability of missing a sighting of risso's dolphin was estimated as 
-\[P_{V}(detect|present) = \mu_{det} * g0\ = 0.29 * 0.81 = 0.23\] 
+The visual data represent wether or not `r I(SPLong)` were seen during each transect segment. The probability of missing a sighting of `r I(SPLong)` was estimated as 
+\[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences X % of the time, therefore zeros are given a wieght of X on a scale of [0,1].
 
-The acoustic data represent presence or absence of Cuvier's beaked whale detections in one day bins. Given that a group of Cuvier's is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
+The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
 \[P_{A}(detect|present) = 1-(1-0.65)^{225}) \approx 1\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all observations are given weight = 1.
@@ -386,22 +390,15 @@ Therefore we assume that there are no false negative days in the passive acousti
 
 <br>
 
-<br> 
-
 # 2. Model Fitting
 
-Models were fit using gam (single data type models) and gamm )joint models from the mgcv package in R. 
+Models were fit using gam from the mgcv package in R. 
 
 ```{r load starting data, echo = FALSE} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 
 ```{r model setup, echo = FALSE} 
-yAcOnly <- transformedCovars_AcOnly.train$Density
-yVisOnly <- transformedCovars_VisOnly.train$Density
-y <- transformedCovars.train$Density
-
-load("E:/NASData/ModelData/Me/MesightwTrunc_GU.Rdata")
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
 transformedCovars_AcOnly.train$yAcOnly_TF<-(transformedCovars_AcOnly.train$Density >0)*1
@@ -418,7 +415,7 @@ joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fa
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
-  if (!is.na(transformedCovars.train$fac1[iFac])){
+  if (!is.na(transformedCovars.train$fac1[iFac]) & !is.na(transformedCovars.train$Density[iFac])){
     if (transformedCovars.train$fac1[iFac]>5) {
       if (transformedCovars.train$Density[iFac]==0){
         # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
@@ -430,7 +427,7 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
 
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
-  if (!is.na(transformedCovars.test$fac1[iFac])){
+  if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
     if (transformedCovars.test$fac1[iFac]>5) {
        if (transformedCovars.test$Density[iFac]==0){
         # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
@@ -444,14 +441,16 @@ VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOn
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
 
 for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
-  if (transformedCovars_VisOnly.train$Density[iFac]==0){
+  if (!is.na(transformedCovars_VisOnly.train$Density[iFac]) & 
+       transformedCovars_VisOnly.train$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
     VisOnly.train_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
 
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
-  if (transformedCovars_VisOnly.test$Density[iFac]==0){
+  if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
+      transformedCovars_VisOnly.test$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
@@ -504,7 +503,7 @@ VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 Run full binomial GAMs on Acoustic only, Visual only, and joint Acoustic/Visual datasets.
 
 
-```{r AC model 1, eval = TRUE,echo = FALSE}
+```{r AC model 1, eval = TRUE, echo = FALSE}
 
 gam_full_AcOnly_TF[[1]] <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
                                + s(SSH, bs='ts', k=kVal)
@@ -568,15 +567,13 @@ load(paste(outDir,SP,'_binomial_GAMs_ALL.Rdata',sep=''))
 
 <br>
 
-# III. Model Comparisons
-
-Look at AIC to select best acoustic-only model:
+# 3. Model Summaries
 
 ```{r AC AIC, echo = FALSE}
 AC_model_AIC <- NULL
 for (iMod in 1:length(gam_full_AcOnly_TF)){
   AC_model_AIC[iMod] <- AIC(gam_full_AcOnly_TF[[iMod]])
-  cat('Model ', names(gam_full_AcOnly_TF[iMod]), ' AIC = ', AC_model_AIC[iMod], '\n')
+  # cat('Model ', names(gam_full_AcOnly_TF[iMod]), ' AIC = ', AC_model_AIC[iMod], '\n')
 }
 ```
 
@@ -584,18 +581,14 @@ for (iMod in 1:length(gam_full_AcOnly_TF)){
 best_AcOnly_model_index <- which.min(AC_model_AIC)
 best_AcOnly_model <- gam_full_AcOnly_TF[[best_AcOnly_model_index]]
 best_AcOnly_model_name <- names(gam_full_AcOnly_TF[best_AcOnly_model_index])
-
-cat('Best acoustic only model is #', best_AcOnly_model_index,' \n')
 ```
 <br>
-
-Look at AIC to select best visual-only model:
 
 ```{r Vis AIC, echo = FALSE}
 Vis_model_AIC <- NULL
 for (iMod in 1:length(gam_full_VisOnly_TF)){
   Vis_model_AIC[iMod] <- AIC(gam_full_VisOnly_TF[[iMod]])
-  cat('Model ', names(gam_full_VisOnly_TF[iMod]), ' AIC = ', Vis_model_AIC[iMod], '\n')
+  #cat('Model ', names(gam_full_VisOnly_TF[iMod]), ' AIC = ', Vis_model_AIC[iMod], '\n')
 }
 ```
 
@@ -603,19 +596,15 @@ for (iMod in 1:length(gam_full_VisOnly_TF)){
 best_VisOnly_model_index <- which.min(Vis_model_AIC)
 best_VisOnly_model <- gam_full_VisOnly_TF[[best_VisOnly_model_index]]
 best_VisOnly_model_name <- names(gam_full_VisOnly_TF[best_VisOnly_model_index])
-
-cat('Best visual only model is #', best_VisOnly_model_index,' \n')
 ```
-Note that all visual-only AIC models come out roughly equivalent, and eddy distance is not significant in any of them
 
 <br>
 
-Look at AIC to select best joint model:
 ```{r joint AIC, echo = FALSE}
 Joint_model_AIC <- NULL
 for (iMod in 1:length(gam_full_Joint_TF)){
   Joint_model_AIC[iMod] <- AIC(gam_full_Joint_TF[[iMod]])
-  cat('Model ', names(gam_full_Joint_TF[iMod]), ' AIC = ', Joint_model_AIC[iMod], '\n')
+  #cat('Model ', names(gam_full_Joint_TF[iMod]), ' AIC = ', Joint_model_AIC[iMod], '\n')
 }
 ```
 <br>
@@ -626,14 +615,11 @@ best_Joint_model_index <- which.min(Joint_model_AIC)
 best_Joint_model <- gam_full_Joint_TF[[best_Joint_model_index]]
 best_Joint_model_name <- names(gam_full_Joint_TF[best_Joint_model_index])
 
-
-cat('Best joint visual and acoustic model is #', best_Joint_model_index,' \n')
+#cat('Best joint visual and acoustic model is #', best_Joint_model_index,' \n')
 ```
 <br> 
 
-## Best Acoustic Only Model
-
-Summaries of the best models show that some terms were not significant.
+Model summaries show that some terms were not significant.
 
 ```{r Ac unpruned model summary}
 summary(best_AcOnly_model)
@@ -683,9 +669,9 @@ plot(residuals.gam(best_Joint_model))
 
 <br> 
 
-# 3. Predict on Test Data
+# 4. Predict on Test Data
 
-## 3.1 Temporal prediction
+## 4.1 Temporal prediction
 
 Predictions were made on the acoustic test dataset, and compared with actual observations for 2013. The predicted probabliity of encountering animals was compared with the actual weekly rate of occurrence of animals at a site. 
 
@@ -694,7 +680,7 @@ CAVEAT: Encounter probability from the data is estimated as fraction of days per
 
 <br>
 
-### 3.1.1 Acoustic Only Prediction
+### 4.1.1 Acoustic Only Prediction
 
 
 ```{r Ac Temporal Predict, echo = FALSE, warning = FALSE, message = FALSE}
@@ -718,7 +704,6 @@ predAcOnly_GC <- predict.gam(best_AcOnly_model,
 predAcOnly_DT <- predict.gam(best_AcOnly_model,
                              transformedCovars_AcOnly.test[compAcSet_DT,],
                             type = 'response',na.action = na.pass,se.fit=TRUE)
-
 occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
@@ -742,7 +727,7 @@ AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
 DT_times <- Test_AcOnly.set$date[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$DT[m3] <-predAcOnly_DT$fit
+AcOnly_predictionSet$DT[m3] <- predAcOnly_DT$fit
 AcOnly_predictionSet$predSd_DT[m3] <- predAcOnly_DT$se.fit
 
 
@@ -779,7 +764,7 @@ p2_Ac <- ggplot() +
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=GC, color = Legend))+
   scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Encounter probabilit", x = "")+theme_bw()+
+  labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")
 
 p3_Ac <- ggplot() +
@@ -795,13 +780,12 @@ p3_Ac <- ggplot() +
   labs(y = "Encounter probability", x = "Date")+theme_bw()+
   theme(legend.position="none")
 
-
 multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
 
 ```
 <br>
 
-### 3.1.2 Visual Only Prediction
+### 4.1.2 Visual Only Prediction
 
 ```{r Vis Temporal Predict, warning = FALSE, echo = FALSE}
 # Confusing, but acoustic only predictors are passed in to since
@@ -890,32 +874,29 @@ p3_Vis <- ggplot() +
   labs(y = "Encounter probability", x = "Date")+theme_bw()+
   theme(legend.position="none")
 
-
 multiplot(p1_Vis, p2_Vis, p3_Vis, cols=1)
 
 ```
 
 <br>
 
-### 3.1.3 Joint Prediction
+### 4.1.3 Joint Prediction
 
 ```{r Combo Temporal Predict,fig.height = 10, fig.width = 7, warning = FALSE, echo = FALSE}
 predJoint_MC <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_MC,],
+                             transformedCovars_AcOnly.test[compAcSet_MC,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 predJoint_GC <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_GC,],
+                             transformedCovars_AcOnly.test[compAcSet_GC,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 predJoint_DT <- predict.gam(best_Joint_model,
-                             transformedCovars.test[compAcSet_DT,],
+                             transformedCovars_AcOnly.test[compAcSet_DT,],
                              type = 'response',na.action = na.pass,se.fit=TRUE)
-
 
 
 
 Joint_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(Joint_predictionSet) <-"date"
-
 Joint_predictionSet$MC <- NA
 Joint_predictionSet$predSd_MC <- NA
 m1 <- match(MC_times,Joint_predictionSet$date)
@@ -982,12 +963,12 @@ p3 <- ggplot() +
   labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")
 
-multiplot(p1, p2, p3, cols = 1)
+multiplot(p1, p2, p3, cols=1)
 
 ```
 <br>
 
-## 3.2 Spatial Prediction
+## 4.2 Spatial Prediction
 
 ```{r load raster bricks, echo = FALSE}
 load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
@@ -1045,13 +1026,12 @@ for (thisVarName in names(jan2009_rastersVis)){
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,best_VisOnly_model,
             type = 'response',na.action = na.pass)
-            
+          
 july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,best_VisOnly_model,
             type = 'response',na.action = na.pass)    
 ```
 
 
-### Joint Visual and Acoustic 
 
 ```{r Combo Spatial Predict, message=FALSE, warning = FALSE, echo = FALSE}
 ### Joint Visual and Acoustic spatial prediction
@@ -1073,10 +1053,10 @@ for (thisVarName in names(jan2009_rastersJoint)){
 
 
 jan2009_prediction <- raster::predict(jan2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass)
+            type = 'response',na.action = na.pass,se.fit=TRUE)
             
 july2009_prediction <- raster::predict(july2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass)    
+            type = 'response',na.action = na.pass,se.fit=TRUE)    
 ```
 <br>
 
@@ -1209,10 +1189,9 @@ map
 
 ```
 
-
 <br>
 
-# 4. Monthly model predictions
+# 5. Monthly model predictions
 
 Spatial model predictions were generated using oceanographic variables averaged by month between 2003 and 2015.
 
