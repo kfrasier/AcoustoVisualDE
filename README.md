@@ -10,24 +10,36 @@ A final report is available here:
 
 ### Species specific models:
 
-
-[Cuvier's beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html)
-
-
-[Gervais' beaked whale](https://kfrasier.github.io/AcoustoVisualDE/Me_model_runs_NN.html)
-
-
-[Sperm whale](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN.html)
+Cuvier's beaked whale
+[GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_gam.html)
+[NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN.html)
+[GAM density](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_gam_density.html)
+[NN Density](https://kfrasier.github.io/AcoustoVisualDE/Zc_model_runs_NN_density.html)
 
 
-[*Kogia* spp.](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN.html)
+Sperm whale
+[GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_gam.html)
+[NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN.html)
+[GAM density](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_gam_density.html)
+[NN Density](https://kfrasier.github.io/AcoustoVisualDE/Pm_model_runs_NN_density.html)
 
 
-[Risso's dolphin](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN.html)
+*Kogia* spp.
+[GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_gam.html)
+[NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN.html)
+[GAM density](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_gam_density.html)
+[NN Density](https://kfrasier.github.io/AcoustoVisualDE/Kspp_model_runs_NN_density.html)
 
 
-[Pelagic Stenellid dolphins (*Stenella spp.*)](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN.html)
+Risso's dolphin
+[GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_gam.html)
+[NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN.html)
+[GAM density](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_gam_density.html)
+[NN Density](https://kfrasier.github.io/AcoustoVisualDE/Gg_model_runs_NN_density.html)
 
 
-[Pilot whale](https://kfrasier.github.io/AcoustoVisualDE/Gmsp_model_runs_NN.html)
-
+Pelagic Stenellid dolphins (*Stenella spp.*)
+[GAM presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_gam.html)
+[NN presence/absence](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN.html)
+[GAM density](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_gam_density.html)
+[NN Density](https://kfrasier.github.io/AcoustoVisualDE/Ssp_model_runs_NN_density.html)
