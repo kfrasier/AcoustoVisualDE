@@ -830,11 +830,11 @@ p3_Ac <- ggplot() +
 
 p4_Ac <- ggplot() +
   geom_ribbon(data = AcOnly_predictionSet,
-            aes(x = date, ymax = predSd_DC + DC,  ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet,
-            aes(x = date, y = pmax(DC - predSd_DC,0)),fill = "white") +
+            aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DC_smooth,color = Legend1))+
+             aes(x = date, y = testObs_DC_smooth, color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
             aes(x=date, y=DC, color = Legend)) +
   scale_color_manual("",values= c("gray48","#009999"))+
@@ -843,13 +843,13 @@ p4_Ac <- ggplot() +
 
 p5_Ac <- ggplot() +
   geom_ribbon(data = AcOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
              aes(x = date, y = testObs_MP_smooth,color = Legend1))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend))+
+            aes(x=date, y=MP, color = Legend)) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
   theme(legend.position="none")
@@ -1117,7 +1117,7 @@ p5 <- ggplot() +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MP_smooth,color = Legend1))+
+             aes(x = date, y = testObs_MP_smooth, color = Legend1))+
   geom_line(data = Joint_predictionSet,
             aes(x = date, y = MP, color = Legend))+
   scale_color_manual("",values = c("gray48","#009999"))+
@@ -1158,11 +1158,11 @@ for (thisVarName in names(jan2009_rastersAc)){
 
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,
                                              best_AcOnly_model,
-                                             type = 'response',na.action = na.pass)
-            
+                                             type = 'response',na.action = na.pass)/10  
+
 july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,
                                               best_AcOnly_model,
-                                              type = 'response',na.action = na.pass)  
+                                              type = 'response',na.action = na.pass)/10  
 ```
 
 
@@ -1186,10 +1186,10 @@ for (thisVarName in names(jan2009_rastersVis)){
 }
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,best_VisOnly_model,
-            type = 'response',na.action = na.pass)
+            type = 'response',na.action = na.pass)/10  
           
 july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,best_VisOnly_model,
-            type = 'response',na.action = na.pass)    
+            type = 'response',na.action = na.pass)/10   
 ```
 
 
@@ -1214,10 +1214,10 @@ for (thisVarName in names(jan2009_rastersJoint)){
 
 
 jan2009_prediction <- raster::predict(jan2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass,se.fit=TRUE)
+            type = 'response',na.action = na.pass,se.fit=TRUE)/10  
             
 july2009_prediction <- raster::predict(july2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass,se.fit=TRUE)    
+            type = 'response',na.action = na.pass,se.fit=TRUE)/10      
 ```
 <br>
 
@@ -1275,9 +1275,9 @@ july2009mean_probSee <- jan2009mean*visG0*visDetProb
 ```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColor <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
-                july2009_VisOnly_prediction_crop@data@max,
-                july2009_prediction_crop@data@max,
-                july2009mean@data@max))*10)/10
+               july2009_VisOnly_prediction_crop@data@max,
+               july2009_prediction_crop@data@max,
+               july2009mean@data@max))*10)/10
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,maxColor), 
                     na.color = 'transparent')

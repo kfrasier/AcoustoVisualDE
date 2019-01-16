@@ -1,5 +1,5 @@
 ---
-title: 'GoMx _Kogia_ spp. habitat models:Density'
+title: 'GoMx _Kogia_ spp. habitat models'
 output: 
   html_document:
     toc: true
@@ -623,7 +623,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -657,7 +657,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -722,7 +722,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -824,10 +824,10 @@ print(round(XEntropyTable, digits = 3))
 ```
 
 
-```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-2
-best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-2
+```{r best model index, echo = TRUE}
+best_AcOnly_ModelIndex <-which.min(XEntropy.AcOnly_test)
+best_VisOnly_ModelIndex <-which.min(XEntropy.VisOnly_test)
+best_Joint_ModelIndex <-which.min(XEntropy.Joint_test)
 ```
 
 <br> 

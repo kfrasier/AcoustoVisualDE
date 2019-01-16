@@ -370,7 +370,7 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 
 ![](E:/NASData/ModelData/Pm/VisualOnly_Pm_density_pres_abs.png)
 
-<br>    
+<br>  
 
 ### 1.2.4 Estimate Relative Weights
 
@@ -825,10 +825,10 @@ print(round(XEntropyTable, digits = 3))
 
 Note: There may be a challenge here because `SPLong` are so common at the acoustic sites that there isn't much of a relationsip to anything when you look at things in terms of presence/absence.
 
-```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-2
-best_VisOnly_ModelIndex <-1
-best_Joint_ModelIndex <-1
+```{r best model index, echo = TRUE}
+best_AcOnly_ModelIndex <-which.min(XEntropy.AcOnly_test)
+best_VisOnly_ModelIndex <-which.min(XEntropy.VisOnly_test)
+best_Joint_ModelIndex <-which.min(XEntropy.Joint_test)
 ```
 
 <br> 

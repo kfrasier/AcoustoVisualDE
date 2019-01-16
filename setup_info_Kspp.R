@@ -18,7 +18,7 @@ siteList= c("MC","GC","DT")#,"DC","MP")
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
 #acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_DC_MP_binsize011000_Group_density_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
-acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density2_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+acousticDensityFile <-"E:/NASData/ModelData/Kspp/MC_GC_DT_binsize011000_Group_density3_Kogia.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 pOccurenceFile <- 'E:/NASData/ModelData/Kspp/ALLSITES_weeklyPOccurrence_Kspp_jahStart.csv' # percent ofdays/week they were present 
@@ -46,9 +46,9 @@ matchACSegs <- TRUE  # set to true if you need to match density estimates with e
 visG0 <- mean(c(0.55,0.29)) # for kogia spp. from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
-AcTruncDist <- .5 # km
+AcTruncDist <- .8 # km
 
-r_sp <-2 # radius over which acoustic probability of detection applies (comes from MC simulation)
+r_sp <-1 # radius over which acoustic probability of detection applies (comes from MC simulation)
 
 
 save(file = "setup_info_Kspp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,

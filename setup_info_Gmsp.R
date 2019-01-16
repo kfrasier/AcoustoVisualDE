@@ -16,7 +16,7 @@ siteList <-c("MC","GC","DT","DC","MP")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Gmsp_density_jahStart.csv" # acoustic input file
+acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Gmsp_density_jahStart_per_km.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 pOccurenceFile <- 'E:/NASData/ModelData/Gmsp/ALLSITES_weeklyPOccurrence_Gmsp_jahStart.csv' # percent ofdays/week they were present 
@@ -44,7 +44,7 @@ matchACSegs <- TRUE  # set to true if you need to match density estimates with e
 visG0 <- mean(c(0.66,0.67)) # for pilot whales from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
-AcTruncDist <- 1.9 # km
+AcTruncDist <- 4.5 # km
 
 r_sp <-5 # radius over which acoustic probability of detection applies
 

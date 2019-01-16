@@ -216,7 +216,7 @@ Covariates have different distributions across the observations.
 **Distributions of covariates from acoustic observations:**
 
 ```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
-plotCols1 <-c(3,4:7,10,12,16,17,19,20)
+plotCols1 <-c(3,4:7,10,11,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
 plot.cleveland(Train_AcOnly.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticOnly_',SP))
@@ -383,10 +383,10 @@ To train the model, we need to know how much power the various data points have 
 The visual data represent wether or not `r I(SPLong)` were seen during each transect segment. The probability of missing a sighting of `r I(SPLong)` was estimated as 
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
-where \mu_{det} is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences X % of the time, therefore zeros are given a wieght of X on a scale of [0,1].
+where `r \mu_{det}` is the mean detection probabiltiy as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
 
-The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period is estimated at 0.65, therefore the probability of missing is 1-0.65 = 0.35. Given that animals were present, the probability of missing a group for a full day is estimated as
-\[P_{A}(detect|present) = 1-(1-0.65)^{225}) \approx 1\]
+The acoustic data represent presence or absence of `r I(SPLong)` detections in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period within a range `acRange` km of is estimated at `pDetAc`, therefore the probability of missing is `1 - pDetAc` = `r 1-pDetAc`. Given that animals were present, the probability of missing a group for a full day is estimated as
+\[P_{A}(detect|present) = 1-(``r 1-pDetAc``)^{225}) \approx 1\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all observations are given weight = 1.
 
@@ -824,10 +824,10 @@ print(round(XEntropyTable, digits = 3))
 ```
 
 
-```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-4
-best_VisOnly_ModelIndex <-4
-best_Joint_ModelIndex <-2
+```{r best model index, echo = TRUE}
+best_AcOnly_ModelIndex <-which.min(XEntropy.AcOnly_test)
+best_VisOnly_ModelIndex <-which.min(XEntropy.VisOnly_test)
+best_Joint_ModelIndex <-which.min(XEntropy.Joint_test)
 ```
 
 <br> 
@@ -1264,12 +1264,12 @@ for (iR in model1.indices){
                               AcOnlyRangesMax[thisVarName]]<- NA
 }
 
-
+# divide by 10 to get density per 100km, since pixels are 10x10km
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10
             
 july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
-                                              na.action = na.pass) 
+                                              na.action = na.pass)/10
 
 # jan2009_AcOnly_prediction_probSee <- jan2009_AcOnly_prediction*visG0*visDetProb
 # july2009_AcOnly_prediction_probSee <- july2009_AcOnly_prediction*visG0*visDetProb
@@ -1278,9 +1278,9 @@ perModel_jan2009_AcOnly <- vector('list',length = trainRepeats)
 perModel_july2009_AcOnly <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_AcOnly[iMod] <- raster::predict(jan2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10
   perModel_july2009_AcOnly[iMod] <- raster::predict(july2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10
 }
 ```
 
@@ -1305,12 +1305,12 @@ for (iR in model1.indices){
                               VisOnlyRangesMax[thisVarName]]<- NA
   
 }
-
+# divide by 10 to get density per 100km, since pixels are 10x10km
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)/10 
             
 july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)    
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)/10    
 
 #jan2009_VisOnly_prediction_probSee <- jan2009_VisOnly_prediction*visG0*visDetProb
 #july2009_VisOnly_prediction_probSee <- july2009_VisOnly_prediction*visG0*visDetProb
@@ -1320,10 +1320,10 @@ perModel_july2009_VisOnly <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_VisOnly[iMod] <- raster::predict(jan2009_rastersVis,
                              nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10 
   perModel_july2009_VisOnly[iMod] <- raster::predict(july2009_rastersVis,
                  nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10 
 }
 ```
 
@@ -1347,11 +1347,12 @@ for (iR in model1.indices){
                               JointRangesMax[thisVarName]]<- NA
 }
 
+# divide by 10 to get density per 100km, since pixels are 10x10km
 jan2009_prediction <- raster::predict(jan2009_rastersJoint,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)/10 
             
 july2009_prediction <- raster::predict(july2009_rastersJoint,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)    
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)/10    
 
 
 perModel_jan2009_Joint <- vector('list',length = trainRepeats)
@@ -1359,10 +1360,10 @@ perModel_july2009_Joint <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_Joint[iMod] <- raster::predict(jan2009_rastersJoint,
                                              nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10 
   perModel_july2009_Joint[iMod] <- raster::predict(july2009_rastersJoint,
                                              nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)
+                                             na.action = na.pass)/10 
 }
 ```
 

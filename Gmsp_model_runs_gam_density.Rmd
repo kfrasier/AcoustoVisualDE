@@ -210,7 +210,7 @@ Covariates have different distributions across the observations.
 
 **Distributions of covariates from acoustic observations:**
 
-```{r dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 plotCols1 <-c(3,4:7,10,12,16,17,19,20)
   
 plot.cleveland(Train_Joint.set,covarList[plotCols1],FALSE,paste0(outDir,'AcousticAndVisual_',SP))
@@ -318,7 +318,7 @@ dev.off()
 <br>
 
 
-```{r transformed dot plots, eval = FALSE, message = FALSE, results = 'hide', echo = FALSE}
+```{r transformed dot plots, eval = TRUE, message = FALSE, results = 'hide', echo = FALSE}
 # Plotting the transformed variables: 
 plotCols = colnames(transformedCovars.train)[c(2:6,10,11,13,14)]
 plot.cleveland(transformedCovars.train,
@@ -365,8 +365,6 @@ plot.covarDensity(transformedCovars_VisOnly.train[,2:(length(transformedCovars_V
 **Visual kernel densities:**
 
 ![](E:/NASData/ModelData/Gmsp/VisualOnly_Gmsp_density_pres_abs.png)
-
-<br>  
 
 <br>  
 
@@ -1160,11 +1158,11 @@ for (thisVarName in names(jan2009_rastersAc)){
 
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,
                                              best_AcOnly_model,
-                                             type = 'response',na.action = na.pass)
-            
+                                             type = 'response',na.action = na.pass)/10  
+
 july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,
                                               best_AcOnly_model,
-                                              type = 'response',na.action = na.pass)  
+                                              type = 'response',na.action = na.pass)/10  
 ```
 
 
@@ -1188,10 +1186,10 @@ for (thisVarName in names(jan2009_rastersVis)){
 }
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,best_VisOnly_model,
-            type = 'response',na.action = na.pass)
+            type = 'response',na.action = na.pass)/10  
           
 july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,best_VisOnly_model,
-            type = 'response',na.action = na.pass)    
+            type = 'response',na.action = na.pass)/10   
 ```
 
 
@@ -1216,10 +1214,10 @@ for (thisVarName in names(jan2009_rastersJoint)){
 
 
 jan2009_prediction <- raster::predict(jan2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass,se.fit=TRUE)
+            type = 'response',na.action = na.pass,se.fit=TRUE)/10  
             
 july2009_prediction <- raster::predict(july2009_rastersJoint,best_Joint_model,
-            type = 'response',na.action = na.pass,se.fit=TRUE)    
+            type = 'response',na.action = na.pass,se.fit=TRUE)/10      
 ```
 <br>
 
@@ -1277,9 +1275,9 @@ july2009mean_probSee <- jan2009mean*visG0*visDetProb
 ```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColor <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
-                july2009_VisOnly_prediction_crop@data@max,
-                july2009_prediction_crop@data@max,
-                july2009mean@data@max))*10)/10
+               july2009_VisOnly_prediction_crop@data@max,
+               july2009_prediction_crop@data@max,
+               july2009mean@data@max))*10)/10
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,maxColor), 
                     na.color = 'transparent')

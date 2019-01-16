@@ -853,10 +853,10 @@ print(MSEtable, digits = 2)
 ```
 
 
-```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-2
-best_VisOnly_ModelIndex <-3
-best_Joint_ModelIndex <-4
+```{r best model index, echo = TRUE}
+best_AcOnly_ModelIndex <-which.min(MSE.nn_AcOnly_test)
+best_VisOnly_ModelIndex <-which.min(MSE.nn_VisOnly_test)
+best_Joint_ModelIndex <-which.min(MSE.nn_Joint_test)
 ```
 
 <br> 
@@ -1547,11 +1547,11 @@ for (iR in model1.indices){
 
 
 jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
 jan2009_AcOnly_prediction[jan2009_AcOnly_prediction<0]=0
             
 july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,nn_AcOnly[[best_AcOnly_ModelIndex]],
-                                              na.action = na.pass)*covars_Joint_max.train['y']
+                                              na.action = na.pass)*covars_Joint_max.train['y']/10
 july2009_AcOnly_prediction[july2009_AcOnly_prediction<0]=0
 # jan2009_AcOnly_prediction_probSee <- jan2009_AcOnly_prediction*visG0*visDetProb
 # july2009_AcOnly_prediction_probSee <- july2009_AcOnly_prediction*visG0*visDetProb
@@ -1560,10 +1560,10 @@ perModel_jan2009_AcOnly <- vector('list',length = trainRepeats)
 perModel_july2009_AcOnly <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_AcOnly[iMod] <- raster::predict(jan2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_jan2009_AcOnly[[iMod]][perModel_jan2009_AcOnly[[iMod]]<0]<-0
   perModel_july2009_AcOnly[iMod] <- raster::predict(july2009_rastersAc,                                             nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_july2009_AcOnly[[iMod]][perModel_july2009_AcOnly[[iMod]]<0]<-0
 }
 ```
@@ -1591,10 +1591,10 @@ for (iR in model1.indices){
 }
 
 jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10
 jan2009_VisOnly_prediction[jan2009_VisOnly_prediction<0]<-0
 july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,
-         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']  
+         nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10 
 july2009_VisOnly_prediction[july2009_VisOnly_prediction<0]<-0
 
 #jan2009_VisOnly_prediction_probSee <- jan2009_VisOnly_prediction*visG0*visDetProb
@@ -1605,12 +1605,12 @@ perModel_july2009_VisOnly <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_VisOnly[iMod] <- raster::predict(jan2009_rastersVis,
                              nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_jan2009_VisOnly[[iMod]][perModel_jan2009_VisOnly[[iMod]]<0]<-0
 
   perModel_july2009_VisOnly[iMod] <- raster::predict(july2009_rastersVis,
                  nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                 na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_july2009_VisOnly[[iMod]][perModel_july2009_VisOnly[[iMod]]<0]<-0
 
 }
@@ -1637,11 +1637,11 @@ for (iR in model1.indices){
 }
 
 jan2009_prediction <- raster::predict(jan2009_rastersJoint,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10
 jan2009_prediction[jan2009_prediction<0]<-0
 
 july2009_prediction <- raster::predict(july2009_rastersJoint,
-         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y'] 
+         nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10
 july2009_prediction[july2009_prediction<0]<-0
 
 
@@ -1650,16 +1650,17 @@ perModel_july2009_Joint <- vector('list',length = trainRepeats)
 for (iMod in c(1:trainRepeats)){
   perModel_jan2009_Joint[iMod] <- raster::predict(jan2009_rastersJoint,
                                              nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_jan2009_Joint[[iMod]][perModel_jan2009_Joint[[iMod]]<0]<-0
 
   perModel_july2009_Joint[iMod] <- raster::predict(july2009_rastersJoint,
                                              nn_Joint[[best_Joint_ModelIndex]]$model[[iMod]],
-                                             na.action = na.pass)*covars_Joint_max.train['y']
+                                             na.action = na.pass)*covars_Joint_max.train['y']/10
   perModel_july2009_Joint[[iMod]][perModel_july2009_Joint[[iMod]]<0]<-0
 
 }
 ```
+<br>
 
 
 ```{r wrangle projections, message = FALSE, warning = FALSE, echo = FALSE, results = 'hide'}
@@ -1739,9 +1740,9 @@ july2009mean_probSee <- jan2009mean*visG0*visDetProb
 ```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColor <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
-                july2009_VisOnly_prediction_crop@data@max,
-                july2009_prediction_crop@data@max,
-                july2009mean@data@max))*10)/10
+               july2009_VisOnly_prediction_crop@data@max,
+               july2009_prediction_crop@data@max,
+               july2009mean@data@max))*10)/10
 pal <- colorNumeric(palette = matlab.like2(5),
                     domain=c(0,maxColor), 
                     na.color = 'transparent')

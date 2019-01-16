@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -39,8 +39,10 @@ if (matchACSegs){
 
   acDensityAll <- acDensityAll[keepPoints,]
   
-  acSegLatFloor <- floor(acSegmentsAll$LAT *1000)/1000
-  acDensLatFloor <- floor(acDensityAll$Lat *1000)/1000
+  acSegLatFloor <- floor(acSegmentsAll$LAT *100)/100
+  acDensLatFloor <- floor(acDensityAll$Lat *100)/100
+  acSegLonFloor <- floor(acSegmentsAll$LONG *100)/100
+  acDensLonFloor <- floor(acDensityAll$Long *100)/100
   
   # Match segments to density datapoints
   covarNames <- names(acSegmentsAll[5:length(names(acSegmentsAll))])
@@ -49,8 +51,12 @@ if (matchACSegs){
     # find all the segments with matching latitudes
     
     goodLat <- which(acSegLatFloor %in% acDensLatFloor[iR])
+    goodLon <- which(acSegLonFloor %in% acDensLonFloor[iR])
+    
     densDate <- acDensityAll$xlsDate[iR]
-    bestMatch <- goodLat[which.min(abs(densDate-acSegmentsAll$XLSDATE[goodLat]))]
+    bestMatchLat <- goodLat[which.min(abs(densDate-acSegmentsAll$XLSDATE[goodLat]))]
+    bestMatchLon <- goodLon[which.min(abs(densDate-acSegmentsAll$XLSDATE[goodLon]))]
+    bestMatch <- intersect(bestMatchLat,bestMatchLon)
     
     if (length(bestMatch)!=0){
       rowMatch <- acSegmentsAll[bestMatch,5:(length(names(acSegmentsAll)))]
@@ -181,7 +187,7 @@ if (runDetFuns){
         
       } else {
         df <-ddf(method ='ds', dsmodel =~ mcds(key = keyListInit[[i1]], formula = ~ 1,
-                                               adj.series = adjInit[[i1]], adj.order = adjOrderInit[[i1]]), data = as.data.frame(ddfData),
+                 adj.series = adjInit[[i1]], adj.order = adjOrderInit[[i1]]), data = as.data.frame(ddfData),
                  meta.data = list(binned=F, width=tDist[nPlatform],left=0))
         #         df <- ds(ddfData, truncation = tDist[nPlatform], transect = "line", key = keyListInit[[i1]],
         #                  adjustment = adjInit[i1], order = adjOrderInit[i1],
@@ -383,7 +389,7 @@ uSiteYear <- unique((siteYear))
 #   thisSet <- which(as.logical(row.match(siteYear,uSiteYear[uR,])))
 #   thisSet_gt0 <- which(acDensityAll$meanDensity[thisSet]>0)
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
-AcOnlySegments$Density <- acDensityAll$meanDensity/(pi*r_sp^2)*1000#[thisSet]/quant95
+AcOnlySegments$Density <- acDensityAll$meanDensity*1000#/[thisSet]/quant95
 
 AcOnlySegments$date <- acDensityAll$xlsDate #date
 AcOnlySegments$Numeric_date <- (as.numeric(acDensityAll$xlsDate)-min(as.numeric(acDensityAll$xlsDate)))/100
@@ -444,7 +450,7 @@ VisOnlySegments$long <- visSeg_OnEffort$Long
 VisOnlySegments$Category<- rep(1,length(visSeg_OnEffort$Long))
 # mergedSegments$ESW <- c(acDensityAll$BW_ESW)
 VisOnlySegments$Density <- visSeg_OnEffort$Density*1000
-  #quantile(visSeg_OnEffort$Density[which(visSeg_OnEffort$Density>0)],probs = .95,na.rm = TRUE)
+# quantile(visSeg_OnEffort$Density[which(visSeg_OnEffort$Density>0)],probs = .95,na.rm = TRUE)
 VisOnlySegments$SST <- visSeg_OnEffort$SST_daily_CMC_L4_GLOB
 VisOnlySegments$SSH <- visSeg_OnEffort$SSH_daily_aviso_double
 VisOnlySegments$CHL <- visSeg_OnEffort$CHl_8Day_NASA
