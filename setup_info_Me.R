@@ -47,7 +47,7 @@ visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 sur
 AcTruncDist <- 2.25 # km
 
 r_sp <- 4
-
+Ac_pDet <- 0.28
 save(file = "setup_info_Me.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,PLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

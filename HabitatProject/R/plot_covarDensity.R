@@ -3,7 +3,7 @@
 #' @examples 
 #' plot.covarDensity() 
 
-plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix){
+plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix,varUnits){
   
   # presAbs = a vector the same length as mySegments, 
   #   where 1 = animals were present 0  is no animals were present
@@ -19,7 +19,7 @@ plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix){
   nCols = ceiling(nCovars/nRows)
   
   png(paste0(fNamePrefix,'_density_pres_abs.png'), width = 1000, height = 600)
-  par(mfrow = c(nRows,nCols), mar = c(2,3,2,1)) # does the subplots
+  par(mfrow = c(nRows,nCols), mar = c(4,4,2,1)) # does the subplots
   
   
   i <- 1
@@ -29,7 +29,8 @@ plot.covarDensity <- function(mySegments,covarList,presAbs,fNamePrefix){
     
     x_range = range(c(d0$x,d1$x)) 
     
-    graphics::plot(d0, xlim = x_range, main = cI, cex.main = 1.5, cex.axis = 1.5)
+    graphics::plot(d0, xlim = x_range, cex.main = 1.5, cex.lab=1.5,
+                     cex.axis = 1.5, main = "", xlab = varUnits[cI], ylab = 'normalized counts')
     par(new = TRUE)
     graphics::plot(d1, xlim = x_range, lty=2,axes = FALSE, xlab = "", ylab = "", main = "")
     

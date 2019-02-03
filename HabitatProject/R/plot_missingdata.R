@@ -5,7 +5,7 @@
 #' @examples 
 #' plot.missingdata() 
 
-plot.missingdata <- function(mySegments,covarList,fNamePrefix){
+plot.missingdata <- function(mySegments,covarList,fNamePrefix,varUnits){
   
   # Make vector of dates by year, so we can figure out what % of segments in yeach year are missing data.
   tmpTimes <- as.Date(mySegments$date,"%Y-%m-%d", tz="GMT")
@@ -36,7 +36,8 @@ plot.missingdata <- function(mySegments,covarList,fNamePrefix){
   nRows = round(sqrt(nCovars))
   nCols = ceiling(nCovars/nRows)
   png(paste0(fNamePrefix,'_missingData.png'), width = 1600, height = 1000)
-  par(mfrow=c(nRows,nCols)) # does the subplots
+  par(mfrow=c(nRows,nCols),mai=c(1.2, 1.2, 0.85, 0.42),mgp = c(6, 1, 0))
+      # mar = c(5, 6, 4, 2) + 0.1, does the subplots
   
   for (cI in covarList){
     thisCovar <- mySegments[,cI]
@@ -52,10 +53,9 @@ plot.missingdata <- function(mySegments,covarList,fNamePrefix){
       n1 <- n1 + 1
       
     }
-    graphics::barplot(percFilled[m1,]*100, main = cI,  xlab = "",
-            ylab = "% of data available", las=2, cex.main=1.5,cex.axis = 1.5,cex.names = 1.5,
+    graphics::barplot(percFilled[m1,]*100, main = varUnits[cI],  xlab = "",
+            ylab = "% of data available", las=2, cex.main=3,cex.lab = 3,cex.axis = 2.5,cex.names = 2.5,
             ylim=c(0,100))
-    
     m1 <- m1 + 1
   }
   

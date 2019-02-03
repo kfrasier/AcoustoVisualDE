@@ -50,7 +50,8 @@ AcTruncDist <- .8 # km
 
 r_sp <-1 # radius over which acoustic probability of detection applies (comes from MC simulation)
 
-
+Ac_pDet<-0.34
+  
 save(file = "setup_info_Kspp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,SPLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

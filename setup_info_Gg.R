@@ -2,7 +2,7 @@
 
 # Species name
 SP <- "Gg" 
-SPLong <- "Risso''s Dolphin"
+SPLong <- "Risso's dolphin"
 
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
@@ -47,9 +47,10 @@ visG0 <- mean(c(0.77,0.84)) # for Gg  from palka 2006 table 5, 2004 survey
               
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 4.5# km #(for group model it's 3.7km for Risso's)
+Ac_pDet <- 0.40
 
 r_sp <-5 # radius over which acoustic probability of detection applies
 
-save(file = "setup_info_Gg.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+save(file = "setup_info_Gg.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,SPLong,r_sp,Ac_pDet,
      visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

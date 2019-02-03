@@ -2,7 +2,7 @@
 
 # Species name
 SP <- "Zc" 
-
+SPLong <- "Cuvier's beaked whale"
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
 # if directory doen't exist, make it.
@@ -47,7 +47,7 @@ visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 sur
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 2.5 # km
-
+Ac_pDet<-0.36
 save(file = "setup_info_Zc.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,SPLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

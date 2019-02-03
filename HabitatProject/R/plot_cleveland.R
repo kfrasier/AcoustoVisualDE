@@ -3,7 +3,7 @@
 #' @examples 
 #' plot.cleveland() 
 
-plot.cleveland <- function(mySegments,covarList,isTrans,fNamePrefix){
+plot.cleveland <- function(mySegments,covarList,isTrans,fNamePrefix,varUnits){
   # isTrans is a boolean flag to name the file appropriately
   
   nCovars <- length(covarList)
@@ -18,11 +18,11 @@ plot.cleveland <- function(mySegments,covarList,isTrans,fNamePrefix){
     
   }
   
-  par(mfrow = c(nRows,nCols),mar = c(2,1,2,1)) # does the subplots
+  par(mfrow = c(nRows,nCols))#,mai=c(.6, .6, 0.6, 0.42))# mar = c(2,1,2,1)) # does the subplots
   
   for (cI in covarList){
     thisCovar <- mySegments[,cI]
-    dotchart(thisCovar, main = cI)
+    dotchart(thisCovar, xlab = varUnits[cI], cex.lab = 1.5, cex = 1)
   }
   dev.off()
   

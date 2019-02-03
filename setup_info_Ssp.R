@@ -48,7 +48,8 @@ visG0 <- mean(c(.37,.94)) # for striped and spotted dolphins from palka 2006 tab
 AcTruncDist <- 2.2 # km (for click detections)
 
 r_sp <- 5 # radius over which acoustic probability of detection applies
+Ac_pDet <- 0.15
 
-save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,r_sp,
+save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,SPLong,r_sp,Ac_pDet,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)
