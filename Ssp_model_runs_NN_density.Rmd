@@ -673,7 +673,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
@@ -714,7 +714,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -792,7 +792,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -1849,7 +1849,7 @@ july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 **Summer 2009 predicted distribution and test sightings:**
 
 
-```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
+```{r leaflet summer, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, echo = FALSE}
 # Display summer (July 2009) map:
 maxColorSummer <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
                july2009_VisOnly_prediction_crop@data@max,
@@ -1920,7 +1920,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addRasterImage(predSTD_july2009_Joint_crop, colors = palUncert,
                  opacity = 0.8, group = 'Joint July 2009') %>%
   addLegend(pal = palUncert, values = c(0,maxColorUncert),
-    title = 'STD(Estimated Density)',position = "bottomleft") %>%
+    title = 'STD(Est. Density)',position = "bottomleft") %>%
   addLayersControl(
     baseGroups = c('Acoustic July 2009','Visual July 2009',
                    'Joint July 2009'),
@@ -1936,7 +1936,7 @@ map
 
 **Winter 2009 predicted distribution:**
 
-```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}
+```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE, fig.width = 7, fig.height = 5}
 # Display winter (January 2009) map:
 maxColorWinter <- ceiling(max(c(jan2009_AcOnly_prediction_crop@data@max,
                jan2009_VisOnly_prediction_crop@data@max,
@@ -1968,7 +1968,7 @@ map
 ```
 
 **Winter 2009 prediction uncertainty:**
-```{r leaflet winter uncert, message = FALSE, warning = FALSE, echo = FALSE}
+```{r leaflet winter uncert, message = FALSE, warning = FALSE, echo = FALSE,width = 60, height = 30}
 # Display summer (July 2009) map:
 
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
@@ -1990,7 +1990,41 @@ map
 ```
 
 <br>
+## How does hidden layer size change spatial predictions?
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
 
+nModels = 6;
+july2009_prediction_hidden <- vector('list',length = nModels)
+
+for (iP in c(1:nModels)){
+     july2009_prediction_hidden[[iP]] <- mask(raster::predict(july2009_rastersJoint,
+         nn_Joint[[iP]],na.action = na.pass)*covars_Joint_max.train['y']/10,crop_limits_proj)
+}
+# Display winter (January 2009) map:
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer,
+                 opacity = 0.8, group = '4 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer,
+                  opacity = 0.8, group = '6 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer,
+                  opacity = 0.8, group = '8 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer,
+                  opacity = 0.8, group = '14 nodes') %>%
+  addLegend(pal = palSummer, values = c(0,maxColorSummer),
+    title = 'Density',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+
+```
 # 4. Monthly model predictions
 
 Spatial model predictions were generated using climatological means of oceanographic variables, averaged by month between 2003 and 2015.

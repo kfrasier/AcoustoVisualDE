@@ -422,6 +422,7 @@ To train the model, we need to know how much power the various data points have 
 For each data type, we estimated the probability of a missed detection to account for differences in zero-inflation, downweighting zeros according to the probability of a recording false negative.
 
 The visual data represent wether or not `r SPLong` were seen during each transect segment. The probability of missing a sighting of `r SPLong` was estimated as 
+
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
@@ -666,7 +667,7 @@ numCores <- detectCores() - 2
 cl <-makeCluster(numCores)
 ```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -703,7 +704,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -769,7 +770,7 @@ stopCluster(cl)
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -926,9 +927,10 @@ kable(mean_var_importance,'markdown',digits = 1)
 
 ```{r plot network, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE, fig.width = 14, fig.height = 8}
 
-n2 = n[model1.indices]
-  png(paste(outDir,SP,'_exampleNetwork_PresAbs.png',sep=''), width = 1400, height = 800)
-plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=2)
+n2 = varUnits[n[model1.indices]]
+  png(paste(outDir,SP,'_exampleNetwork_PresAbs.png',sep=''), width = 1200, height = 600)
+  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
 dev.off()
 egNetFig <-paste0(outDir,SP,'_exampleNetwork_PresAbs.png')
 ```
@@ -1854,6 +1856,40 @@ map
 ```
 
 <br>
+## How does hidden layer size change spatial predictions?
+```{r look at effect of hidden layer on spatial prediction}
+nModels = 6;
+july2009_prediction_hidden <- vector('list',length = nModels)
+
+for (iP in c(1:nModels)){
+     july2009_prediction_hidden[[iP]] <- mask(raster::predict(july2009_rastersJoint,
+         nn_Joint[[iP]],na.action = na.pass),crop_limits_proj)
+}
+# Display winter (January 2009) map:
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 5)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer,
+                 opacity = 0.8, group = '4 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer,
+                  opacity = 0.8, group = '6 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer,
+                  opacity = 0.8, group = '8 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer,
+                  opacity = 0.8, group = '14 nodes') %>%
+  addLegend(pal = palSummer, values = c(0,maxColorSummer),
+    title = 'P(encounter)',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+
+```
 
 # 4. Monthly model predictions
 

@@ -172,7 +172,6 @@ DTTS <- paste0(outDir,SP,'_Timeseries_Site_DT.png')
 ```
 
 
-
 ![](`r MCTS`)
 ![](`r GCTS`)
 ![](`r DTTS`)
@@ -1674,6 +1673,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = palSummer, values = c(0,maxColorSummer),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1746,6 +1747,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint Jan. 2009') %>%
   addRasterImage(jan2009mean_prediction_crop,colors = palWinter,
                  opacity = 0.8, group = 'Vis. & Ac. Mean Jan. 2009') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
   addLegend(pal = palWinter, values = c(0,maxColorWinter),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1780,6 +1782,43 @@ map
 ```
 
 <br>
+## How does hidden layer size change spatial predictions?
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
+palSummer2 <- colorNumeric(palette = matlab.like2(5),
+                    domain=c(0,13), 
+                    na.color = 'transparent')
+nModels = 6;
+july2009_prediction_hidden <- vector('list',length = nModels)
+
+for (iP in c(1:nModels)){
+     july2009_prediction_hidden[[iP]] <- mask(raster::predict(july2009_rastersJoint,
+         nn_Joint[[iP]],na.action = na.pass)*covars_Joint_max.train['y']/10,crop_limits_proj)
+}
+# Display winter (January 2009) map:
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer2,
+                 opacity = 0.8, group = '4 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer2,
+                  opacity = 0.8, group = '6 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
+                  opacity = 0.8, group = '8 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+                  opacity = 0.8, group = '14 nodes') %>%
+  addLegend(pal = palSummer2, values = c(0,13),
+    title = 'Density',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+
+```
 
 # 4. Monthly model predictions
 

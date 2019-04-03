@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('E:/NASData/ModelData/Pm/setup_info_Pm.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -391,8 +391,8 @@ uSiteYear <- unique((siteYear))
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
 if (strcmp(SP, "Gg") | strcmp(SP, "Gmsp") | strcmp(SP, "Ssp")){
 
-AcOnlySegments$Density <- acDensityAll$meanDensity*(60*60*24)#/[thisSet]/quant95
-print("hello")
+  AcOnlySegments$Density <- acDensityAll$meanDensity*(60*60*24)#/[thisSet]/quant95
+  print("hello")
 }else{
   AcOnlySegments$Density <- acDensityAll$meanDensity*1000#/[thisSet]/quant95
 }
