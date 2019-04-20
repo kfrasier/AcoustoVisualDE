@@ -92,7 +92,7 @@ visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
 <br> 
 
 
-### 1.1.1 Splitting into testing and training Sets
+### 1.1.1 Splitting into testing and training sets
 
 The data are split into training and testing sets. In this case, visual data from 2009 and acoustic data from 2013 were used only for testing. Only observations from 2003 or later were used for modeling due to covariate limitations.  
 
@@ -172,7 +172,6 @@ DTTS <- paste0(outDir,SP,'_Timeseries_Site_DT.png')
 DCTS <- paste0(outDir,SP,'_Timeseries_Site_DC.png')
 MPTS <- paste0(outDir,SP,'_Timeseries_Site_MP.png')
 ```
-
 
 
 ![](`r MCTS`)
@@ -268,7 +267,7 @@ covarList2 <- c("Density","SST","SSH","CHL",
                 "HYCOM_MLD","HYCOM_SALIN_0","HYCOM_MAG_0",
                 "HYCOM_UPVEL_50",
                 "Neg_EddyDist","Pos_EddyDist",
-                "fac1","fac2")
+                "fac1","fac2","EffectiveArea")
 
 # restrict covariates again to limited set
 Train_Joint.set2<- Train_Joint.set[,covarList2]
@@ -313,7 +312,7 @@ transformList <- c("none","none","none","log10",
                    "log10","none","log10",
                    "none",
                    "none","none",
-                   "none","none")
+                   "none","none","none")
 
 transformedCovars.train <-
   transform.covars(Train_Joint.set2,covarList2,transformList)
@@ -422,6 +421,7 @@ To train the model, we need to know how much power the various data points have 
 For each data type, we estimated the probability of a missed detection to account for differences in zero-inflation, downweighting zeros according to the probability of a recording false negative.
 
 The visual data represent wether or not `r SPLong` were seen during each transect segment. The probability of missing a sighting of `r SPLong` was estimated as 
+
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
@@ -473,7 +473,7 @@ transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
-joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.test$fac1),1))
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
@@ -487,6 +487,12 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
   }
 }
 
+maxEffectiveAreaJoint <- max(c(transformedCovars.train$EffectiveArea,
+                               transformedCovars.test$EffectiveArea))
+
+# do additional adjustment for effective area
+joint_train_weightsG0 <- joint_train_weightsG0*
+                  (transformedCovars.train$EffectiveArea/maxEffectiveAreaJoint)
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
   if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
@@ -498,6 +504,10 @@ for (iFac in 1:length(transformedCovars.test$fac1)) {
     }
   }
 }
+# do additional adjustment for effective area
+joint_test_weightsG0 <- joint_test_weightsG0*
+                  (transformedCovars.test$EffectiveArea/maxEffectiveAreaJoint)
+
 
 VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
@@ -510,6 +520,12 @@ for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   }
 }
 
+maxEffectiveAreaVis <- max(c(transformedCovars_VisOnly.train$EffectiveArea,
+                               transformedCovars_VisOnly.test$EffectiveArea))
+# do additional adjustment for effective area
+VisOnly.train_weightsG0 <- VisOnly.train_weightsG0*
+                  (transformedCovars_VisOnly.train$EffectiveArea/maxEffectiveAreaVis)
+
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
   if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
       transformedCovars_VisOnly.test$Density[iFac]==0){
@@ -517,6 +533,10 @@ for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
+
+# do additional adjustment for effective area
+VisOnly.test_weightsG0 <- VisOnly.test_weightsG0*
+                  (transformedCovars_VisOnly.test$EffectiveArea/maxEffectiveAreaVis)
 
 # Remove NaNs
 goodData_Ac <- which(!is.na(rowSums(transformedCovars_AcOnly.train)))
@@ -668,12 +688,8 @@ pr.nn_Joint_test <- NULL
 
 ```
 
-```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
-numCores <- detectCores() - 2
-cl <-makeCluster(numCores)
-```
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
@@ -689,7 +705,7 @@ for (layerSize in layerSizeList){
                                  na.action = na.omit,
                                  rang = 0.7, 
                                  decay = 0.0001, 
-                                 maxit = 1000,
+                                 maxit = 500,
                                  trace = FALSE)
   
   # predict on train data and estimate Mean Squared Error (MSE)
@@ -714,7 +730,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -730,7 +746,7 @@ for (layerSize in layerSizeList){
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
-                                       maxit = 10000,
+                                       maxit = 500,
                                        trace = FALSE)
                                        # weights = 
   
@@ -759,7 +775,7 @@ for (layerSize in layerSizeList){
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
-                                      maxit = 10000,
+                                      maxit = 500,
                                       trace = FALSE)                                     
 
   
@@ -786,13 +802,10 @@ for (layerSize in layerSizeList){
 }
 ```
 
-```{r Turn off parallel cluster, eval = FALSE, echo = FALSE}
-stopCluster(cl)
-```
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE.nn_AcOnly_train,MSE.nn_AcOnly_test,
      pr.nn_AcOnly_train,pr.nn_AcOnly_test,
@@ -1033,11 +1046,11 @@ for (iMod in c(1:trainRepeats)){
   predVar_MP[[iMod]] <- predict(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[iMod]],
                              AcOnly_test_scaled[compAcSet_MP,model1.indices])*
                              covars_Joint_max.train['y']
-  predVar_MP[[iMod]][predVar_MP[[iMod]]<0] = 0
-  
+  predVar_MP[[iMod]][predVar_MP[[iMod]]<0] = 0 
 }
 
-AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date[goodData_Ac_test]))
+AcOnlyGoodTimes <-  Test_AcOnly.set$date[goodData_Ac_test]
 colnames(AcOnly_predictionSet) <-"date"
 
 n1MC <- length(predVar_MC[[1]])
@@ -1062,7 +1075,7 @@ AcOnly_predictionSet$MC <- NA
 AcOnly_predictionSet$predSd_MC <- NA
 AcOnly_predictionSet$testObs_MC <-NA
 AcOnly_predictionSet$testObs_MC_smooth <- NA
-MC_times <- Test_AcOnly.set$date[compAcSet_MC]
+MC_times <- AcOnlyGoodTimes[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
 AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
@@ -1072,7 +1085,7 @@ AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$GC <- NA
 AcOnly_predictionSet$predSd_GC <- NA
 AcOnly_predictionSet$testObs_GC <-NA
-GC_times <- Test_AcOnly.set$date[compAcSet_GC]
+GC_times <- AcOnlyGoodTimes[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
 AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
@@ -1082,7 +1095,7 @@ AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
 AcOnly_predictionSet$testObs_DT <-NA
-DT_times <- Test_AcOnly.set$date[compAcSet_DT]
+DT_times <- AcOnlyGoodTimes[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
 AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
@@ -1092,7 +1105,7 @@ AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DC <- NA
 AcOnly_predictionSet$predSd_DC <- NA
 AcOnly_predictionSet$testObs_DC <-NA
-DC_times <- Test_AcOnly.set$date[compAcSet_DC]
+DC_times <- AcOnlyGoodTimes[compAcSet_DC]
 m4 <- match(DC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DC[m4] <-predAcOnly_DC
 AcOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)
@@ -1102,11 +1115,11 @@ AcOnly_predictionSet$testObs_DC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$MP <- NA
 AcOnly_predictionSet$predSd_MP <- NA
 AcOnly_predictionSet$testObs_MP <-NA
-MP_times <- Test_AcOnly.set$date[compAcSet_MP]
+MP_times <- AcOnlyGoodTimes[compAcSet_MP]
 m5 <- match(MP_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MP[m5] <-predAcOnly_MP
 AcOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)
-AcOnly_predictionSet$testObs_MP[m5] <-Test_AcOnly.set$Density[compAcSet_MP]
+AcOnly_predictionSet$testObs_MP[m5] <- Test_AcOnly.set$Density[compAcSet_MP]
 AcOnly_predictionSet$testObs_MP_smooth <- rollmean(AcOnly_predictionSet$testObs_MP,k=7,fill=NA)
 
 AcOnly_predictionSet$Legend1 <- "Observations"
@@ -1419,8 +1432,6 @@ pred_MP <- predict(nn_Joint[[best_Joint_ModelIndex]],
                    AcOnly_test_scaled[compAcSet_MP,model1.indices])*covars_Joint_max.train['y']
 pred_MP[pred_MP<0]<-0
 
-
-
 predVar_MC <- NULL
 predVar_GC <- NULL
 predVar_DT <- NULL
@@ -1468,7 +1479,6 @@ predVar_DC_DF <- structure(predVar_DC, row.names = c(NA, -n1DC), class = "data.f
 
 n1MP <- length(predVar_MP[[1]])
 predVar_MP_DF <- structure(predVar_MP, row.names = c(NA, -n1MP), class = "data.frame")
-
 
 Joint_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
 colnames(Joint_predictionSet) <-"date"
@@ -1884,6 +1894,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = palSummer, values = c(0,maxColorSummer),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1956,6 +1968,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint Jan. 2009') %>%
   addRasterImage(jan2009mean_prediction_crop,colors = palWinter,
                  opacity = 0.8, group = 'Vis. & Ac. Mean Jan. 2009') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
   addLegend(pal = palWinter, values = c(0,maxColorWinter),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1990,7 +2003,46 @@ map
 ```
 
 <br>
+## How does hidden layer size change spatial predictions?
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
+nModels = length(layerSizeList)
+july2009_prediction_hidden <- vector('list',length = nModels)
 
+for (iP in c(1:nModels)){
+     july2009_prediction_hidden[[iP]] <- mask(raster::predict(july2009_rastersJoint,
+         nn_Joint[[iP]],na.action = na.pass)*covars_Joint_max.train['y']/10,crop_limits_proj)
+}
+
+maxVal = maxValue(july2009_prediction_hidden[[nModels]])
+palSummer2 <- colorNumeric(palette = matlab.like2(5),
+                    domain=c(0,maxVal), 
+                    na.color = 'transparent')
+
+
+# Display winter (January 2009) map:
+map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
+  addProviderTiles(providers$Esri.OceanBasemap) %>%
+  addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer2,
+                 opacity = 0.8, group = '4 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer2,
+                  opacity = 0.8, group = '6 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
+                  opacity = 0.8, group = '8 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+                  opacity = 0.8, group = '14 nodes') %>%
+  addLegend(pal = palSummer2, values = c(0,maxVal),
+    title = 'Density',position = "bottomleft") %>%
+  addLayersControl(
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+map
+```
 # 4. Monthly model predictions
 
 Spatial model predictions were generated using climatological means of oceanographic variables, averaged by month between 2003 and 2015.

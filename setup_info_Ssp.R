@@ -16,7 +16,7 @@ siteList <-c("MC","GC","DT","DC","MP")
 
 #File paths 
 acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Ssp_density_jahStart_per_km.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
+acousticDensityFile <-"E:/NASData/ALLSITES_binsize011000_Ssp_BINMETHOD_density_jahStart.csv"# "E:/NASData/GC_DT_binsize000800_Group_density_Zc.csv" # acoustic input file
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
 pOccurenceFile <- 'E:/NASData/ModelData/Ssp/ALLSITES_weeklyPOccurrence_Ssp_jahStart.csv' # percent ofdays/week they were present 
@@ -42,7 +42,7 @@ detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")#
 
 matchACSegs <- TRUE  # set to true if you need to match density estimates with environmental parameters
 
-visG0 <- mean(c(.37,.94)) # for striped and spotted dolphins from palka 2006 table 5, 2004 survey
+visG0 <- mean(c(.94)) # .37 for striped and spotted dolphins from palka 2006 table 5, 2004 survey
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 2.2 # km (for click detections)

@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Pm/setup_info_Pm.Rdata')
+load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")
@@ -366,11 +366,11 @@ for (iSeg in 1:length(prunedSightings$Segment)){
 }
 
 # account for G0 in encounters
-visSeg_OnEffort$sp_count_g0adj <- visSeg_OnEffort$sp_count/(visG0*detFun[[bestModelIdx]]$fitted[1])#
+visSeg_OnEffort$sp_count <- visSeg_OnEffort$sp_count # 
 
 # Estimate surveyed area
 visSeg_OnEffort$EffectiveArea <- (2*tDist/1000)*(visSeg_OnEffort$SegmentLength/1000)
-visSeg_OnEffort$Density <- (visSeg_OnEffort$sp_count_g0adj)/visSeg_OnEffort$EffectiveArea
+visSeg_OnEffort$Density <- (visSeg_OnEffort$sp_count)/visSeg_OnEffort$EffectiveArea
 
 
 ############## Form Acoustic and Visual Covariate Dataframes #####################
@@ -390,9 +390,9 @@ uSiteYear <- unique((siteYear))
 #   thisSet_gt0 <- which(acDensityAll$meanDensity[thisSet]>0)
 #   quant95 <-quantile(acDensityAll$meanDensity[thisSet[thisSet_gt0]],probs = .95,na.rm = TRUE)
 if (strcmp(SP, "Gg") | strcmp(SP, "Gmsp") | strcmp(SP, "Ssp")){
-
-  AcOnlySegments$Density <- acDensityAll$meanDensity*(60*60*24)#/[thisSet]/quant95
-  print("hello")
+  # already in units of /1000km2
+  AcOnlySegments$Density <- acDensityAll$meanDensity #/[thisSet]/quant95
+  print("no 1000 km2 adjustment")
 }else{
   AcOnlySegments$Density <- acDensityAll$meanDensity*1000#/[thisSet]/quant95
 }
@@ -401,7 +401,7 @@ AcOnlySegments$Numeric_date <- (as.numeric(acDensityAll$xlsDate)-min(as.numeric(
 AcOnlySegments$lat <- acDensityAll$Lat
 AcOnlySegments$long <- acDensityAll$Long
 
-AcOnlySegments$Category<- rep(2,length(acDensityAll$Long))
+AcOnlySegments$Category<- rep(2,nAc)
 AcOnlySegments$SST <- acDensityAll$SST_DAILY_CMC
 AcOnlySegments$SSH <- acDensityAll$SSH_DAILY_AVISO
 AcOnlySegments$CHL <- acDensityAll$CHL_8DAY_NASA
@@ -423,7 +423,7 @@ AcOnlySegments$Pos_EddyDist <- acDensityAll$PosEddyDist
 
 AcOnlySegments$Type <- rep(2,times = nAc)
 AcOnlySegments$DayOfYear <- as.numeric(strftime(acDensityAll$xlsDate,"%j")) # day of year
-AcOnlySegments$Weight <- 24*(AcTruncDist^2)*pi # 24 hours, 5km radius
+AcOnlySegments$EffectiveArea <- rep((r_sp^2)*pi, times = nAc) # 24 hours, 5km radius
 AcOnlySegments$Site<- acDensityAll$Site
 AcOnlySegments <- as.data.frame(AcOnlySegments)
 # Make vector indicating deployment categories based on lat/long
@@ -474,7 +474,8 @@ VisOnlySegments$FrontDist_Cayula <- visSeg_OnEffort$FrontDist_Cayula
 VisOnlySegments$EddyDist <- visSeg_OnEffort$EddyDist
 VisOnlySegments$Neg_EddyDist <- visSeg_OnEffort$NegEddyDist
 VisOnlySegments$Pos_EddyDist <- visSeg_OnEffort$PosEddyDist
-
+VisOnlySegments$EffectiveArea <- visSeg_OnEffort$EffectiveArea
+  
 nVis <- length(visSeg_OnEffort$HYCOM_upVel_100)
 VisOnlySegments$Type <- rep(1,times = nVis)
 VisOnlySegments$DayOfYear <- as.numeric(strftime(VisOnlySegments$date,format="%j")) # day of year
@@ -482,9 +483,7 @@ VisOnlySegments <- as.data.frame(VisOnlySegments)
 visOrder <- order(VisOnlySegments$date)
 VisOnlySegments <-VisOnlySegments[visOrder,] # make sure the segments are sequential 
 # in case it matters for correlation structure.
-VisOnlySegments$Weight <- (((visSeg_OnEffort$SegmentLength/1000)/18.52)*
-                             visSeg_OnEffort$EffectiveArea)
-      # transect length, divided by speed (10knots/hr = 18.52 km/hr), times estimated strip width, times length, *2
+# transect length, divided by speed (10knots/hr = 18.52 km/hr), times estimated strip width, times length, *2
 
 ##################### Merge Visual and Acoustic Segments #####################
 cat("Merging Visual and Acoustic Segments\n")
@@ -521,9 +520,10 @@ mergedSegments$Pos_EddyDist <- c(visSeg_OnEffort$PosEddyDist,acDensityAll$PosEdd
 
 mergedSegments$Type <- c(rep(1,times = nVis),rep(2,times = nAc))
 mergedSegments$DayOfYear <- as.numeric(strftime(mergedSegments$date,"%j")) # day of year
-mergedSegments$Weight <- c(VisOnlySegments$Weight,AcOnlySegments$Weight)
-mergedSegments <- as.data.frame(mergedSegments)
+mergedSegments$EffectiveArea <- c(VisOnlySegments$EffectiveArea,AcOnlySegments$EffectiveArea)
 
+
+mergedSegments <- as.data.frame(mergedSegments)
 
 ############ Calculate a covariance factor based on deployment (Acoustic) or Year (Visual) #############
 # Trying two grouping options: fac1 just groups acoustic monitoring by site, this seems ideal but results in small sample size

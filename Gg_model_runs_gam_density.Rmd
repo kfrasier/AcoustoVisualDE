@@ -88,7 +88,7 @@ visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
 <br> 
 
 
-### 1.1.1 Splitting into testing and training Sets
+### 1.1.1 Splitting into testing and training sets
 
 The data are split into training and testing sets. In this case, visual data from 2009 and acoustic data from 2013 were used only for testing. Only observations from 2003 or later were used for modeling due to covariate limitations.  
 
@@ -162,13 +162,12 @@ The time series below show timeseries of estimated densities from passive acoust
 **Acoustic Timeseries:**
 ```{r plot timeseries, message = FALSE, echo = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
-MCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MC.png')
-GCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_GC.png')
-DTTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DT.png')
-DCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DC.png')
-MPTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MP.png')
+MCTS <- paste0(outDir,SP,'_Timeseries_Site_MC.png')
+GCTS <- paste0(outDir,SP,'_Timeseries_Site_GC.png')
+DTTS <- paste0(outDir,SP,'_Timeseries_Site_DT.png')
+DCTS <- paste0(outDir,SP,'_Timeseries_Site_DC.png')
+MPTS <- paste0(outDir,SP,'_Timeseries_Site_MP.png')
 ```
-
 
 
 ![](`r MCTS`)
@@ -240,9 +239,9 @@ Test_VisOnly.set$Density[outlierList] <- NaN
 plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP),varUnits)
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP),varUnits)
 plot.cleveland(Train_Joint.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP),varUnits)
-ACclevelandPlot<-paste0(savePath,'/AcousticOnly_',
+ACclevelandPlot<-paste0(outDir,'AcousticOnly_',
                         SP,'_clevelandDots_noTransform.png')
-VisclevelandPlot<-paste0(savePath,'/VisualOnly_',
+VisclevelandPlot<-paste0(outDir,'VisualOnly_',
                         SP,'_clevelandDots_noTransform.png')
 ```
 
@@ -264,7 +263,7 @@ covarList2 <- c("Density","SST","SSH","CHL",
                 "HYCOM_MLD","HYCOM_SALIN_0","HYCOM_MAG_0",
                 "HYCOM_UPVEL_50",
                 "Neg_EddyDist","Pos_EddyDist",
-                "fac1","fac2")
+                "fac1","fac2","EffectiveArea")
 
 # restrict covariates again to limited set
 Train_Joint.set2<- Train_Joint.set[,covarList2]
@@ -284,7 +283,7 @@ dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
 pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
-covarPlot <-paste0(savePath,'/',SP,'_correlations_noTransform.png')
+covarPlot <-paste0(outDir,SP,'_correlations_noTransform.png')
 ```
 <br> 
 
@@ -309,7 +308,7 @@ transformList <- c("none","none","none","log10",
                    "log10","none","log10",
                    "none",
                    "none","none",
-                   "none","none")
+                   "none","none","none")
 
 transformedCovars.train <-
   transform.covars(Train_Joint.set2,covarList2,transformList)
@@ -406,10 +405,10 @@ visKernels <- paste0(savePath,'/VisualOnly_',SP,'_density_pres_abs.png')
 ### 1.2.4 Estimation of relative weights
 
 ```{r load detection prob, echo = FALSE} 
-visDetProbData<-paste0(savePath,'/',SP,'sightwTrunc_GU.Rdata')
+visDetProbData<-paste0(outDir,SP,'sightwTrunc_GU.Rdata')
 load(visDetProbData)
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
-visDetProbFigure <- paste0(savePath,'/',SP,'sightwTrunc_GU.png')
+visDetProbFigure <- paste0(outDir,SP,'sightwTrunc_GU.png')
 ```
 To train the model, we need to know how much power the various data points have relative to one another. This is important because the duration, spatial coverage, and detection probabilities are quite different between the visual and acoustic data sets. If an animal is seen or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. 
 
@@ -418,6 +417,7 @@ To train the model, we need to know how much power the various data points have 
 For each data type, we estimated the probability of a missed detection to account for differences in zero-inflation, downweighting zeros according to the probability of a recording false negative.
 
 The visual data represent wether or not `r SPLong` were seen during each transect segment. The probability of missing a sighting of `r SPLong` was estimated as 
+
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
@@ -464,7 +464,7 @@ transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
-joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.test$fac1),1))
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
@@ -478,6 +478,12 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
   }
 }
 
+maxEffectiveAreaJoint <- max(c(transformedCovars.train$EffectiveArea,
+                               transformedCovars.test$EffectiveArea))
+
+# do additional adjustment for effective area
+joint_train_weightsG0 <- joint_train_weightsG0*
+                  (transformedCovars.train$EffectiveArea/maxEffectiveAreaJoint)
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
   if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
@@ -489,6 +495,10 @@ for (iFac in 1:length(transformedCovars.test$fac1)) {
     }
   }
 }
+# do additional adjustment for effective area
+joint_test_weightsG0 <- joint_test_weightsG0*
+                  (transformedCovars.test$EffectiveArea/maxEffectiveAreaJoint)
+
 
 VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
@@ -501,6 +511,12 @@ for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   }
 }
 
+maxEffectiveAreaVis <- max(c(transformedCovars_VisOnly.train$EffectiveArea,
+                               transformedCovars_VisOnly.test$EffectiveArea))
+# do additional adjustment for effective area
+VisOnly.train_weightsG0 <- VisOnly.train_weightsG0*
+                  (transformedCovars_VisOnly.train$EffectiveArea/maxEffectiveAreaVis)
+
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
   if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
       transformedCovars_VisOnly.test$Density[iFac]==0){
@@ -508,6 +524,10 @@ for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
+
+# do additional adjustment for effective area
+VisOnly.test_weightsG0 <- VisOnly.test_weightsG0*
+                  (transformedCovars_VisOnly.test$EffectiveArea/maxEffectiveAreaVis)
 
 # Remove NaNs
 goodData_Ac <- which(!is.na(rowSums(transformedCovars_AcOnly.train)))
@@ -801,13 +821,15 @@ predAcOnly_MP <- predict.gam(AcOnly_model,
 # occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
-AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date[goodData_Ac_test]))
+AcOnlyGoodTimes <-  Test_AcOnly.set$date[goodData_Ac_test]
+colnames(AcOnly_predictionSet) <-"date"
 colnames(AcOnly_predictionSet) <-"date"
 AcOnly_predictionSet$MC <- NA
 AcOnly_predictionSet$predSd_MC <- NA
 AcOnly_predictionSet$testObs_MC <-NA
 AcOnly_predictionSet$testObs_MC_smooth <- NA
-MC_times <- Test_AcOnly.set$date[compAcSet_MC]
+MC_times <- AcOnlyGoodTimes[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC$fit
 AcOnly_predictionSet$predSd_MC[m1] <- predAcOnly_MC$se.fit
@@ -817,7 +839,7 @@ AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$GC <- NA
 AcOnly_predictionSet$predSd_GC <- NA
 AcOnly_predictionSet$testObs_GC <-NA
-GC_times <- Test_AcOnly.set$date[compAcSet_GC]
+GC_times <- AcOnlyGoodTimes[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC$fit
 AcOnly_predictionSet$predSd_GC[m2] <- predAcOnly_GC$se.fit
@@ -827,7 +849,7 @@ AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
 AcOnly_predictionSet$testObs_DT <-NA
-DT_times <- Test_AcOnly.set$date[compAcSet_DT]
+DT_times <- AcOnlyGoodTimes[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <- predAcOnly_DT$fit
 AcOnly_predictionSet$predSd_DT[m3] <- predAcOnly_DT$se.fit
@@ -837,7 +859,7 @@ AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DC <- NA
 AcOnly_predictionSet$predSd_DC <- NA
 AcOnly_predictionSet$testObs_DC <-NA
-DC_times <- Test_AcOnly.set$date[compAcSet_DC]
+DC_times <- AcOnlyGoodTimes[compAcSet_DC]
 m4 <- match(DC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DC[m4] <- predAcOnly_DC$fit
 AcOnly_predictionSet$predSd_DC[m4] <- predAcOnly_DC$se.fit
@@ -847,7 +869,7 @@ AcOnly_predictionSet$testObs_DC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$MP <- NA
 AcOnly_predictionSet$predSd_MP <- NA
 AcOnly_predictionSet$testObs_MP <-NA
-MP_times <- Test_AcOnly.set$date[compAcSet_MP]
+MP_times <- AcOnlyGoodTimes[compAcSet_MP]
 m5 <- match(MP_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MP[m5] <- predAcOnly_MP$fit
 AcOnly_predictionSet$predSd_MP[m5] <- predAcOnly_MP$se.fit
@@ -1009,7 +1031,7 @@ VisOnly_predictionSet$predSd_MP[m5] <- predVisOnly_MP$se.fit
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
-**Predicted and observed densities at passive acoustic monitoring sites using the visual-only model:**
+**Predicted and observed encounter probabilities at passive acoustic monitoring sites using the visual-only model:**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
@@ -1418,6 +1440,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1447,6 +1471,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint Jan. 2009') %>%
   addRasterImage(jan2009mean_prediction_crop,colors = pal,
                  opacity = 0.8, group = 'Vis. & Ac. Mean Jan. 2009') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(

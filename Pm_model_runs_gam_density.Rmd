@@ -88,7 +88,7 @@ visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
 <br> 
 
 
-### 1.1.1 Splitting into testing and training Sets
+### 1.1.1 Splitting into testing and training sets
 
 The data are split into training and testing sets. In this case, visual data from 2009 and acoustic data from 2013 were used only for testing. Only observations from 2003 or later were used for modeling due to covariate limitations.  
 
@@ -166,7 +166,6 @@ MCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MC.png')
 GCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_GC.png')
 DTTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DT.png')
 ```
-
 
 
 ![](`r MCTS`)
@@ -260,7 +259,7 @@ covarList2 <- c("Density","SST","SSH","CHL",
                 "HYCOM_MLD","HYCOM_SALIN_0","HYCOM_MAG_0",
                 "HYCOM_UPVEL_50",
                 "Neg_EddyDist","Pos_EddyDist",
-                "fac1","fac2")
+                "fac1","fac2","EffectiveArea")
 
 # restrict covariates again to limited set
 Train_Joint.set2<- Train_Joint.set[,covarList2]
@@ -305,7 +304,7 @@ transformList <- c("none","none","none","log10",
                    "log10","none","log10",
                    "none",
                    "none","none",
-                   "none","none")
+                   "none","none","none")
 
 transformedCovars.train <-
   transform.covars(Train_Joint.set2,covarList2,transformList)
@@ -414,6 +413,7 @@ To train the model, we need to know how much power the various data points have 
 For each data type, we estimated the probability of a missed detection to account for differences in zero-inflation, downweighting zeros according to the probability of a recording false negative.
 
 The visual data represent wether or not `r SPLong` were seen during each transect segment. The probability of missing a sighting of `r SPLong` was estimated as 
+
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
@@ -460,7 +460,7 @@ transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
-joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.test$fac1),1))
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
@@ -474,6 +474,12 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
   }
 }
 
+maxEffectiveAreaJoint <- max(c(transformedCovars.train$EffectiveArea,
+                               transformedCovars.test$EffectiveArea))
+
+# do additional adjustment for effective area
+joint_train_weightsG0 <- joint_train_weightsG0*
+                  (transformedCovars.train$EffectiveArea/maxEffectiveAreaJoint)
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
   if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
@@ -485,6 +491,10 @@ for (iFac in 1:length(transformedCovars.test$fac1)) {
     }
   }
 }
+# do additional adjustment for effective area
+joint_test_weightsG0 <- joint_test_weightsG0*
+                  (transformedCovars.test$EffectiveArea/maxEffectiveAreaJoint)
+
 
 VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
@@ -497,6 +507,12 @@ for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   }
 }
 
+maxEffectiveAreaVis <- max(c(transformedCovars_VisOnly.train$EffectiveArea,
+                               transformedCovars_VisOnly.test$EffectiveArea))
+# do additional adjustment for effective area
+VisOnly.train_weightsG0 <- VisOnly.train_weightsG0*
+                  (transformedCovars_VisOnly.train$EffectiveArea/maxEffectiveAreaVis)
+
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
   if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
       transformedCovars_VisOnly.test$Density[iFac]==0){
@@ -504,6 +520,10 @@ for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
+
+# do additional adjustment for effective area
+VisOnly.test_weightsG0 <- VisOnly.test_weightsG0*
+                  (transformedCovars_VisOnly.test$EffectiveArea/maxEffectiveAreaVis)
 
 # Remove NaNs
 goodData_Ac <- which(!is.na(rowSums(transformedCovars_AcOnly.train)))
