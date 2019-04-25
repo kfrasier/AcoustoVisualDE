@@ -70,7 +70,7 @@ Note: Future work could use monthly climatologies (averages) so that older sight
 ```{r Missing data, echo = FALSE}
 plotCols1 <-c(7:10,14,16,19,22,23)
 covarList<-names(mergedSegments[c(plotCols1)])
-varUnits <- c("SST (C)","SSH (m)",expression("Chorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
+varUnits <- c("SST (C)","SSH (m)",expression("Chlorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
                  "Current Magnitude (m/sec)", "Upwelling (m/sec)", 
                  "Dist. to Anti-Cyclonic Eddy (km)","Dist. to Cyclonic Eddy (km)")
 
@@ -438,7 +438,7 @@ Therefore we assume that there are no false negative days in the passive acousti
 
 # 2. Model Fitting
 
-Models were fit using gam from the mgcv package in R [@RN783]. 
+Models were fit using avnnet from the caret package in R. 
 
 ```{r load starting data, echo = FALSE} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
@@ -449,23 +449,16 @@ pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN')
 yAcOnly <- transformedCovars_AcOnly.train$Density
 yVisOnly <- transformedCovars_VisOnly.train$Density
 y <- transformedCovars.train$Density
-yAcOnlySqrt <- sqrt(yAcOnly)
 
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
 transformedCovars_AcOnly.train$yAcOnly<- transformedCovars_AcOnly.train$Density
 transformedCovars_VisOnly.train$yVisOnly<-transformedCovars_VisOnly.train$Density
 transformedCovars.train$y <- transformedCovars.train$Density
-transformedCovars_AcOnly.train$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.train$Density)
-transformedCovars_VisOnly.train$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.train$Density)
-transformedCovars.train$ySqrt <-sqrt(transformedCovars.train$Density)
 
 transformedCovars_AcOnly.test$yAcOnly <-  transformedCovars_AcOnly.test$Density
 transformedCovars_VisOnly.test$yVisOnly <- transformedCovars_VisOnly.test$Density
 transformedCovars.test$y <- transformedCovars.test$Density
-transformedCovars_AcOnly.test$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.test$Density)
-transformedCovars_VisOnly.test$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.test$Density)
-transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
@@ -637,7 +630,7 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 # set up model params
 model1.indices <- c(2:10)
 nMax1 <- length(model1.indices)
-layerSizeList <- c(4,6,8,10,12,14)
+layerSizeList <- c(4,6,8)#,10,12,14)
 trainRepeats <- 25
 
 ```
@@ -684,10 +677,6 @@ pr.nn_Joint_test <- NULL
 
 ```
 
-```{r Set up parallel cluster, eval = FALSE, echo = FALSE}
-numCores <- detectCores() - 2
-cl <-makeCluster(numCores)
-```
 
 ```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
 ## ACOUSTIC ONLY
@@ -802,9 +791,6 @@ for (layerSize in layerSizeList){
 }
 ```
 
-```{r Turn off parallel cluster, eval = FALSE, echo = FALSE}
-stopCluster(cl)
-```
 <br>  
 
 
@@ -965,9 +951,10 @@ kable(mean_var_importance,'markdown',digits = 1)
 
 ```{r plot network, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE, fig.width = 14, fig.height = 8}
 
-n2 = n[model1.indices]
-  png(paste(outDir,SP,'_exampleNetwork.png',sep=''), width = 1400, height = 800)
-plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=2)
+n2 = varUnits[n[model1.indices]]
+  png(paste(outDir,SP,'_exampleNetwork.png',sep=''), width = 1200, height = 600)
+  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
 dev.off()
 egNetFig <-paste0(outDir,SP,'_exampleNetwork.png')
 ```
@@ -1805,10 +1792,6 @@ map
 ## How does hidden layer size change spatial predictions?
 ```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
 nModels = length(layerSizeList)
-maxVal = maxValue(july2009_prediction_hidden[[nModels]])
-palSummer2 <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,maxVal), 
-                    na.color = 'transparent')
 
 july2009_prediction_hidden <- vector('list',length = nModels)
 
@@ -1816,6 +1799,12 @@ for (iP in c(1:nModels)){
      july2009_prediction_hidden[[iP]] <- mask(raster::predict(july2009_rastersJoint,
          nn_Joint[[iP]],na.action = na.pass)*covars_Joint_max.train['y']/10,crop_limits_proj)
 }
+
+maxVal = maxValue(july2009_prediction_hidden[[nModels]])
+palSummer2 <- colorNumeric(palette = matlab.like2(5),
+                    domain=c(0,maxVal), 
+                    na.color = 'transparent')
+
 # Display winter (January 2009) map:
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
@@ -1825,21 +1814,23 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                   opacity = 0.8, group = '6 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
                   opacity = 0.8, group = '8 nodes') %>%
-  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
-                  opacity = 0.8, group = '10 nodes') %>%
-  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
-                  opacity = 0.8, group = '12 nodes') %>%
-  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
-                  opacity = 0.8, group = '14 nodes') %>%
+  # addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+  #               opacity = 0.8, group = '10 nodes') %>%
+  # addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+  #                 opacity = 0.8, group = '12 nodes') %>%
+  # addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+  #                 opacity = 0.8, group = '14 nodes') %>%
   addLegend(pal = palSummer2, values = c(0,maxVal),
     title = 'Density',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('4 nodes','6 nodes','8 nodes',
-                   '10 nodes','12 nodes','14 nodes'),
+    baseGroups = c('4 nodes','6 nodes','8 nodes'),
+                   #'10 nodes','12 nodes','14 nodes'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
+
 ```
+
 # 4. Monthly model predictions
 
 Spatial model predictions were generated using climatological means of oceanographic variables, averaged by month between 2003 and 2015.
@@ -1864,7 +1855,7 @@ for (iM in 1:length(monthStr)){
                           
   mapClimatePrediction[[iM]] <- mask(climatePrediction[[iM]], crop_limits_proj)  
   # output raster to geotiff
-  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'GAM_mean_density.tif')
+  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NNet_mean_density.tif')
   writeRaster(mapClimatePrediction[[iM]],filename = rasterImageFileName, format="GTiff",overwrite = TRUE)
   
   # #ouput raster to kml

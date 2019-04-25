@@ -162,13 +162,12 @@ The time series below show timeseries of estimated densities from passive acoust
 **Acoustic Timeseries:**
 ```{r plot timeseries, message = FALSE, echo = FALSE}
 plot.timeseries(siteList,outDir,AcOnlySegments)
-MCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MC.png')
-GCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_GC.png')
-DTTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DT.png')
-DCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DC.png')
-MPTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MP.png')
+MCTS <- paste0(outDir,SP,'_Timeseries_Site_MC.png')
+GCTS <- paste0(outDir,SP,'_Timeseries_Site_GC.png')
+DTTS <- paste0(outDir,SP,'_Timeseries_Site_DT.png')
+DCTS <- paste0(outDir,SP,'_Timeseries_Site_DC.png')
+MPTS <- paste0(outDir,SP,'_Timeseries_Site_MP.png')
 ```
-
 
 
 ![](`r MCTS`)
@@ -240,9 +239,9 @@ Test_VisOnly.set$Density[outlierList] <- NaN
 plot.cleveland(Train_AcOnly.set,covarList,FALSE,paste0(outDir,'AcousticOnly_',SP),varUnits)
 plot.cleveland(Train_VisOnly.set,covarList,FALSE,paste0(outDir,'VisualOnly_',SP),varUnits)
 plot.cleveland(Train_Joint.set,covarList,FALSE,paste0(outDir,'AcousticAndVisual_',SP),varUnits)
-ACclevelandPlot<-paste0(savePath,'/AcousticOnly_',
+ACclevelandPlot<-paste0(outDir,'AcousticOnly_',
                         SP,'_clevelandDots_noTransform.png')
-VisclevelandPlot<-paste0(savePath,'/VisualOnly_',
+VisclevelandPlot<-paste0(outDir,'VisualOnly_',
                         SP,'_clevelandDots_noTransform.png')
 ```
 
@@ -284,7 +283,7 @@ dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
 pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
-covarPlot <-paste0(savePath,'/',SP,'_correlations_noTransform.png')
+covarPlot <-paste0(outDir,SP,'_correlations_noTransform.png')
 ```
 <br> 
 
@@ -406,10 +405,10 @@ visKernels <- paste0(savePath,'/VisualOnly_',SP,'_density_pres_abs.png')
 ### 1.2.4 Estimation of relative weights
 
 ```{r load detection prob, echo = FALSE} 
-visDetProbData<-paste0(savePath,'/',SP,'sightwTrunc_GU.Rdata')
+visDetProbData<-paste0(outDir,SP,'sightwTrunc_GU.Rdata')
 load(visDetProbData)
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
-visDetProbFigure <- paste0(savePath,'/',SP,'sightwTrunc_GU.png')
+visDetProbFigure <- paste0(outDir,SP,'sightwTrunc_GU.png')
 ```
 To train the model, we need to know how much power the various data points have relative to one another. This is important because the duration, spatial coverage, and detection probabilities are quite different between the visual and acoustic data sets. If an animal is seen or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. 
 
@@ -444,28 +443,22 @@ Models were fit using gam from the mgcv package in R [@RN783].
 ```{r load starting data, echo = FALSE} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
-
+## 2.1 Set up weighting
 ```{r model setup, echo = FALSE} 
 # set up weighting
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
-transformedCovars_AcOnly.train$yAcOnly<- transformedCovars_AcOnly.train$Density
-transformedCovars_VisOnly.train$yVisOnly<-transformedCovars_VisOnly.train$Density
+transformedCovars_AcOnly.train$yAcOnly <- transformedCovars_AcOnly.train$Density
+transformedCovars_VisOnly.train$yVisOnly <- transformedCovars_VisOnly.train$Density
 transformedCovars.train$y <- transformedCovars.train$Density
-transformedCovars_AcOnly.train$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.train$Density)
-transformedCovars_VisOnly.train$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.train$Density)
-transformedCovars.train$ySqrt <-sqrt(transformedCovars.train$Density)
 
-transformedCovars_AcOnly.test$yAcOnly <-  transformedCovars_AcOnly.test$Density
+transformedCovars_AcOnly.test$yAcOnly <- transformedCovars_AcOnly.test$Density
 transformedCovars_VisOnly.test$yVisOnly <- transformedCovars_VisOnly.test$Density
 transformedCovars.test$y <- transformedCovars.test$Density
-transformedCovars_AcOnly.test$yAcOnlySqrt <-sqrt(transformedCovars_AcOnly.test$Density)
-transformedCovars_VisOnly.test$yVisOnlySqrt <-sqrt(transformedCovars_VisOnly.test$Density)
-transformedCovars.test$ySqrt <-sqrt(transformedCovars.test$Density)
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
-joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.test$fac1),1))
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
@@ -526,7 +519,6 @@ for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
   }
 }
 
-
 # do additional adjustment for effective area
 VisOnly.test_weightsG0 <- VisOnly.test_weightsG0*
                   (transformedCovars_VisOnly.test$EffectiveArea/maxEffectiveAreaVis)
@@ -575,57 +567,39 @@ VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
                           function(x) min(x, na.rm=TRUE))
 ```
 
+## 2.2 Run GAMs
+
 Run GAMs on acoustic-only, visual-only, and joint acoustic/visual datasets.
 
-
 ```{r AcOnly model, eval = TRUE, echo = TRUE}
-
-gam_full_AcOnly[[1]] <- gam(yAcOnly ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+varNames <- names(transformedCovars_AcOnly.train)
+varNamesFormula <- varNames[2:10]
+formulaAcOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaAcOnly_allVars <- as.formula(paste('yAcOnly ~',formulaAcOnly_allVars))
+gam_full_AcOnly <- gam(formulaAcOnly_allVars,
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = tw())
 ```
 
 
 ```{r VisOnly model, eval = TRUE, include = TRUE, echo = TRUE} 
-
-gam_full_VisOnly[[1]] <- gam(yVisOnly ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+formulaVisOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaVisOnly_allVars <- as.formula(paste('yVisOnly ~',formulaVisOnly_allVars))
+gam_full_VisOnly <- gam(formulaVisOnly_allVars,
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,
-                               family = Tweedie(p = 1.3, link = log),
+                               family = Tweedie(p = 1.5, link = log),
                                weights = VisOnly.train_weightsG0)
 ```
 
 ```{r Joint model, eval = TRUE, include = TRUE, echo = TRUE} 
-
-gam_full_Joint[[1]] <- gam(y ~ s(SST, bs='ts', k=kVal) 
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+formulaJoint_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaJoint_allVars <- as.formula(paste('y ~',formulaJoint_allVars))
+gam_full_Joint <- gam(formulaJoint_allVars,
                         data = transformedCovars.train, 
                         weights = joint_train_weightsG0,
                         na.action = na.omit,
-                        family = Tweedie(p = 1.6, link = log))
+                        family = Tweedie(p = 1.5, link = log))
 ```
 
 
@@ -648,50 +622,6 @@ load(paste(outDir,SP,'_Joint_tw_GAMs_Density.Rdata',sep=''))
 
 # 3. Model Summaries
 
-```{r Acoustic only AIC, echo = FALSE}
-AC_model_AIC <- NULL
-for (iMod in 1:length(gam_full_AcOnly)){
-  AC_model_AIC[iMod] <- AIC(gam_full_AcOnly[[iMod]])
-  # cat('Model ', names(gam_full_AcOnly[iMod]), ' AIC = ', AC_model_AIC[iMod], '\n')
-}
-```
-
-```{r Acoustic only model, echo = FALSE}
-AcOnly_model_index <- which.min(AC_model_AIC)
-AcOnly_model <- gam_full_AcOnly[[AcOnly_model_index]]
-AcOnly_model_name <- names(gam_full_AcOnly[AcOnly_model_index])
-```
-
-```{r Vis AIC, echo = FALSE}
-Vis_model_AIC <- NULL
-for (iMod in 1:length(gam_full_VisOnly)){
-  Vis_model_AIC[iMod] <- AIC(gam_full_VisOnly[[iMod]])
-  #cat('Model ', names(gam_full_VisOnly[iMod]), ' AIC = ', Vis_model_AIC[iMod], '\n')
-}
-```
-
-```{r Best visual model, echo = FALSE}
-VisOnly_model_index <- which.min(Vis_model_AIC)
-VisOnly_model <- gam_full_VisOnly[[VisOnly_model_index]]
-VisOnly_model_name <- names(gam_full_VisOnly[VisOnly_model_index])
-```
-
-
-```{r joint AIC, echo = FALSE}
-Joint_model_AIC <- NULL
-for (iMod in 1:length(gam_full_Joint)){
-  Joint_model_AIC[iMod] <- AIC(gam_full_Joint[[iMod]])
-}
-```
-
-
-```{r joint model, echo = FALSE}
-Joint_model_index <- which.min(Joint_model_AIC)
-Joint_model <- gam_full_Joint[[Joint_model_index]]
-Joint_model_name <- names(gam_full_Joint[Joint_model_index])
-
-```
-
 Model summaries show that some terms were not significant.
 
 ## 3.1 Acoustic-only model
@@ -699,6 +629,17 @@ Model summaries show that some terms were not significant.
 Model summary:
 
 ```{r AcOnly unpruned model summary, echo = FALSE}
+AcOnlySummary <- summary(gam_full_AcOnly)
+# AcOnlySummary
+significantPvals_AcOnly <- which(AcOnlySummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaAcOnly_prunedVars <-paste('s(', varNamesFormula[significantPvals_AcOnly], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaAcOnly_prunedVars <- as.formula(paste('yAcOnly ~',formulaAcOnly_prunedVars))
+AcOnly_model <- gam(formulaAcOnly_prunedVars,
+                               data = transformedCovars_AcOnly.train,
+                               na.action = na.omit,family = tw())
+
 summary(AcOnly_model)
 ```
 <br> 
@@ -707,7 +648,7 @@ Smooths of predictor variables:
 
 ```{r AcOnly model plots, echo = FALSE}
 nTerms <- size(AcOnly_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(AcOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -729,14 +670,26 @@ plot(residuals.gam(AcOnly_model))
 Model summary:
 
 ```{r VisOnly model summary, echo = FALSE}
+VisOnlySummary <- summary(gam_full_VisOnly)
+# VisOnlySummary
+significantPvals_VisOnly <- which(VisOnlySummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaVisOnly_prunedVars <-paste('s(', varNamesFormula[significantPvals_VisOnly], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaVisOnly_prunedVars <- as.formula(paste('yVisOnly ~',formulaVisOnly_prunedVars))
+VisOnly_model <- gam(formulaVisOnly_prunedVars,
+                               data = transformedCovars_VisOnly.train,
+                               family = Tweedie(p = 1.5, link = log),
+                               weights = VisOnly.train_weightsG0)
 summary(VisOnly_model)
+
 ```
 
 Smooths of predictor variables:
 
 ```{r VisOnly model plots, echo = FALSE}
 nTerms <- size(VisOnly_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(VisOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -757,6 +710,18 @@ plot(residuals.gam(VisOnly_model))
 Model summary:
 
 ```{r Joint model summary,echo = FALSE}
+JointSummary <- summary(gam_full_Joint)
+# JointSummary
+significantPvals_Joint <- which(JointSummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaJoint_prunedVars <-paste('s(', varNamesFormula[significantPvals_Joint], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaJoint_prunedVars <- as.formula(paste('y ~',formulaJoint_prunedVars))
+Joint_model <- gam(formulaJoint_prunedVars,
+                        data = transformedCovars.train, 
+                        weights = joint_train_weightsG0,
+                        na.action = na.omit,
+                        family = Tweedie(p = 1.5, link = log))
 summary(Joint_model)
 ```
 
@@ -764,7 +729,7 @@ Smooths of predictor variables:
 
 ```{r Joint model plots,echo = FALSE}
 nTerms <- size(Joint_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -823,13 +788,14 @@ predAcOnly_MP <- predict.gam(AcOnly_model,
 # occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
 
-AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
+AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date[goodData_Ac_test]))
+AcOnlyGoodTimes <-  Test_AcOnly.set$date[goodData_Ac_test]
 colnames(AcOnly_predictionSet) <-"date"
 AcOnly_predictionSet$MC <- NA
 AcOnly_predictionSet$predSd_MC <- NA
 AcOnly_predictionSet$testObs_MC <-NA
 AcOnly_predictionSet$testObs_MC_smooth <- NA
-MC_times <- Test_AcOnly.set$date[compAcSet_MC]
+MC_times <- AcOnlyGoodTimes[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC$fit
 AcOnly_predictionSet$predSd_MC[m1] <- predAcOnly_MC$se.fit
@@ -839,7 +805,7 @@ AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$GC <- NA
 AcOnly_predictionSet$predSd_GC <- NA
 AcOnly_predictionSet$testObs_GC <-NA
-GC_times <- Test_AcOnly.set$date[compAcSet_GC]
+GC_times <- AcOnlyGoodTimes[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC$fit
 AcOnly_predictionSet$predSd_GC[m2] <- predAcOnly_GC$se.fit
@@ -849,7 +815,7 @@ AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
 AcOnly_predictionSet$testObs_DT <-NA
-DT_times <- Test_AcOnly.set$date[compAcSet_DT]
+DT_times <- AcOnlyGoodTimes[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <- predAcOnly_DT$fit
 AcOnly_predictionSet$predSd_DT[m3] <- predAcOnly_DT$se.fit
@@ -859,7 +825,7 @@ AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$DC <- NA
 AcOnly_predictionSet$predSd_DC <- NA
 AcOnly_predictionSet$testObs_DC <-NA
-DC_times <- Test_AcOnly.set$date[compAcSet_DC]
+DC_times <- AcOnlyGoodTimes[compAcSet_DC]
 m4 <- match(DC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DC[m4] <- predAcOnly_DC$fit
 AcOnly_predictionSet$predSd_DC[m4] <- predAcOnly_DC$se.fit
@@ -869,7 +835,7 @@ AcOnly_predictionSet$testObs_DC_smooth <- rollmean(AcOnly_predictionSet$testObs_
 AcOnly_predictionSet$MP <- NA
 AcOnly_predictionSet$predSd_MP <- NA
 AcOnly_predictionSet$testObs_MP <-NA
-MP_times <- Test_AcOnly.set$date[compAcSet_MP]
+MP_times <- AcOnlyGoodTimes[compAcSet_MP]
 m5 <- match(MP_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MP[m5] <- predAcOnly_MP$fit
 AcOnly_predictionSet$predSd_MP[m5] <- predAcOnly_MP$se.fit
@@ -1031,7 +997,7 @@ VisOnly_predictionSet$predSd_MP[m5] <- predVisOnly_MP$se.fit
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
-**Predicted and observed encounter probabilities at passive acoustic monitoring sites using the visual-only model:**
+**Predicted and observed densities at passive acoustic monitoring sites using the visual-only model:**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
@@ -1440,6 +1406,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
@@ -1469,6 +1437,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  opacity = 0.8, group = 'Joint Jan. 2009') %>%
   addRasterImage(jan2009mean_prediction_crop,colors = pal,
                  opacity = 0.8, group = 'Vis. & Ac. Mean Jan. 2009') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
   addLayersControl(
