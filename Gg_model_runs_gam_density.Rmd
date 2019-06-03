@@ -625,7 +625,7 @@ load(paste(outDir,SP,'_Joint_tw_GAMs_Density.Rdata',sep=''))
 Model summaries show that some terms were not significant.
 
 ## 3.1 Acoustic-only model
-
+<br>
 Model summary:
 
 ```{r AcOnly unpruned model summary, echo = FALSE}
@@ -654,8 +654,8 @@ for  (i in 1:nTerms) {
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
 }
 ```
-<br>
 
+<br>
 Plot of residuals:
 
 ```{r AcOnly model residuals, echo = FALSE}
@@ -666,7 +666,7 @@ plot(residuals.gam(AcOnly_model))
 
 ## 3.2 Visual-only model
 
-
+<br>
 Model summary:
 
 ```{r VisOnly model summary, echo = FALSE}
@@ -684,7 +684,7 @@ VisOnly_model <- gam(formulaVisOnly_prunedVars,
 summary(VisOnly_model)
 
 ```
-
+<br>
 Smooths of predictor variables:
 
 ```{r VisOnly model plots, echo = FALSE}
@@ -695,7 +695,7 @@ for  (i in 1:nTerms) {
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
 }
 ```
-
+<br>
 Plot of residuals:
 
 ```{r VisOnly model residuals, echo = FALSE}
@@ -706,7 +706,7 @@ plot(residuals.gam(VisOnly_model))
 <br>
 
 ## 3.3 Joint model
-
+<br>
 Model summary:
 
 ```{r Joint model summary,echo = FALSE}

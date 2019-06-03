@@ -70,7 +70,7 @@ Note: Future work could use monthly climatologies (averages) so that older sight
 ```{r Missing data, echo = FALSE}
 plotCols1 <-c(7:10,14,16,19,22,23)
 covarList<-names(mergedSegments[c(plotCols1)])
-varUnits <- c("SST (C)","SSH (m)",expression("Chorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
+varUnits <- c("SST (C)","SSH (m)",expression("Chlorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
                  "Current Magnitude (m/sec)", "Upwelling (m/sec)", 
                  "Dist. to Anti-Cyclonic Eddy (km)","Dist. to Cyclonic Eddy (km)")
 
@@ -92,7 +92,7 @@ visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
 <br> 
 
 
-### 1.1.1 Splitting into testing and training Sets
+### 1.1.1 Splitting into testing and training sets
 
 The data are split into training and testing sets. In this case, visual data from 2009 and acoustic data from 2013 were used only for testing. Only observations from 2003 or later were used for modeling due to covariate limitations.  
 
@@ -640,7 +640,7 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 # set up model params
 model1.indices <- c(2:10)
 nMax1 <- length(model1.indices)
-layerSizeList <- c(4,6,8)#,10,12,14)
+layerSizeList <- c(4,6,8,10)#12,14)
 trainRepeats <- 25
 
 ```
@@ -1880,7 +1880,7 @@ july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 **Summer 2009 predicted distribution and test sightings:**
 
 
-```{r leaflet summer, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, echo = FALSE}
+```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColorSummer <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
                july2009_VisOnly_prediction_crop@data@max,

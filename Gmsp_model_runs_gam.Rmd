@@ -88,7 +88,7 @@ visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
 <br> 
 
 
-### 1.1.1 Splitting into testing and training Sets
+### 1.1.1 Splitting into testing and training sets
 
 The data are split into training and testing sets. In this case, visual data from 2009 and acoustic data from 2013 were used only for testing. Only observations from 2003 or later were used for modeling due to covariate limitations.  
 
@@ -172,7 +172,6 @@ DTTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DT.png')
 DCTS <- paste0(savePath,'/',SP,'_Timeseries_Site_DC.png')
 MPTS <- paste0(savePath,'/',SP,'_Timeseries_Site_MP.png')
 ```
-
 
 
 ![](`r MCTS`)
@@ -268,7 +267,7 @@ covarList2 <- c("Density","SST","SSH","CHL",
                 "HYCOM_MLD","HYCOM_SALIN_0","HYCOM_MAG_0",
                 "HYCOM_UPVEL_50",
                 "Neg_EddyDist","Pos_EddyDist",
-                "fac1","fac2")
+                "fac1","fac2","EffectiveArea")
 
 # restrict covariates again to limited set
 Train_Joint.set2<- Train_Joint.set[,covarList2]
@@ -313,7 +312,7 @@ transformList <- c("none","none","none","log10",
                    "log10","none","log10",
                    "none",
                    "none","none",
-                   "none","none")
+                   "none","none","none")
 
 transformedCovars.train <-
   transform.covars(Train_Joint.set2,covarList2,transformList)
@@ -422,6 +421,7 @@ To train the model, we need to know how much power the various data points have 
 For each data type, we estimated the probability of a missed detection to account for differences in zero-inflation, downweighting zeros according to the probability of a recording false negative.
 
 The visual data represent wether or not `r SPLong` were seen during each transect segment. The probability of missing a sighting of `r SPLong` was estimated as 
+
 \[P_{V}(detect|present) = \mu_{det} * g0\ =  `r round(visDetProb*100)/100` * `r  round(visG0*100)/100` = `r round(visDetProb* visG0*100)/100`\] 
 
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
@@ -447,22 +447,22 @@ Models were fit using gam from the mgcv package in R [@RN783].
 ```{r load starting data, echo = FALSE} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
-
+## 2.1 Set up weighting
 ```{r model setup, echo = FALSE} 
 # set up weighting
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
 
-transformedCovars_AcOnly.train$yAcOnly_TF<-(transformedCovars_AcOnly.train$Density >0)*1
-transformedCovars_VisOnly.train$yVisOnly_TF<-(transformedCovars_VisOnly.train$Density >0)*1
-transformedCovars.train$y_TF<-(transformedCovars.train$Density>0)*1
+transformedCovars_AcOnly.train$yAcOnly_TF <- (transformedCovars_AcOnly.train$Density >0)*1
+transformedCovars_VisOnly.train$yVisOnly_TF <- (transformedCovars_VisOnly.train$Density >0)*1
+transformedCovars.train$y_TF <- (transformedCovars.train$Density>0)*1
 
-transformedCovars_AcOnly.test$yAcOnly_TF<-(transformedCovars_AcOnly.test$Density >0)*1
-transformedCovars_VisOnly.test$yVisOnly_TF<-(transformedCovars_VisOnly.test$Density >0)*1
-transformedCovars.test$y_TF<- (transformedCovars.test$Density>0)*1
+transformedCovars_AcOnly.test$yAcOnly_TF <- (transformedCovars_AcOnly.test$Density >0)*1
+transformedCovars_VisOnly.test$yVisOnly_TF <- (transformedCovars_VisOnly.test$Density >0)*1
+transformedCovars.test$y_TF <- (transformedCovars.test$Density>0)*1
 
 # make some factors and calculate introduce column of g0 weights
 joint_train_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
-joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.train$fac1),1))
+joint_test_weightsG0<- array(data = 1, dim = c(length(transformedCovars.test$fac1),1))
 
 
 for (iFac in 1:length(transformedCovars.train$fac1)) {
@@ -476,6 +476,12 @@ for (iFac in 1:length(transformedCovars.train$fac1)) {
   }
 }
 
+maxEffectiveAreaJoint <- max(c(transformedCovars.train$EffectiveArea,
+                               transformedCovars.test$EffectiveArea))
+
+# do additional adjustment for effective area
+joint_train_weightsG0 <- joint_train_weightsG0*
+                  (transformedCovars.train$EffectiveArea/maxEffectiveAreaJoint)
 
 for (iFac in 1:length(transformedCovars.test$fac1)) {
   if (!is.na(transformedCovars.test$fac1[iFac]) & !is.na(transformedCovars.test$Density[iFac])){
@@ -487,6 +493,10 @@ for (iFac in 1:length(transformedCovars.test$fac1)) {
     }
   }
 }
+# do additional adjustment for effective area
+joint_test_weightsG0 <- joint_test_weightsG0*
+                  (transformedCovars.test$EffectiveArea/maxEffectiveAreaJoint)
+
 
 VisOnly.train_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.train$fac1),1))
 VisOnly.test_weightsG0<- array(data = 1, dim = c(length(transformedCovars_VisOnly.test$fac1),1))
@@ -499,6 +509,12 @@ for (iFac in 1:length(transformedCovars_VisOnly.train$fac1)) {
   }
 }
 
+maxEffectiveAreaVis <- max(c(transformedCovars_VisOnly.train$EffectiveArea,
+                               transformedCovars_VisOnly.test$EffectiveArea))
+# do additional adjustment for effective area
+VisOnly.train_weightsG0 <- VisOnly.train_weightsG0*
+                  (transformedCovars_VisOnly.train$EffectiveArea/maxEffectiveAreaVis)
+
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
   if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
       transformedCovars_VisOnly.test$Density[iFac]==0){
@@ -506,6 +522,10 @@ for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
   }
 }
+
+# do additional adjustment for effective area
+VisOnly.test_weightsG0 <- VisOnly.test_weightsG0*
+                  (transformedCovars_VisOnly.test$EffectiveArea/maxEffectiveAreaVis)
 
 # Remove NaNs
 goodData_Ac <- which(!is.na(rowSums(transformedCovars_AcOnly.train)))
@@ -550,53 +570,35 @@ VisOnlyRangesMax <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
                           function(x) min(x, na.rm=TRUE))
 ```
+## 2.2 Run GAMs
 
 Run binomial GAMs on acoustic-only, visual-only, and joint acoustic/visual datasets.
 
 
-```{r AcOnly model, eval = TRUE, echo = TRUE}
-
-gam_full_AcOnly_TF[[1]] <- gam(yAcOnly_TF ~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+```{r AcOnly model, eval = TRUE, echo = TRUE, warning = FALSE}
+varNames <- names(transformedCovars_AcOnly.train)
+varNamesFormula <- varNames[2:10]
+formulaAcOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaAcOnly_allVars <- as.formula(paste('yAcOnly_TF ~',formulaAcOnly_allVars))
+gam_full_AcOnly <- gam(formulaAcOnly_allVars,
                                data = transformedCovars_AcOnly.train,
                                na.action = na.omit,family = binomial())
 ```
 
 
-```{r VisOnly model, eval = TRUE, include = TRUE, echo = TRUE} 
-
-gam_full_VisOnly_TF[[1]] <- gam(yVisOnly_TF~ s(SST, bs='ts', k=kVal)
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+```{r VisOnly model, eval = TRUE, include = TRUE, echo = TRUE, warning = FALSE} 
+formulaVisOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaVisOnly_allVars <- as.formula(paste('yVisOnly_TF ~',formulaVisOnly_allVars))
+gam_full_VisOnly <- gam(formulaVisOnly_allVars,
                                data = transformedCovars_VisOnly.train,
                                na.action = na.omit,family = binomial(),
                                weights = VisOnly.train_weightsG0)
 ```
 
-```{r Joint model, eval = TRUE, include = TRUE, echo = TRUE} 
-
-gam_full_Joint_TF[[1]] <- gam(y_TF~ s(SST, bs='ts', k=kVal) 
-                               + s(SSH, bs='ts', k=kVal)
-                               + s(log10_CHL, bs='ts', k=kVal)
-                               + s(log10_HYCOM_MLD, bs='ts', k=kVal)
-                               + s(HYCOM_SALIN_0,bs='ts', k=kVal)
-                               + s(log10_HYCOM_MAG_0, bs='ts', k=kVal)
-                               + s(HYCOM_UPVEL_50, bs='ts', k=kVal)
-                               + s(Neg_EddyDist, bs='ts', k=kVal)
-                               + s(Pos_EddyDist, bs='ts', k=kVal),
+```{r Joint model, eval = TRUE, include = TRUE, echo = TRUE, warning = FALSE} 
+formulaJoint_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaJoint_allVars <- as.formula(paste('y_TF ~',formulaJoint_allVars))
+gam_full_Joint <- gam(formulaJoint_allVars,
                         data = transformedCovars.train, 
                         weights = joint_train_weightsG0,
                         na.action = na.omit,family = binomial())
@@ -622,58 +624,24 @@ load(paste(outDir,SP,'_binomial_GAMs_ALL.Rdata',sep=''))
 
 # 3. Model Summaries
 
-```{r Acoustic only AIC, echo = FALSE}
-AC_model_AIC <- NULL
-for (iMod in 1:length(gam_full_AcOnly_TF)){
-  AC_model_AIC[iMod] <- AIC(gam_full_AcOnly_TF[[iMod]])
-  # cat('Model ', names(gam_full_AcOnly_TF[iMod]), ' AIC = ', AC_model_AIC[iMod], '\n')
-}
-```
-
-```{r Acoustic only model, echo = FALSE}
-AcOnly_model_index <- which.min(AC_model_AIC)
-AcOnly_model <- gam_full_AcOnly_TF[[AcOnly_model_index]]
-AcOnly_model_name <- names(gam_full_AcOnly_TF[AcOnly_model_index])
-```
-
-```{r Vis AIC, echo = FALSE}
-Vis_model_AIC <- NULL
-for (iMod in 1:length(gam_full_VisOnly_TF)){
-  Vis_model_AIC[iMod] <- AIC(gam_full_VisOnly_TF[[iMod]])
-  #cat('Model ', names(gam_full_VisOnly_TF[iMod]), ' AIC = ', Vis_model_AIC[iMod], '\n')
-}
-```
-
-```{r Best visual model, echo = FALSE}
-VisOnly_model_index <- which.min(Vis_model_AIC)
-VisOnly_model <- gam_full_VisOnly_TF[[VisOnly_model_index]]
-VisOnly_model_name <- names(gam_full_VisOnly_TF[VisOnly_model_index])
-```
-
-
-
-```{r joint AIC, echo = FALSE}
-Joint_model_AIC <- NULL
-for (iMod in 1:length(gam_full_Joint_TF)){
-  Joint_model_AIC[iMod] <- AIC(gam_full_Joint_TF[[iMod]])
-}
-```
-
-
-```{r joint model, echo = FALSE}
-Joint_model_index <- which.min(Joint_model_AIC)
-Joint_model <- gam_full_Joint_TF[[Joint_model_index]]
-Joint_model_name <- names(gam_full_Joint_TF[Joint_model_index])
-
-```
-
 Model summaries show that some terms were not significant.
 
 ## 3.1 Acoustic-only model
 
 Model summary:
 
-```{r AcOnly unpruned model summary, echo = FALSE}
+```{r AcOnly unpruned model summary, echo = FALSE, warning = FALSE}
+AcOnlySummary <- summary(gam_full_AcOnly)
+# AcOnlySummary
+significantPvals_AcOnly <- which(AcOnlySummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaAcOnly_prunedVars <-paste('s(', varNamesFormula[significantPvals_AcOnly], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaAcOnly_prunedVars <- as.formula(paste('yAcOnly_TF ~',formulaAcOnly_prunedVars))
+AcOnly_model <- gam(formulaAcOnly_prunedVars,
+                               data = transformedCovars_AcOnly.train,
+                               na.action = na.omit,family = binomial())
+
 summary(AcOnly_model)
 ```
 <br> 
@@ -682,7 +650,7 @@ Smooths of predictor variables:
 
 ```{r AcOnly model plots, echo = FALSE}
 nTerms <- size(AcOnly_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(AcOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -703,15 +671,27 @@ plot(residuals.gam(AcOnly_model))
 
 Model summary:
 
-```{r VisOnly model summary, echo = FALSE}
+```{r VisOnly model summary, echo = FALSE, warning = FALSE}
+VisOnlySummary <- summary(gam_full_VisOnly)
+# VisOnlySummary
+significantPvals_VisOnly <- which(VisOnlySummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaVisOnly_prunedVars <-paste('s(', varNamesFormula[significantPvals_VisOnly], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaVisOnly_prunedVars <- as.formula(paste('yVisOnly_TF ~',formulaVisOnly_prunedVars))
+VisOnly_model <- gam(formulaVisOnly_prunedVars,
+                               data = transformedCovars_VisOnly.train,
+                               family = binomial(),
+                               weights = VisOnly.train_weightsG0)
 summary(VisOnly_model)
+
 ```
 
 Smooths of predictor variables:
 
 ```{r VisOnly model plots, echo = FALSE}
 nTerms <- size(VisOnly_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(VisOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -731,7 +711,19 @@ plot(residuals.gam(VisOnly_model))
 
 Model summary:
 
-```{r Joint model summary,echo = FALSE}
+```{r Joint model summary,echo = FALSE, warning = FALSE}
+JointSummary <- summary(gam_full_Joint)
+# JointSummary
+significantPvals_Joint <- which(JointSummary$s.pv<=.05)
+
+# rerun model with only significant predictors
+formulaJoint_prunedVars <-paste('s(', varNamesFormula[significantPvals_Joint], ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
+formulaJoint_prunedVars <- as.formula(paste('y_TF ~',formulaJoint_prunedVars))
+Joint_model <- gam(formulaJoint_prunedVars,
+                        data = transformedCovars.train, 
+                        weights = joint_train_weightsG0,
+                        na.action = na.omit,
+                        family = binomial())
 summary(Joint_model)
 ```
 
@@ -739,7 +731,7 @@ Smooths of predictor variables:
 
 ```{r Joint model plots,echo = FALSE}
 nTerms <- size(Joint_model$smooth,2)
-par(mfrow = c(nTerms/3,3),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
@@ -760,10 +752,7 @@ plot(residuals.gam(Joint_model))
 
 ## 4.1 Temporal predictions
 
-Predictions were made on the acoustic test dataset, and compared with actual observations for 2013. The predicted probabliity of encountering animals was compared with the actual weekly rate of occurrence of animals at a site. 
-
-CAVEAT: Encounter probability from the data is estimated as fraction of days per week during which this species was detected. 
-
+Predictions were made on the acoustic test dataset, and compared with actual observations for 2013. The predicted probabliity of encountering animals was compared with the actual weekly rate of occurrence of animals at a site.  
 
 <br>
 
@@ -809,6 +798,8 @@ MC_times <- Test_AcOnly.set$date[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC$fit
 AcOnly_predictionSet$predSd_MC[m1] <- predAcOnly_MC$se.fit
+AcOnly_predictionSet$yTF_MC <- NA
+AcOnly_predictionSet$yTF_MC[m1]<- (Test_AcOnly.set$Density[compAcSet_MC]>0)*1
 
 AcOnly_predictionSet$GC <- NA
 AcOnly_predictionSet$predSd_GC <- NA
@@ -816,6 +807,8 @@ GC_times <- Test_AcOnly.set$date[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC$fit
 AcOnly_predictionSet$predSd_GC[m2] <- predAcOnly_GC$se.fit
+AcOnly_predictionSet$yTF_GC <- NA
+AcOnly_predictionSet$yTF_GC[m2]<- (Test_AcOnly.set$Density[compAcSet_GC]>0)*1
 
 AcOnly_predictionSet$DT <- NA
 AcOnly_predictionSet$predSd_DT <- NA
@@ -823,6 +816,8 @@ DT_times <- Test_AcOnly.set$date[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <- predAcOnly_DT$fit
 AcOnly_predictionSet$predSd_DT[m3] <- predAcOnly_DT$se.fit
+AcOnly_predictionSet$yTF_DT <- NA
+AcOnly_predictionSet$yTF_DT[m3]<- (Test_AcOnly.set$Density[compAcSet_DT]>0)*1
 
 AcOnly_predictionSet$DC <- NA
 AcOnly_predictionSet$predSd_DC <- NA
@@ -830,6 +825,8 @@ DC_times <- Test_AcOnly.set$date[compAcSet_DC]
 m4 <- match(DC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DC[m4] <- predAcOnly_DC$fit
 AcOnly_predictionSet$predSd_DC[m4] <- predAcOnly_DC$se.fit
+AcOnly_predictionSet$yTF_DC <- NA
+AcOnly_predictionSet$yTF_DC[m4]<- (Test_AcOnly.set$Density[compAcSet_DC]>0)*1
 
 AcOnly_predictionSet$MP <- NA
 AcOnly_predictionSet$predSd_MP <- NA
@@ -837,10 +834,13 @@ MP_times <- Test_AcOnly.set$date[compAcSet_MP]
 m5 <- match(MP_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MP[m5] <- predAcOnly_MP$fit
 AcOnly_predictionSet$predSd_MP[m5] <- predAcOnly_MP$se.fit
+AcOnly_predictionSet$yTF_MP <- NA
+AcOnly_predictionSet$yTF_MP[m5]<- (Test_AcOnly.set$Density[compAcSet_MP]>0)*1
 
 AcOnly_predictionSet$Legend <- "Predictions"
 AcOnly_predictionSet$StDev <- "Std. Error"
 pOccur$Legend <- "Observations"
+AcOnly_predictionSet$Legend1 <- "Observations"
 
 ```
 
@@ -866,8 +866,8 @@ p1_Ac <- ggplot() +
             aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
   geom_line(data = AcOnly_predictionSet,
             aes(x= date, y=MC, color = Legend)) +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MC, color = Legend1),alpha = 0.5) +
   labs(y = "Encounter probability", x = "")+
   scale_color_manual("",values= c("gray48","#009999"))+
   theme_bw()+theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
@@ -879,10 +879,10 @@ p2_Ac <- ggplot() +
             aes(x = date, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet, 
             aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend))+
+            aes(x = date, y = GC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_GC, color = Legend1),alpha = 0.5) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")+annotation_custom(gcLabel)
@@ -892,10 +892,10 @@ p3_Ac <- ggplot() +
             aes(x = date, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet, 
             aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
+            aes(x = date, y = DT, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DT, color = Legend1),alpha = 0.5) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")+annotation_custom(dtLabel)
@@ -905,10 +905,10 @@ p4_Ac <- ggplot() +
             aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet,
             aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=DC, color = Legend)) +
+            aes(x = date, y = DC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DC, color = Legend1),alpha = 0.5) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
   theme(legend.position="none")+annotation_custom(dcLabel)
@@ -918,10 +918,10 @@ p5_Ac <- ggplot() +
             aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
   geom_area(data = AcOnly_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend)) +
+            aes(x = date, y = MP, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MP, color = Legend1),alpha = 0.5) +
   scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "Date")+theme_bw()+
   theme(legend.position="none")+annotation_custom(mpLabel)
@@ -1000,74 +1000,71 @@ pOccur$Legend <- "Observations"
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_ribbon(data = VisOnly_predictionSet,
+            aes(x = date, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
   geom_area(data = VisOnly_predictionSet, 
             aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=MC, color = Legend)) +
+            aes(x= date, y=MC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MC, color = Legend1),alpha = 0.5) +
   labs(y = "Encounter probability", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
-  theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
+  scale_color_manual("",values= c("gray48","#009999"))+
+  theme_bw()+theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
                    legend.margin=margin(c(1,5,5,5)))+
-  annotation_custom(mcLabel)
+  annotation_custom(mcLabel)#+ylim(c(0,.6))
 
 p2_Vis <- ggplot() +
   geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
   geom_area(data = VisOnly_predictionSet, 
             aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = GC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_GC, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(gcLabel)
+  theme(legend.position="none")+annotation_custom(gcLabel)
 
 p3_Vis <- ggplot() +
   geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
   geom_area(data = VisOnly_predictionSet, 
             aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = DT, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DT, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(dtLabel)
+  theme(legend.position="none")+annotation_custom(dtLabel)
 
 p4_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_DC + DC,ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet, 
+  geom_ribbon(data = VisOnly_predictionSet,
+            aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
+  geom_area(data = VisOnly_predictionSet,
             aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DC, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=DC, color = Legend)) +  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = DC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DC, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(dcLabel)
+  theme(legend.position="none")+annotation_custom(dcLabel)
 
 p5_Vis <- ggplot() +
   geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(DT - predSd_MP,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
   geom_area(data = VisOnly_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = MP, color = Legend))+
   geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y = MP, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = MP, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MP, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "Date")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(mpLabel)
+  theme(legend.position="none")+annotation_custom(mpLabel)
 
 multiplot(p1_Vis, p2_Vis, p3_Vis, p4_Vis, p5_Vis, cols=1)
 
@@ -1137,75 +1134,71 @@ pOccur$Legend <- "Observations"
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
 p1 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_ribbon(data = Joint_predictionSet,
+            aes(x = date, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MC, color = Legend))+
   geom_line(data = Joint_predictionSet,
-            aes(x=date, y=MC, color = Legend)) +
+            aes(x= date, y=MC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MC, color = Legend1),alpha = 0.5) +
   labs(y = "Encounter probability", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
-  theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
+  scale_color_manual("",values= c("gray48","#009999"))+
+  theme_bw()+theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
                    legend.margin=margin(c(1,5,5,5)))+
-  annotation_custom(mcLabel)
+  annotation_custom(mcLabel)#+ylim(c(0,.6))
 
 p2 <- ggplot() +
   geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = GC, color = Legend))+
   geom_line(data = Joint_predictionSet,
-            aes(x=date, y=GC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = GC, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_GC, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(gcLabel)
+  theme(legend.position="none")+annotation_custom(gcLabel)
 
 p3 <- ggplot() +
   geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x =as.POSIXct(dateStr), y = DT, color = Legend))+
   geom_line(data = Joint_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+            aes(x = date, y = DT, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DT, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position="none")+
-  annotation_custom(dtLabel)
+  theme(legend.position="none")+annotation_custom(dtLabel)
 
 p4 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_DC + DC,ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
+  geom_ribbon(data = Joint_predictionSet,
+            aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
+  geom_area(data = Joint_predictionSet,
             aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = DC, color = Legend))+
   geom_line(data = Joint_predictionSet,
             aes(x = date, y = DC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_DC, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
   labs(y = "Encounter probability", x = "")+theme_bw()+
-  theme(legend.position = "none")+
-  annotation_custom(dcLabel)
+  theme(legend.position="none")+annotation_custom(dcLabel)
 
 p5 <- ggplot() +
   geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
+            aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
   geom_area(data = Joint_predictionSet, 
             aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = pOccur[occurIdx,],
-             aes(x = as.POSIXct(dateStr), y = MP, color = Legend))+
   geom_line(data = Joint_predictionSet,
-            aes(x=date, y = MP, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
-  labs(y = "Encounter probability", x = "Date")+
-  theme(legend.position = "none")+
-  annotation_custom(mpLabel)
+            aes(x = date, y = MP, color = Legend)) +
+  geom_point(data = AcOnly_predictionSet,
+             aes(x = date, y = yTF_MP, color = Legend1),alpha = 0.5) +
+  scale_color_manual("",values= c("gray48","#009999"))+
+  labs(y = "Encounter probability", x = "Date")+theme_bw()+
+  theme(legend.position="none")+annotation_custom(mpLabel)
 
 multiplot(p1, p2, p3, p4, p5, cols = 1)
 
@@ -1343,8 +1336,6 @@ july2009_map_probSee <- july2009_prediction_crop*visG0*visDetProb
 
 Note: As an alternative to training joint models, an average surface was computed across the acoustic and visual-only predictions.
 
-
-Each grid cell in the following maps represents a 10x10 km square.
 <br>
 
 ```{r Model Averaging, warning = FALSE, echo = FALSE}

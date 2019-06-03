@@ -14,7 +14,7 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
+load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
 
 # Set up directories
 outDir <- file.path("E:/NASData/ModelData",SP,"/")

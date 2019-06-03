@@ -640,7 +640,7 @@ VisOnlyRangesMin <- apply(VisOnly_train_scaled, MARGIN = 2,
 # set up model params
 model1.indices <- c(2:10)
 nMax1 <- length(model1.indices)
-layerSizeList <- c(4,6,8)#,10,12,14)
+layerSizeList <- c(4,6,8,10)#12,14)
 trainRepeats <- 25
 
 ```
@@ -676,6 +676,8 @@ MSE.nn_Joint_train<-NULL
 MSE.nn_AcOnly_test<-NULL
 MSE.nn_VisOnly_test<-NULL
 MSE.nn_Joint_test<-NULL
+MSE.nn_AcOnly_test_allData<-NULL
+MSE.nn_VisOnly_test_allData<-NULL
 
 pr.nn_AcOnly_train <- NULL
 pr.nn_VisOnly_train <- NULL
@@ -683,7 +685,8 @@ pr.nn_Joint_train <- NULL
 pr.nn_AcOnly_test <- NULL
 pr.nn_VisOnly_test<- NULL
 pr.nn_Joint_test <- NULL
-
+pr.nn_AcOnly_test_allData <- NULL
+pr.nn_VisOnly_test_allData <- NULL
 
 ```
 
@@ -720,6 +723,15 @@ for (layerSize in layerSizeList){
   pr.nn_AcOnly_test[[AcCounter]][pr.nn_AcOnly_test[[AcCounter]] <0]<-0
   MSE.nn_AcOnly_test[[AcCounter]] <- mean(abs(AcOnly_test_scaled$yAcOnly - 
                          pr.nn_AcOnly_test[[AcCounter]]),na.rm = TRUE)
+  
+  ## how well does the model predict joint test data?
+  pr.nn_AcOnly_test_allData[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],
+                                                Joint_test_scaled[,model1.indices])
+  pr.nn_AcOnly_test_allData[[AcCounter]][pr.nn_AcOnly_test_allData[[AcCounter]]<0]<-0
+
+  MSE.nn_AcOnly_test_allData[[AcCounter]] <- mean(Joint_test_scaled$weightsG0*
+                                        abs(Joint_test_scaled$y - 
+                                        pr.nn_AcOnly_test_allData[[AcCounter]]),na.rm = TRUE)
   cat(paste("Done with AcOnly model iteration ",
             AcCounter, " of ", length(layerSizeList),
             ": Layer Size = ", layerSize, "\n"))
@@ -765,6 +777,16 @@ for (layerSize in layerSizeList){
   MSE.nn_VisOnly_test[[modelCounter]] <- mean(VisOnly_test_scaled$weightsG0*
                                         abs(VisOnly_test_scaled$yVisOnly - 
                                         pr.nn_VisOnly_test[[modelCounter]]),na.rm = TRUE)
+  
+  ## how well does the model predict joint test data?
+  pr.nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
+                                                Joint_test_scaled[,model1.indices],
+                                                na.action = na.omit)
+  pr.nn_VisOnly_test_allData[[modelCounter]][pr.nn_VisOnly_test_allData[[modelCounter]]<0]<-0
+
+  MSE.nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                                        abs(Joint_test_scaled$y - 
+                                        pr.nn_VisOnly_test_allData[[modelCounter]]),na.rm = TRUE)
   
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, Joint_train_scaled,
@@ -1858,7 +1880,7 @@ july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 **Summer 2009 predicted distribution and test sightings:**
 
 
-```{r leaflet summer, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, echo = FALSE}
+```{r leaflet summer, message = FALSE, warning = FALSE, echo = FALSE}
 # Display summer (July 2009) map:
 maxColorSummer <- ceiling(max(c(july2009_AcOnly_prediction_crop@data@max,
                july2009_VisOnly_prediction_crop@data@max,

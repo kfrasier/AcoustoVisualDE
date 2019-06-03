@@ -575,7 +575,7 @@ VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 Run binomial GAMs on acoustic-only, visual-only, and joint acoustic/visual datasets.
 
 
-```{r AcOnly model, eval = TRUE, echo = TRUE}
+```{r AcOnly model, eval = TRUE, echo = TRUE, warning = FALSE}
 varNames <- names(transformedCovars_AcOnly.train)
 varNamesFormula <- varNames[2:10]
 formulaAcOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
@@ -586,7 +586,7 @@ gam_full_AcOnly <- gam(formulaAcOnly_allVars,
 ```
 
 
-```{r VisOnly model, eval = TRUE, include = TRUE, echo = TRUE} 
+```{r VisOnly model, eval = TRUE, include = TRUE, echo = TRUE, warning = FALSE} 
 formulaVisOnly_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
 formulaVisOnly_allVars <- as.formula(paste('yVisOnly_TF ~',formulaVisOnly_allVars))
 gam_full_VisOnly <- gam(formulaVisOnly_allVars,
@@ -595,7 +595,7 @@ gam_full_VisOnly <- gam(formulaVisOnly_allVars,
                                weights = VisOnly.train_weightsG0)
 ```
 
-```{r Joint model, eval = TRUE, include = TRUE, echo = TRUE} 
+```{r Joint model, eval = TRUE, include = TRUE, echo = TRUE, warning = FALSE} 
 formulaJoint_allVars <-paste('s(', varNamesFormula, ", bs = 'ts', k = kVal)", sep = "", collapse = ' + ')
 formulaJoint_allVars <- as.formula(paste('y_TF ~',formulaJoint_allVars))
 gam_full_Joint <- gam(formulaJoint_allVars,
@@ -630,7 +630,7 @@ Model summaries show that some terms were not significant.
 
 Model summary:
 
-```{r AcOnly unpruned model summary, echo = FALSE}
+```{r AcOnly unpruned model summary, echo = FALSE, warning = FALSE}
 AcOnlySummary <- summary(gam_full_AcOnly)
 # AcOnlySummary
 significantPvals_AcOnly <- which(AcOnlySummary$s.pv<=.05)
@@ -671,7 +671,7 @@ plot(residuals.gam(AcOnly_model))
 
 Model summary:
 
-```{r VisOnly model summary, echo = FALSE}
+```{r VisOnly model summary, echo = FALSE, warning = FALSE}
 VisOnlySummary <- summary(gam_full_VisOnly)
 # VisOnlySummary
 significantPvals_VisOnly <- which(VisOnlySummary$s.pv<=.05)
@@ -711,7 +711,7 @@ plot(residuals.gam(VisOnly_model))
 
 Model summary:
 
-```{r Joint model summary,echo = FALSE}
+```{r Joint model summary,echo = FALSE, warning = FALSE}
 JointSummary <- summary(gam_full_Joint)
 # JointSummary
 significantPvals_Joint <- which(JointSummary$s.pv<=.05)
