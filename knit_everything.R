@@ -9,10 +9,13 @@ setwd('E:/NASData/AcoustoVisualDE/AcoustoVisualDE')
 #             "Zc_model_runs_gam.Rmd",  "Zc_model_runs_gam_density.Rmd",        
 #             "Zc_model_runs_NN.Rmd",   "Zc_model_runs_NN_density.Rmd")
             
- myList =  c("Gg_model_runs_gam_density.Rmd",
-             "Zc_model_runs_gam_density.Rmd",
-             "Ssp_model_runs_gam_density.Rmd", "Pm_model_runs_gam_density.Rmd",
-             "Kspp_model_runs_gam_density.Rmd","Gmsp_model_runs_gam_density.Rmd","Me_model_runs_gam_density.Rmd")
+myList = c("Gg_model_runs_NN_density.Rmd","Pm_model_runs_NN_density.Rmd",
+           "Pm_model_runs_NN.Rmd","Gg_model_runs_NN.Rmd","Gmsp_model_runs_NN_density.Rmd")
+           
+ # myList =  c("Gg_model_runs_gam_density.Rmd",
+ #             "Zc_model_runs_gam_density.Rmd",
+ #             "Ssp_model_runs_gam_density.Rmd", "Pm_model_runs_gam_density.Rmd",
+ #             "Kspp_model_runs_gam_density.Rmd","Gmsp_model_runs_gam_density.Rmd","Me_model_runs_gam_density.Rmd")
  # 
   # myList =  c("Zc_model_runs_NN.Rmd",
   #              "Ssp_model_runs_NN.Rmd", "Pm_model_runs_gam.Rmd",
