@@ -34,6 +34,8 @@ PLC <- c("GU")#"OR"
 # Calculate detection functions? This is slow, so if it's already done, you can load trunc dists from file
 runDetFuns <- TRUE # can be true or false
 
+r_sp <-4 # radius over which acoustic probability of detection applies
+
 # The name of the visual detection function file. 
 detFunFile <- paste0("Vis_TruncDist_",SP,"_only.Rdata")# 
 # If runDetFuns = TRUE, detFunFile is used to name the R output from the detection function calculation process.
@@ -45,9 +47,8 @@ visG0 <- mean(c(0.27,0.31)) # for beaked whale from palka 2006 table 5, 2004 sur
 
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 2.25 # km
-
 r_sp <- 4
 Ac_pDet <- 0.28
 save(file = "setup_info_Me.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,PLong,r_sp,Ac_pDet,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,SPLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

@@ -43,6 +43,7 @@ source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R'
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 
 options(stringsAsFactors = FALSE)
 # load some preferences
@@ -743,6 +744,48 @@ plot(residuals.gam(Joint_model))
 ```
 
 <br> 
+
+## 3.4 Model prediction on joint dataset
+```{r compare model predictions, echo = FALSE}
+pr <- NULL
+pr$AcOnly_JointData <- predict.gam(AcOnly_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+pr$VisOnly_JointData <- predict.gam(VisOnly_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+pr$Joint_JointData <- predict.gam(Joint_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+
+XEntropy <- NULL
+
+XEntropy$AcOnly_test_JointData <- weighted_logloss(round(pr$AcOnly_JointData$fit,
+                                                         digits = 0),
+                                                   as.vector(transformedCovars.test$y_TF),
+                                                   as.vector(joint_test_weightsG0))
+XEntropy$VisOnly_test_JointData <- weighted_logloss(round(pr$VisOnly_JointData$fit,
+                                                          digits = 0),
+                                                   as.vector(transformedCovars.test$y_TF),
+                                                   as.vector(joint_test_weightsG0))
+XEntropy$Joint_test <- weighted_logloss(round(pr$Joint_JointData$fit, digits = 0),
+                                                   as.vector(transformedCovars.test$y_TF),
+                                                   as.vector(joint_test_weightsG0))
+
+
+XEntropyTable<- rbind(XEntropy$AcOnly_test_JointData,XEntropy$VisOnly_test_JointData,
+                      XEntropy$Joint_test)
+
+colnames(XEntropyTable)<- 'Cross-Entropy Score'
+rownames(XEntropyTable)<- c("Acoustic - Test Joint Data",
+                       "Visual - Test Joint Data",
+                       "Joint - Test Joint Data")
+print('cross entropy scores (lower is better)')
+print(round(XEntropyTable, digits = 3))
+
+
+```
+<br>
 
 # 4. Model Predictions
 

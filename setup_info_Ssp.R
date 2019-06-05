@@ -2,7 +2,7 @@
 
 # Species name
 SP <- "Ssp" 
-
+SPLong <- "Stenella spp."
 # Set file path with species name
 savePath <-(file.path('E:/NASData/ModelData',SP))
 # if directory doen't exist, make it.
@@ -50,6 +50,6 @@ AcTruncDist <- 2.2 # km (for click detections)
 r_sp <- 5 # radius over which acoustic probability of detection applies
 Ac_pDet <- 0.15
 
-save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,SPLong,r_sp,Ac_pDet,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+save(file = "setup_info_Ssp.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,SPLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

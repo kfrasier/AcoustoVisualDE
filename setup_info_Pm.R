@@ -48,10 +48,7 @@ visG0 <- mean(c(0.57,0.46)) # for Sperm whales from palka 2006 table 5, 2004 sur
 # Acoustic truncation distance. Should be the distance within which 95% of detections occur.
 AcTruncDist <- 6 # km
 Ac_pDet <- 0.50
-
 r_sp <-12 # radius over which acoustic probability of detection applies
-
-
-save(file = "setup_info_Pm.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,SPLong,r_sp,Ac_pDet,
-     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,
+save(file = "setup_info_Pm.Rdata", SP,acousticSegFile,acousticDensityFile,visDataFile,
+     visSegmentsFile,surveyAreaFile,SPC_vis,PLC,savePath,acDensityFile,SPLong,r_sp,Ac_pDet,
      runDetFuns,detFunFile,matchACSegs,visG0,AcTruncDist,siteList,pOccurenceFile)

@@ -746,6 +746,45 @@ plot(residuals.gam(Joint_model))
 
 <br> 
 
+## 3.4 Model prediction on joint dataset
+```{r compare model predictions, echo = FALSE}
+pr <- NULL
+pr$AcOnly_JointData <- predict.gam(AcOnly_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+pr$VisOnly_JointData <- predict.gam(VisOnly_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+pr$Joint_JointData <- predict.gam(Joint_model,
+                             transformedCovars.test,
+                             type = 'response',na.action = na.pass,se.fit=TRUE)
+
+MSE <- NULL
+
+MSE$AcOnly_test_JointData <- mean(as.vector(joint_test_weightsG0)*
+                                    abs(as.vector(transformedCovars.test$y)-
+                                    pr$AcOnly_JointData$fit),na.rm = TRUE)
+MSE$VisOnly_test_JointData <- mean(as.vector(joint_test_weightsG0)*
+                                    abs(as.vector(transformedCovars.test$y)-
+                                    pr$VisOnly_JointData$fit),na.rm = TRUE)
+MSE$Joint_test <- mean(as.vector(joint_test_weightsG0)*
+                         abs(as.vector(transformedCovars.test$y)-
+                         pr$Joint_JointData$fit),na.rm = TRUE)
+
+XEntropyTable<- rbind(MSE$AcOnly_test_JointData,MSE$VisOnly_test_JointData,
+                      MSE$Joint_test)
+
+colnames(XEntropyTable)<- 'Mean Average Error'
+rownames(XEntropyTable)<- c("Acoustic - Test Joint Data",
+                       "Visual - Test Joint Data",
+                       "Joint - Test Joint Data")
+print('Mean average error scores (lower is better)')
+print(round(XEntropyTable, digits = 3))
+
+
+```
+<br>
+
 # 4. Model Predictions
 
 ## 4.1 Temporal predictions
