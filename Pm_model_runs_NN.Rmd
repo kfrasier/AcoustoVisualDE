@@ -548,6 +548,17 @@ Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 
 ```
 
+```{r plot weights, echo = FALSE}
+png(paste(outDir,SP,'_caseWeights_NN.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
+#  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
+abline(v = 2016,col = "darkgrey",lty = 2, lwd = 3)
+
+dev.off()
+wghtFig <-paste0(outDir,SP,'_caseWeights_NN.png')
+```
+
+
 ```{r Scale all the data, echo = FALSE}
 # NNs don't do well with unscaled data. Scale it and then unscale it at the end.
 

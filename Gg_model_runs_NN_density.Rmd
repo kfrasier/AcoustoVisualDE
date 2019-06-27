@@ -559,6 +559,21 @@ Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 
 ```
 
+<br>
+
+Case weights:
+
+```{r plot weights, echo = FALSE}
+png(paste(outDir,SP,'_caseWeights_NNet_density.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
+#  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
+abline(v = 2016,col = "darkgrey",lty = 2, lwd = 3)
+
+dev.off()
+wghtFig <-paste0(outDir,SP,'_caseWeights_NNet_density.png')
+```
+
+
 ```{r Scale all the data, echo = FALSE}
 # NNs don't do well with unscaled data. Scale it and then unscale it at the end.
 
@@ -706,8 +721,9 @@ for (layerSize in layerSizeList){
   pr$nn_AcOnly_test[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],
                                      AcOnly_test_scaled[,model1.indices])
   pr$nn_AcOnly_test[[AcCounter]][pr$nn_AcOnly_test[[AcCounter]] <0]<-0
-  MSE$nn_AcOnly_test[[AcCounter]] <- mean(abs(AcOnly_test_scaled$yAcOnly - 
-                         pr$nn_AcOnly_test[[AcCounter]]),na.rm = TRUE)
+  MSE$nn_AcOnly_test[[AcCounter]] <- mean(abs(covars_Joint_max.train['y']* 
+                                                (AcOnly_test_scaled$yAcOnly - 
+                                    pr$nn_AcOnly_test[[AcCounter]])),na.rm = TRUE)
   
   ## how well does the model predict joint test data?
   pr$nn_AcOnly_test_allData[[AcCounter]] <- predict(nn_AcOnly[[AcCounter]],
@@ -715,8 +731,8 @@ for (layerSize in layerSizeList){
   pr$nn_AcOnly_test_allData[[AcCounter]][pr$nn_AcOnly_test_allData[[AcCounter]]<0]<-0
 
   MSE$nn_AcOnly_test_allData[[AcCounter]] <- mean(Joint_test_scaled$weightsG0*
-                                        abs(Joint_test_scaled$y - 
-                                        pr$nn_AcOnly_test_allData[[AcCounter]]),na.rm = TRUE)
+                                        abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                                        pr$nn_AcOnly_test_allData[[AcCounter]])),na.rm = TRUE)
   cat(paste("Done with AcOnly model iteration ",
             AcCounter, " of ", length(layerSizeList),
             ": Layer Size = ", layerSize, "\n"))
@@ -751,8 +767,9 @@ for (layerSize in layerSizeList){
                                                 VisOnly_train_scaled[,model1.indices])
   pr$nn_VisOnly_train[[modelCounter]][ pr$nn_VisOnly_train[[modelCounter]]<0]<-0
   MSE$nn_VisOnly_train[[modelCounter]] <- mean(VisOnly_train_scaled$weightsG0*
-                                        abs(VisOnly_train_scaled$yVisOnly - 
-                                        pr$nn_VisOnly_train[[modelCounter]]),na.rm = TRUE)
+                                        abs(covars_Joint_max.train['y']*
+                                              (VisOnly_train_scaled$yVisOnly - 
+                                        pr$nn_VisOnly_train[[modelCounter]])),na.rm = TRUE)
   
   # predict on test data and estimate MSE
   pr$nn_VisOnly_test[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
@@ -760,8 +777,9 @@ for (layerSize in layerSizeList){
   pr$nn_VisOnly_test[[modelCounter]][ pr$nn_VisOnly_test[[modelCounter]]<0]<-0
 
   MSE$nn_VisOnly_test[[modelCounter]] <- mean(VisOnly_test_scaled$weightsG0*
-                                        abs(VisOnly_test_scaled$yVisOnly - 
-                                        pr$nn_VisOnly_test[[modelCounter]]),na.rm = TRUE)
+                                        abs(covars_Joint_max.train['y']*
+                                              (VisOnly_test_scaled$yVisOnly - 
+                                        pr$nn_VisOnly_test[[modelCounter]])),na.rm = TRUE)
   
   ## how well does the model predict joint test data?
   pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
@@ -770,8 +788,8 @@ for (layerSize in layerSizeList){
   pr$nn_VisOnly_test_allData[[modelCounter]][pr$nn_VisOnly_test_allData[[modelCounter]]<0]<-0
 
   MSE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
-                                        abs(Joint_test_scaled$y - 
-                                        pr$nn_VisOnly_test_allData[[modelCounter]]),na.rm = TRUE)
+                                        abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                                        pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
   
   ## JOINT
   nn_Joint[[modelCounter]]  <- avNNet(f.Joint_NN1, Joint_train_scaled,
@@ -791,16 +809,16 @@ for (layerSize in layerSizeList){
   pr$nn_Joint_train[[modelCounter]][pr$nn_Joint_train[[modelCounter]]<0]<-0
 
   MSE$nn_Joint_train[[modelCounter]]  <- mean(Joint_train_scaled$weightsG0*
-                                         abs(Joint_train_scaled$y - 
-                                         pr$nn_Joint_train[[modelCounter]]),na.rm = TRUE)
+                                         abs(covars_Joint_max.train['y']*(Joint_train_scaled$y - 
+                                         pr$nn_Joint_train[[modelCounter]])),na.rm = TRUE)
   
   pr$nn_Joint_test[[modelCounter]]  <- predict(nn_Joint[[modelCounter]],
                                         Joint_test_scaled[,model1.indices],
                                         na.action=na.omit)
   pr$nn_Joint_test[[modelCounter]][pr$nn_Joint_test[[modelCounter]]<0]<-0
   MSE$nn_Joint_test[[modelCounter]]  <- mean(Joint_test_scaled$weightsG0*
-                                        abs(Joint_test_scaled$y - 
-                                        pr$nn_Joint_test[[modelCounter]]),na.rm = TRUE)
+                                        abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                                        pr$nn_Joint_test[[modelCounter]])),na.rm = TRUE)
   
   cat(paste("Done with VisOnly and Joint model iteration ",
             modelCounter, " of ", length(layerSizeList),
@@ -871,8 +889,42 @@ for (iM in 1: length(nn_AcOnly)){
 }
 
 
+modelCounter <-1
+for (modelCounter in 1:length(nn_AcOnly)){
+pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
+                                                      Joint_test_scaled[,model1.indices],
+                                                      na.action = na.omit)
+pr$nn_VisOnly_test_allData[[modelCounter]][pr$nn_VisOnly_test_allData[[modelCounter]]<0]<-0
+
+MSE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                             pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+
+## how well does the Acoustic only model predict joint test data?
+pr$nn_AcOnly_test_allData[[modelCounter]] <- predict(nn_AcOnly[[modelCounter]],
+                                                  Joint_test_scaled[,model1.indices])
+pr$nn_AcOnly_test_allData[[modelCounter]][pr$nn_AcOnly_test_allData[[modelCounter]]<0]<-0
+
+MSE$nn_AcOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
+                             pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+## how well does the Joint only model predict joint test data?
+pr$nn_Joint_test_allData[[modelCounter]] <- predict(nn_Joint[[modelCounter]],
+                                                  Joint_test_scaled[,model1.indices])
+pr$nn_Joint_test_allData[[modelCounter]][pr$nn_Joint_test_allData[[modelCounter]]<0]<-0
+
+MSE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
+}
+
+
+
+
 MSEtable<- rbind(MSE$nn_AcOnly_train,MSE$nn_AcOnly_test,MSE$nn_VisOnly_train,
-                 MSE$nn_VisOnly_test,MSE$nn_Joint_train,MSE$nn_Joint_test,
+                 MSE$nn_VisOnly_test,MSE$nn_Joint_train,MSE$nn_Joint_test_allData,
                  MSE$nn_AcOnly_test_allData,MSE$nn_VisOnly_test_allData)
 colnames(MSEtable)<- layerSizeList
 rownames(MSEtable)<- c("Acoustic - Train","Acoustic - Test",
@@ -2006,7 +2058,7 @@ map
 
 <br>
 
-## How does hidden layer size change spatial predictions?
+### 3.3.3 How does hidden layer size change spatial predictions?
 
 ```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
 nModels = length(layerSizeList)
@@ -2032,12 +2084,12 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                   opacity = 0.8, group = '6 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
                   opacity = 0.8, group = '8 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
-  #               opacity = 0.8, group = '10 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
-  #                 opacity = 0.8, group = '12 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
-  #                 opacity = 0.8, group = '14 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+                opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+                 opacity = 0.8, group = '14 nodes') %>%
   addLegend(pal = palSummer2, values = c(0,maxVal),
     title = 'Density',position = "bottomleft") %>%
   addLayersControl(
