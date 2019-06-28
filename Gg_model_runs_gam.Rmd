@@ -428,7 +428,7 @@ The visual data represent wether or not `r SPLong` were seen during each transec
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
 
 The acoustic data represent presence or absence of `r SPLong` in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period within a `r r_sp` km range is estimated at `r Ac_pDet`, therefore the probability of missing an encounter is 1 - `r Ac_pDet` = `r 1-Ac_pDet` [@RN806; @RN506]. Given that animals were present, the probability of missing a group for a full day (288 5-minute periods) is estimated as
-\[P_{A}(detect|present) = (1-`r Ac_pDet`)^{288} \approx 1\]
+\[P_{A}(detect|present) = (1-`r Ac_pDet`)^{288} \approx 0\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all acoustic observations are given weight = 1.
 
@@ -571,6 +571,17 @@ VisOnlyRangesMax <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
                           function(x) min(x, na.rm=TRUE))
 ```
+
+```{r plot weights, echo = FALSE}
+png(paste(outDir,SP,'_caseWeights_gam.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
+#  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
+abline(v = 2016,col = "darkgrey",lty = 2, lwd = 3)
+
+dev.off()
+wghtFig <-paste0(outDir,SP,'_caseWeights_gam.png')
+```
+
 ## 2.2 Run GAMs
 
 Run binomial GAMs on acoustic-only, visual-only, and joint acoustic/visual datasets.
@@ -733,9 +744,10 @@ Smooths of predictor variables:
 ```{r Joint model plots,echo = FALSE}
 nTerms <- size(Joint_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
+varUnits_signif <- varUnits[significantPvals_Joint]
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits_signif[i], ylab = "")
 }
 ```
 <br>

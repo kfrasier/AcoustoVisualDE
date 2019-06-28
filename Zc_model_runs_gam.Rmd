@@ -797,7 +797,7 @@ print(round(XEntropyTable, digits = 3))
 
 
 # adjusted R^2
-rSq.AcOnly_JointTest <- 
+#rSq.AcOnly_JointTest <- 
 
 ```
 <br>

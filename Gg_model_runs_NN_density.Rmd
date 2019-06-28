@@ -41,6 +41,7 @@ library(pracma)
 library(grid)
 library(knitr)
 library(matrixStats)
+library(tmap)
 library(zoo)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
@@ -566,13 +567,21 @@ Case weights:
 ```{r plot weights, echo = FALSE}
 png(paste(outDir,SP,'_caseWeights_NNet_density.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
 #  par(mar = c(5.1, 4.1, 4.1, 3.1))
-plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
-abline(v = 2016,col = "darkgrey",lty = 2, lwd = 3)
+visIdx <-length(VisOnly.train_weightsG0)
+jointN <- length(joint_train_weightsG0)
+plot(c(1:visIdx), joint_train_weightsG0[c(1:visIdx)],pch = 1,col = "red",
+     ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1,xlim= c(0,jointN+1))
+points(c((1+visIdx):jointN),
+     joint_train_weightsG0[c((1+visIdx):jointN)],pch = 4,
+     ylim =c(0,1 ),ylab = 'Case Weight',xlab = 'Case Index',cex = 1,xlim= c(0,jointN+1))
+abline(v = visIdx+.5,col = "darkgrey",lty = 2, lwd = 3)
 
 dev.off()
 wghtFig <-paste0(outDir,SP,'_caseWeights_NNet_density.png')
+
 ```
 
+![](`r wghtFig`)
 
 ```{r Scale all the data, echo = FALSE}
 # NNs don't do well with unscaled data. Scale it and then unscale it at the end.
@@ -691,7 +700,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
@@ -742,7 +751,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = TRUE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -829,7 +838,7 @@ for (layerSize in layerSizeList){
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE,pr,
      file = paste(outDir,SP,'_AcOnly_NN_density.Rdata',sep=''))
@@ -1132,7 +1141,7 @@ AcOnly_predictionSet$testObs_MC_smooth <- NA
 MC_times <- AcOnlyGoodTimes[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
-AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_MC[m1] <- Test_AcOnly.set$Density[compAcSet_MC]
 AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_MC,k = 7,fill=NA)
 
@@ -1142,7 +1151,7 @@ AcOnly_predictionSet$testObs_GC <-NA
 GC_times <- AcOnlyGoodTimes[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
-AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_GC[m2] <- Test_AcOnly.set$Density[compAcSet_GC]
 AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_GC,k=7,fill=NA)
 
@@ -1152,7 +1161,7 @@ AcOnly_predictionSet$testObs_DT <-NA
 DT_times <- AcOnlyGoodTimes[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
-AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_DT[m3] <- Test_AcOnly.set$Density[compAcSet_DT]
 AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_DT,k=7,fill=NA)
 
@@ -1162,7 +1171,7 @@ AcOnly_predictionSet$testObs_DC <-NA
 DC_times <- AcOnlyGoodTimes[compAcSet_DC]
 m4 <- match(DC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DC[m4] <-predAcOnly_DC
-AcOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)
+AcOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_DC[m4] <- Test_AcOnly.set$Density[compAcSet_DC]
 AcOnly_predictionSet$testObs_DC_smooth <- rollmean(AcOnly_predictionSet$testObs_DC,k=7,fill=NA)
 
@@ -1172,7 +1181,7 @@ AcOnly_predictionSet$testObs_MP <-NA
 MP_times <- AcOnlyGoodTimes[compAcSet_MP]
 m5 <- match(MP_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MP[m5] <-predAcOnly_MP
-AcOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)
+AcOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_MP[m5] <- Test_AcOnly.set$Density[compAcSet_MP]
 AcOnly_predictionSet$testObs_MP_smooth <- rollmean(AcOnly_predictionSet$testObs_MP,k=7,fill=NA)
 
@@ -1352,31 +1361,30 @@ VisOnly_predictionSet$MC <- NA
 VisOnly_predictionSet$predSd_MC <- NA
 m1 <- match(MC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$MC[m1] <-predVisOnly_MC
-VisOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+VisOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$GC <- NA
 VisOnly_predictionSet$predSd_GC <- NA
 m2 <- match(GC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$GC[m2] <-predVisOnly_GC
-VisOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+VisOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$DT <- NA
 VisOnly_predictionSet$predSd_DT <- NA
 m3 <- match(DT_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
-VisOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
-
+VisOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)/sqrt(trainRepeats)
 VisOnly_predictionSet$DC <- NA
 VisOnly_predictionSet$predSd_DC <- NA
 m4 <- match(DC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$DC[m4] <-predVisOnly_DC
-VisOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF))
+VisOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$MP <- NA
 VisOnly_predictionSet$predSd_MP <- NA
 m5 <- match(MP_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$MP[m5] <-predVisOnly_MP
-VisOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF))
+VisOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$Legend <- "Predictions"
 ```
@@ -1540,31 +1548,31 @@ Joint_predictionSet$MC <- NA
 Joint_predictionSet$predSd_MC <- NA
 m1 <- match(MC_times,Joint_predictionSet$date)
 Joint_predictionSet$MC[m1] <-pred_MC
-Joint_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))
+Joint_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 Joint_predictionSet$GC <- NA
 Joint_predictionSet$predSd_GC <- NA
 m2 <- match(GC_times,Joint_predictionSet$date)
 Joint_predictionSet$GC[m2] <-pred_GC
-Joint_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))
+Joint_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 Joint_predictionSet$DT <- NA
 Joint_predictionSet$predSd_DT <- NA
 m3 <- match(DT_times,Joint_predictionSet$date)
 Joint_predictionSet$DT[m3] <-pred_DT
-Joint_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))
+Joint_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 Joint_predictionSet$DC <- NA
 Joint_predictionSet$predSd_DC <- NA
 m4 <- match(DC_times,Joint_predictionSet$date)
 Joint_predictionSet$DC[m4] <-pred_DC
-Joint_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF))
+Joint_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 Joint_predictionSet$MP <- NA
 Joint_predictionSet$predSd_MP <- NA
 m5 <- match(MP_times,Joint_predictionSet$date)
 Joint_predictionSet$MP[m5] <-pred_MP
-Joint_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF))
+Joint_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 Joint_predictionSet$Legend <- "Predictions"
 ```
@@ -1963,6 +1971,15 @@ map
 
 ```
 
+```{r plot best summer map}
+# plot best summer map for publication
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+ tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer)
+```
 
 **Summer 2009 prediction uncertainty:**
 ```{r leaflet summer uncert, message = FALSE, warning = FALSE, echo = FALSE}
@@ -2093,8 +2110,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addLegend(pal = palSummer2, values = c(0,maxVal),
     title = 'Density',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('4 nodes','6 nodes','8 nodes'),
-                   #'10 nodes','12 nodes','14 nodes'),
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
