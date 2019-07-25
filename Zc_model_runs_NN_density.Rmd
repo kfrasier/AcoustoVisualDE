@@ -41,8 +41,8 @@ library(pracma)
 library(grid)
 library(knitr)
 library(matrixStats)
-library(tmap)
 library(zoo)
+library(tmap)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
@@ -1122,7 +1122,7 @@ AcOnly_predictionSet$testObs_MC_smooth <- NA
 MC_times <- AcOnlyGoodTimes[compAcSet_MC]
 m1 <- match(MC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$MC[m1] <-predAcOnly_MC
-AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))/sqrt(trainRepeats)
+AcOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_MC[m1] <- Test_AcOnly.set$Density[compAcSet_MC]
 AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_MC,k = 7,fill=NA)
 
@@ -1132,7 +1132,7 @@ AcOnly_predictionSet$testObs_GC <-NA
 GC_times <- AcOnlyGoodTimes[compAcSet_GC]
 m2 <- match(GC_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
-AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))/sqrt(trainRepeats)
+AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_GC[m2] <- Test_AcOnly.set$Density[compAcSet_GC]
 AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_GC,k=7,fill=NA)
 
@@ -1142,7 +1142,7 @@ AcOnly_predictionSet$testObs_DT <-NA
 DT_times <- AcOnlyGoodTimes[compAcSet_DT]
 m3 <- match(DT_times,AcOnly_predictionSet$date)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
-AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))/sqrt(trainRepeats)
+AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)/sqrt(trainRepeats)
 AcOnly_predictionSet$testObs_DT[m3] <- Test_AcOnly.set$Density[compAcSet_DT]
 AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_DT,k=7,fill=NA)
 
@@ -1269,19 +1269,19 @@ VisOnly_predictionSet$MC <- NA
 VisOnly_predictionSet$predSd_MC <- NA
 m1 <- match(MC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$MC[m1] <-predVisOnly_MC
-VisOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF))/sqrt(trainRepeats)
+VisOnly_predictionSet$predSd_MC[m1] <- rowSds(data.matrix(predVar_MC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$GC <- NA
 VisOnly_predictionSet$predSd_GC <- NA
 m2 <- match(GC_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$GC[m2] <-predVisOnly_GC
-VisOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF))/sqrt(trainRepeats)
+VisOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 VisOnly_predictionSet$DT <- NA
 VisOnly_predictionSet$predSd_DT <- NA
 m3 <- match(DT_times,VisOnly_predictionSet$date)
 VisOnly_predictionSet$DT[m3] <-predVisOnly_DT
-VisOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF))/sqrt(trainRepeats)
+VisOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)/sqrt(trainRepeats)
 
 
 VisOnly_predictionSet$Legend <- "Predictions"
@@ -1777,13 +1777,39 @@ map
 ```
 
 ```{r plot best summer map}
+png(paste(outDir,SP,'_summer2009maps_NN_density.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
+
 # plot best summer map for publication
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
- tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer)
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+ tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer,ncol = 1, nrow = 3, outer.margins = 0.05)
+ 
+ dev.off()
 ```
 
 **Summer 2009 prediction uncertainty:**

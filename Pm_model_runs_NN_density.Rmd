@@ -41,8 +41,8 @@ library(pracma)
 library(grid)
 library(knitr)
 library(matrixStats)
-library(tmap)
 library(zoo)
+library(tmap)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
@@ -1777,13 +1777,39 @@ map
 ```
 
 ```{r plot best summer map}
+png(paste(outDir,SP,'_summer2009maps.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
+
 # plot best summer map for publication
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "Animals/100 km^{2}")
- tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer)
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+ tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer,ncol = 1, nrow = 3, outer.margins = 0.05)
+ 
+ dev.off()
 ```
 
 **Summer 2009 prediction uncertainty:**
@@ -1911,87 +1937,3 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
                   opacity = 0.8, group = '12 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
-                 opacity = 0.8, group = '14 nodes') %>%
-  addLegend(pal = palSummer2, values = c(0,maxVal),
-    title = 'Density',position = "bottomleft") %>%
-  addLayersControl(
-    baseGroups = c('4 nodes','6 nodes','8 nodes',
-                   '10 nodes','12 nodes','14 nodes'),
-    options = layersControlOptions(collapsed = FALSE)
-  )
-map
-
-```
-
-# 4. Monthly model predictions
-
-Spatial model predictions were generated using climatological means of oceanographic variables, averaged by month between 2003 and 2015.
-
-
-```{r evaluate climatology-based models, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
-# to recalculate the climatology raster stack:
-# source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/scaled_climate_raster_stack.R', echo=TRUE)
-# scaled_climate_raster_stack(covars_Joint_max.train,covars_Joint_min.train) 
-
-load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/climatology_rasters_scaled.Rdata') 
-monthNum <-c('01','02','03','04','05','06','07','08','09','10','11','12')
-monthStr<-c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
-
-climatePrediction <- vector('list',length = 12)
-mapClimatePrediction <- vector('list',length = 12)
-
-for (iM in 1:length(monthStr)){
-  climatePrediction[[iM]] <- raster::predict(raster_set[[iM]],nn_Joint[[best_Joint_ModelIndex]],
-           na.action = na.pass)*covars_Joint_max.train['y']/10
-  climatePrediction[[iM]][climatePrediction[[iM]]<0]<-0
-                          
-  mapClimatePrediction[[iM]] <- mask(climatePrediction[[iM]], crop_limits_proj)  
-  # output raster to geotiff
-  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NNet_mean_density.tif')
-  writeRaster(mapClimatePrediction[[iM]],filename = rasterImageFileName, format="GTiff",overwrite = TRUE)
-  
-  # #ouput raster to kml
-  # kmlImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.kml')
-  # KML(mapClimatePrediction[[iM]],file = kmlImageFileName, col=matlab.like2(32),overwrite = TRUE)
-}
-  
-```
-
-```{r plot climatologies, eval = TRUE, message = FALSE, warning = FALSE, echo = FALSE}
-maxColor <- ceiling(max(c(mapClimatePrediction[[1]]@data@max,
-                mapClimatePrediction[[3]]@data@max,
-                mapClimatePrediction[[5]]@data@max,
-                mapClimatePrediction[[7]]@data@max,
-                mapClimatePrediction[[9]]@data@max,
-                mapClimatePrediction[[11]]@data@max))*10)/10
-
-pal <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,maxColor), 
-                    na.color = 'transparent')
-
-map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
-  addProviderTiles(providers$Esri.OceanBasemap) %>%
-  addRasterImage(mapClimatePrediction[[1]] , colors = pal,
-                 opacity = 0.8, group = 'Jan.') %>%
-  addRasterImage(mapClimatePrediction[[3]] , colors = pal,
-                 opacity = 0.8, group = 'March') %>%
-  addRasterImage(mapClimatePrediction[[5]] , colors = pal,
-                 opacity = 0.8, group = 'May') %>%
-  addRasterImage(mapClimatePrediction[[7]] , colors = pal,
-                 opacity = 0.8, group = 'July') %>%
-  addRasterImage(mapClimatePrediction[[9]] ,colors = pal,
-                 opacity = 0.8, group = 'Sept.') %>%
-  addRasterImage(mapClimatePrediction[[11]] ,colors = pal,
-                 opacity = 0.8, group = 'Nov.') %>%
-  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat,
-             group = "HARP Locations") %>%
-  addLegend(pal = pal, values = c(0,maxColor),
-    title = 'Est. Density <br> per 100 km^2',position = "bottomleft") %>%
-  addLayersControl(
-    baseGroups = c('Jan.','March','May',
-                   'July','Sept.','Nov.'),
-    overlayGroups = c('HARP Locations'),
-    options = layersControlOptions(collapsed = FALSE)
-  )
-map
-```
