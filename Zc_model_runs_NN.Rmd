@@ -275,13 +275,13 @@ Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
 
 # without transform
 png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_Joint.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_Joint.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 covarPlot <-paste0(outDir,SP,'_correlations_noTransform.png')
 ```
@@ -326,14 +326,17 @@ transformedCovars_VisOnly.test <-
 
 # Generate correlation plots with transform
 png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars.train[,1:(length(covarList2)-2)], ellipses=FALSE, 
+pairs.panels(transformedCovars.train[,1:(length(covarList2)-2)], 
+             ellipses=FALSE, 
              method = "spearman",cex.cor=.75)
 dev.off() 
+
 png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), 
     width = 2000, height = 1600)
 pairs.panels(transformedCovars_AcOnly.train[,1:(length(covarList2)-2)], 
              ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off() 
+
 png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), 
     width = 2000, height = 1600)
 pairs.panels(transformedCovars_VisOnly.train[,1:(length(covarList2)-2)],
@@ -440,11 +443,11 @@ Therefore we assume that there are no false negative days in the passive acousti
 
 Models were fit using avnnet from the caret package in R. 
 
-```{r load starting data, echo = FALSE} 
+```{r load starting data, echo = FALSE,message = FALSE, results = 'hide'} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 
-```{r model setup, echo = FALSE} 
+```{r model setup, echo = FALSE, message = FALSE, results = 'hide'} 
 # set up weighting
 yAcOnly <- transformedCovars_AcOnly.train$Density
 yVisOnly <- transformedCovars_VisOnly.train$Density
@@ -549,7 +552,7 @@ Joint.test.NoNa <- transformedCovars.test[goodData_Joint_test,]
 
 ```
 
-```{r plot weights, echo = FALSE}
+```{r plot weights, echo = FALSE, message = FALSE, results = 'hide'}
 png(paste(outDir,SP,'_caseWeights_NN.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
 #  par(mar = c(5.1, 4.1, 4.1, 3.1))
 plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
@@ -677,7 +680,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -726,7 +729,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -811,7 +814,7 @@ for (layerSize in layerSizeList){
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE,pr,
      file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))
@@ -838,6 +841,7 @@ Models were compared using a Kolmogorov-Smirnov test to compare predicted and ob
 ```{r Model comparison, echo = FALSE}
 
 XEntropy <- NULL
+XEntropy_unweighted <- NULL
 for (iM in 1: length(nn_AcOnly)){
   XEntropy$AcOnly_train[[iM]] <- LogLoss(round(pr$nn_AcOnly_train[[iM]],digits = 0),
                                          AcOnly_train_scaled$yAcOnly_TF)
@@ -863,6 +867,19 @@ for (iM in 1: length(nn_AcOnly)){
   XEntropy$Joint_test[[iM]] <- weighted_logloss(round(pr$nn_Joint_test[[iM]], digits = 0),
                                          Joint_test_scaled$y_TF,
                                          Joint_test_scaled$weightsG0)
+  
+  XEntropy_unweighted$AcOnly_test_JointData[[iM]] <- LogLoss(round(pr$nn_AcOnly_test_JointData[[iM]],
+                                                                 digits = 0),
+                                        Joint_test_scaled$y_TF)
+
+  XEntropy_unweighted$VisOnly_test_JointData[[iM]] <- LogLoss(round(pr$nn_VisOnly_test_JointData[[iM]],
+                                                                  digits = 0),
+                                        Joint_test_scaled$y_TF)
+  
+  XEntropy_unweighted$Joint_test[[iM]] <- LogLoss(round(pr$nn_Joint_test[[iM]], digits = 0),
+                                         Joint_test_scaled$y_TF)
+  
+  
 }
 
 KSStat <- NULL
@@ -894,15 +911,17 @@ for (iM in 1: length(nn_AcOnly)){
 # 
 # 
 
-XEntropyTable<- rbind(XEntropy$AcOnly_train,XEntropy$AcOnly_test,XEntropy$VisOnly_train,
-                 XEntropy$VisOnly_test,XEntropy$Joint_train,XEntropy$Joint_test,
-                 XEntropy$AcOnly_test_JointData,XEntropy$VisOnly_test_JointData)
+XEntropyTable<- rbind( XEntropy$AcOnly_test_JointData,
+                       XEntropy$VisOnly_test_JointData,
+                       XEntropy$Joint_test,
+                       XEntropy_unweighted$AcOnly_test_JointData,
+                       XEntropy_unweighted$VisOnly_test_JointData,
+                       XEntropy_unweighted$Joint_test)
 
 colnames(XEntropyTable)<- layerSizeList
-rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
-                       "Visual - Train","Visual - Test",
-                       "Joint - Train","Joint - Test",
-                       "Acoustic - Test Joint Data","Visual - Test Joint Data")
+rownames(XEntropyTable)<- c("Acoustic - Weighted","Visual - Weighted",
+                       "Joint - Weighted","Acoustic - Unweighted",
+                       "Visual - Unweighted","Joint - Unweighted")
 print('cross entropy scores (lower is better)')
 print(round(XEntropyTable, digits = 3))
 
@@ -920,10 +939,10 @@ print(round(XEntropyTable, digits = 3))
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-which.min(XEntropy$AcOnly_test)
+best_AcOnly_ModelIndex <-which.min(XEntropy$AcOnly_test_JointData)
 print(paste(c('Best acoustic model has', layerSizeList[best_AcOnly_ModelIndex], 
               'nodes.'),collapse = " "))
-best_VisOnly_ModelIndex <-which.min(XEntropy$VisOnly_test)
+best_VisOnly_ModelIndex <-which.min(XEntropy$VisOnly_test_JointData)
 print(paste(c('Best visual model has', layerSizeList[best_VisOnly_ModelIndex],
             'nodes.'),collapse = " "))
 best_Joint_ModelIndex <-which.min(XEntropy$Joint_test)
@@ -976,11 +995,21 @@ kable(mean_var_importance,'markdown',digits = 1)
 ```{r plot network, eval = TRUE, message = FALSE, warning = FALSE, results = 'hide', echo = FALSE, fig.width = 14, fig.height = 8}
 
 n2 = varUnits[n[model1.indices]]
-  png(paste(outDir,SP,'_exampleNetwork_PresAbs.png',sep=''), width = 1200, height = 600)
-  par(mar = c(5.1, 4.1, 4.1, 3.1))
+png(paste(outDir,SP,'_exampleNetwork_AcOnly_PresAbs.png',sep=''), width = 1200, height = 600)
+par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot.nnet(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
+dev.off()
+
+png(paste(outDir,SP,'_exampleNetwork_VisOnly_PresAbs.png',sep=''), width = 1200, height = 600)
+par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot.nnet(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
+dev.off()
+
+png(paste(outDir,SP,'_exampleNetwork_Joint_PresAbs.png',sep=''), width = 1200, height = 600)
+par(mar = c(5.1, 4.1, 4.1, 3.1))
 plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
 dev.off()
-egNetFig <-paste0(outDir,SP,'_exampleNetwork_PresAbs.png')
+egNetFig <-paste0(outDir,SP,'_exampleNetwork_Joint_PresAbs.png')
 ```
 ***Example network:***
 
@@ -1645,7 +1674,7 @@ map
 
 ```
 
-```{r plot best summer map}
+```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
 png(paste(outDir,SP,'_summer2009maps_NN.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
 
 # plot best summer map for publication
@@ -1654,22 +1683,22 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
@@ -1777,7 +1806,7 @@ map
 
 ### 3.3.3 How does hidden layer size change spatial predictions?
 
-```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30, message = FALSE, warning = FALSE, echo = FALSE}
 nModels = length(layerSizeList)
 
 july2009_prediction_hidden <- vector('list',length = nModels)
@@ -1796,22 +1825,22 @@ palSummer2 <- colorNumeric(palette = matlab.like2(5),
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer2,
-                 opacity = 0.8, group = '4 nodes') %>%
+                  opacity = 0.8, group = '4 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer2,
                   opacity = 0.8, group = '6 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
                   opacity = 0.8, group = '8 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
-  #               opacity = 0.8, group = '10 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
-  #                 opacity = 0.8, group = '12 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
-  #                 opacity = 0.8, group = '14 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+                  opacity = 0.8, group = '14 nodes') %>%
   addLegend(pal = palSummer2, values = c(0,maxVal),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('4 nodes','6 nodes','8 nodes'),
-                   #'10 nodes','12 nodes','14 nodes'),
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map

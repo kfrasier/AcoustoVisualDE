@@ -20,8 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load packages, echo = FALSE, message = FALSE, warning = FALSE}
-library(rgdal)
-library(raster)
+
 library(ggplot2)
 library(rgeos)
 library(mapview)
@@ -42,6 +41,8 @@ library(grid)
 library(knitr)
 library(matrixStats)
 library(zoo)
+library(rgdal)
+library(raster)
 library(tmap)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')

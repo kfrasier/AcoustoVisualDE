@@ -276,13 +276,13 @@ Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
 
 # without transform
 png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_Joint.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_Joint.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 covarPlot <-paste0(outDir,SP,'_correlations_noTransform.png')
 ```
@@ -327,14 +327,17 @@ transformedCovars_VisOnly.test <-
 
 # Generate correlation plots with transform
 png(paste(outDir,SP,'_correlations_withTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(transformedCovars.train[,1:(length(covarList2)-2)], ellipses=FALSE, 
+pairs.panels(transformedCovars.train[,1:(length(covarList2)-2)], 
+             ellipses=FALSE, 
              method = "spearman",cex.cor=.75)
 dev.off() 
+
 png(paste(outDir,SP,'_correlations_withTransform_AcOnly.png',sep=''), 
     width = 2000, height = 1600)
 pairs.panels(transformedCovars_AcOnly.train[,1:(length(covarList2)-2)], 
              ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off() 
+
 png(paste(outDir,SP,'_correlations_withTransform_visOnly.png',sep=''), 
     width = 2000, height = 1600)
 pairs.panels(transformedCovars_VisOnly.train[,1:(length(covarList2)-2)],
@@ -441,11 +444,11 @@ Therefore we assume that there are no false negative days in the passive acousti
 
 Models were fit using avnnet from the caret package in R. 
 
-```{r load starting data, echo = FALSE} 
+```{r load starting data, echo = FALSE,message = FALSE, results = 'hide'} 
 pOccur <- read.csv(pOccurenceFile, header = TRUE,na.strings=c('',' ','NA','NaN'))
 ```
 
-```{r model setup, echo = FALSE} 
+```{r model setup, echo = FALSE, message = FALSE, results = 'hide'} 
 # set up weighting
 yAcOnly <- transformedCovars_AcOnly.train$Density
 yVisOnly <- transformedCovars_VisOnly.train$Density
@@ -696,7 +699,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = TRUE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly ~", paste(n[model1.indices], collapse = " + ")))
@@ -747,7 +750,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = TRUE} 
+```{r other models 1, eval = FALSE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -1790,14 +1793,14 @@ JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matl
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
@@ -1908,7 +1911,7 @@ map
 
 ### 3.3.3 How does hidden layer size change spatial predictions?
 
-```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30, message = FALSE, warning = FALSE, echo = FALSE}
 nModels = length(layerSizeList)
 
 july2009_prediction_hidden <- vector('list',length = nModels)

@@ -662,7 +662,7 @@ nTerms <- size(AcOnly_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(AcOnly_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_AcOnly[i]], ylab = "")
 }
 ```
 <br>
@@ -703,7 +703,7 @@ nTerms <- size(VisOnly_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(VisOnly_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_VisOnly[i]], ylab = "")
 }
 ```
 
@@ -741,10 +741,9 @@ Smooths of predictor variables:
 ```{r Joint model plots,echo = FALSE}
 nTerms <- size(Joint_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
-varUnits_signif <- varUnits[significantPvals_Joint]
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits_signif[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_Joint[i]], ylab = "")
 }
 ```
 <br>
@@ -796,9 +795,6 @@ rownames(XEntropyTable)<- c("Acoustic - Test Joint Data",
 print('cross entropy scores (lower is better)')
 print(round(XEntropyTable, digits = 3))
 
-
-# adjusted R^2
-#rSq.AcOnly_JointTest <- 
 
 ```
 <br>
