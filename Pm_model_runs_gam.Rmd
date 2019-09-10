@@ -1123,7 +1123,7 @@ multiplot(p1, p2, p3, cols = 1)
 ## 4.2 Spatial predictions
 
 ```{r load raster bricks, echo = FALSE}
-load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
+load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters_UNscaled.Rdata') 
 ```
 
 Models were evaluated for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).

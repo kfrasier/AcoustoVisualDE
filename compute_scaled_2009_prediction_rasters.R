@@ -104,24 +104,24 @@ Pos_Eddy_july_2009 <- scale(
   scale = covars_Joint_max.train["Pos_EddyDist"]-covars_Joint_min.train["Pos_EddyDist"])
 
 
-jan2009_rasters <- brick(log10_CHL_jan_2009,SST_jan_2009,SSH_jan_2009,log10_Cayula_jan_2009,
-                         SAL0_jan_2009,SAL100_jan_2009, 
-                         Eddy_jan_2009,Neg_Eddy_jan_2009,Pos_Eddy_jan_2009,
+jan2009_rasters <- brick(log10_CHL_jan_2009,SST_jan_2009,SSH_jan_2009,#log10_Cayula_jan_2009,
+                         SAL0_jan_2009,#SAL100_jan_2009, Eddy_jan_2009,
+                         Neg_Eddy_jan_2009,Pos_Eddy_jan_2009,
                          log10_HYCOM_MAG_0_jan2009,log10_HYCOM_MLD_jan2009,HYCOM_UPVEL_jan2009) 
 
-july2009_rasters <- brick(log10_CHL_july_2009,SST_july_2009,SSH_july_2009,log10_Cayula_july_2009,
-                          SAL0_july_2009,SAL100_july_2009,
-                          Eddy_july_2009,Neg_Eddy_july_2009,Pos_Eddy_july_2009,
+july2009_rasters <- brick(log10_CHL_july_2009,SST_july_2009,SSH_july_2009,#log10_Cayula_july_2009,
+                          SAL0_july_2009,#SAL100_july_2009,Eddy_july_2009,
+                          Neg_Eddy_july_2009,Pos_Eddy_july_2009,
                           log10_HYCOM_MAG_0_july2009,log10_HYCOM_MLD_july2009,HYCOM_UPVEL_july2009)      
 
-names(jan2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
-                          'HYCOM_SALIN_0','HYCOM_SALIN_100',
-                          'EddyDist','Neg_EddyDist',"Pos_EddyDist",
-                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
-names(july2009_rasters)<-c('log10_CHL','SST','SSH','log10_FrontDist_Cayula',
-                           'HYCOM_SALIN_0','HYCOM_SALIN_100',
-                           'EddyDist','Neg_EddyDist',"Pos_EddyDist",
-                           'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')
+names(jan2009_rasters)<-c('log10_CHL','SST','SSH',
+                          'HYCOM_SALIN_0',#'HYCOM_SALIN_100','EddyDist',
+                          'Neg_EddyDist',"Pos_EddyDist",
+                          'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')#'log10_FrontDist_Cayula',
+names(july2009_rasters)<-c('log10_CHL','SST','SSH',
+                           'HYCOM_SALIN_0',#'HYCOM_SALIN_100','EddyDist',
+                           'Neg_EddyDist',"Pos_EddyDist",
+                           'log10_HYCOM_MAG_0','log10_HYCOM_MLD','HYCOM_UPVEL_50')#'log10_FrontDist_Cayula',
 
 save(jan2009_rasters,july2009_rasters,
      file = 'E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters_scaled.Rdata')  

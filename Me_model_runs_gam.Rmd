@@ -424,7 +424,7 @@ The visual data represent wether or not `r SPLong` were seen during each transec
 where \mu_{det} is the mean detection probability as estimated by a model fit using the mrds package, and g0 is the probability of observing an animal on the transect line [@RN862]. We assume that reported absences are likely to be true absences `r round(visDetProb* visG0*100)` % of the time, therefore zeros are given a weight of `r round(visDetProb* visG0*100)/100` on a scale of [0,1].
 
 The acoustic data represent presence or absence of `r SPLong` in one day bins. Given that a group of animals is present near the sensor, the probability of detecting them in a 5 minute period within a `r r_sp` km range is estimated at `r Ac_pDet`, therefore the probability of missing an encounter is 1 - `r Ac_pDet` = `r 1-Ac_pDet` [@RN806; @RN506]. Given that animals were present, the probability of missing a group for a full day (288 5-minute periods) is estimated as
-\[P_{A}(detect|present) = (1-`r Ac_pDet`)^{288} \approx 1\]
+\[P_{A}(detect|present) = (1-`r Ac_pDet`)^{288} \approx 0\]
 
 Therefore we assume that there are no false negative days in the passive acoustic timeseries, and all acoustic observations are given weight = 1.
 
@@ -567,6 +567,17 @@ VisOnlyRangesMax <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
 VisOnlyRangesMin <- apply(transformedCovars_VisOnly.train, MARGIN = 2,
                           function(x) min(x, na.rm=TRUE))
 ```
+
+```{r plot weights, echo = FALSE}
+png(paste(outDir,SP,'_caseWeights_gam.png',sep=''), width = 4, height = 4, units = 'in',res = 300)
+#  par(mar = c(5.1, 4.1, 4.1, 3.1))
+plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)
+abline(v = 2016,col = "darkgrey",lty = 2, lwd = 3)
+
+dev.off()
+wghtFig <-paste0(outDir,SP,'_caseWeights_gam.png')
+```
+
 ## 2.2 Run GAMs
 
 Run binomial GAMs on acoustic-only, visual-only, and joint acoustic/visual datasets.
@@ -650,7 +661,7 @@ nTerms <- size(AcOnly_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(AcOnly_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_AcOnly[i]], ylab = "")
 }
 ```
 <br>
@@ -696,7 +707,7 @@ nTerms <- size(VisOnly_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(VisOnly_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_VisOnly[i]], ylab = "")
 }
 ```
 
@@ -736,7 +747,7 @@ nTerms <- size(Joint_model$smooth,2)
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
-       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[i], ylab = "")
+       cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_Joint[i]], ylab = "")
 }
 ```
 <br>
@@ -1116,7 +1127,7 @@ multiplot(p1, p2, p3, cols = 1)
 ## 4.2 Spatial predictions
 
 ```{r load raster bricks, echo = FALSE}
-load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
+load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters_UNscaled.Rdata') 
 ```
 
 Models were evaluated for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
@@ -1312,7 +1323,43 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
 map
 
 ```
-<br>
+
+```{r plot best summer map}
+# plot best summer map for publication
+png(paste(outDir,SP,'_summer2009maps_GAM.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
+
+# plot best summer map for publication
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
+
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+ tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer,ncol = 1, nrow = 3, outer.margins = 0.05)
+ 
+ dev.off()
+```
 
 **Winter 2009 predicted distribution:**
 
