@@ -1,0 +1,7 @@
+"0","# Save models if re-calculating everything"
+"0","save(nn_AcOnly,MSE,pr,"
+"0","     file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))"
+"0","save(nn_VisOnly,MSE,pr,"
+"0","     file = paste(outDir,SP,'_VisOnly_NN.Rdata',sep=''))"
+"0","save(nn_Joint,MSE,pr,"
+"0","     file = paste(outDir,SP,'_Joint_NN.Rdata',sep=''))"

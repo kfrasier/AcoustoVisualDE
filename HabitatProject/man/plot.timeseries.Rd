@@ -4,7 +4,7 @@
 \alias{plot.timeseries}
 \title{Function to plot acoustic timeseries data and save to image.}
 \usage{
-plot.timeseries(siteList, outDir, AcOnlySegments)
+\method{plot}{timeseries}(siteList, outDir, AcOnlySegments)
 }
 \description{
 Function to plot acoustic timeseries data and save to image.

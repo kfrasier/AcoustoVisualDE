@@ -1,0 +1,6 @@
+"0","# set up model params"
+"0","model1.indices <- c(2:10)"
+"0","nMax1 <- length(model1.indices)"
+"0","layerSizeList <- c(4,6,8,10,12,14)"
+"0","trainRepeats <- 25"
+"0",""

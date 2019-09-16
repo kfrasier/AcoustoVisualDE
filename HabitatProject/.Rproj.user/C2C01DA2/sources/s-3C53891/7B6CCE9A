@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568317763807.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "7B6CCE9A",
+    "lastKnownWriteTime" : 1568322158,
+    "last_content_update" : 1568326007471,
+    "path" : "E:/NASData/AcoustoVisualDE/AcoustoVisualDE/Pm_model_runs_NN.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "50,0",
+        "last_setup_crc32" : "",
+        "scrollLine" : "32"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

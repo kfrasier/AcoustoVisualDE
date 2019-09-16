@@ -4,7 +4,8 @@
 \alias{plot.covarDensity}
 \title{Function plots presence absence as a function of predictor variables.}
 \usage{
-plot.covarDensity(mySegments, covarList, presAbs, fNamePrefix)
+\method{plot}{covarDensity}(mySegments, covarList, presAbs, fNamePrefix,
+  varUnits)
 }
 \description{
 Function plots presence absence as a function of predictor variables.

@@ -4,7 +4,8 @@
 \alias{plot.cleveland}
 \title{Function plots covariates to look for skew}
 \usage{
-plot.cleveland(mySegments, covarList, isTrans, fNamePrefix)
+\method{plot}{cleveland}(mySegments, covarList, isTrans, fNamePrefix,
+  varUnits)
 }
 \description{
 Function plots covariates to look for skew

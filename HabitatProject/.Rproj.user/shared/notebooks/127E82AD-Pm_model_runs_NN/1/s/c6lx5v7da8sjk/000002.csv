@@ -1,0 +1,4 @@
+"0","plot.timeseries(siteList,outDir,AcOnlySegments)"
+"0","MCTS <- paste0(outDir,SP,'_Timeseries_Site_MC.png')"
+"0","GCTS <- paste0(outDir,SP,'_Timeseries_Site_GC.png')"
+"0","DTTS <- paste0(outDir,SP,'_Timeseries_Site_DT.png')"

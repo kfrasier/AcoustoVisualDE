@@ -48,6 +48,8 @@ source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_log
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
 options(stringsAsFactors = FALSE)
 # load some preferences
@@ -680,7 +682,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -729,7 +731,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = FALSE} 
+```{r other models 1, eval = TRUE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -814,7 +816,7 @@ for (layerSize in layerSizeList){
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE,pr,
      file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))

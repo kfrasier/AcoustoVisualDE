@@ -1,0 +1,4 @@
+"0","visDetProbData<-paste0(outDir,SP,'sightwTrunc_GU.Rdata')"
+"0","load(visDetProbData)"
+"0","visDetProb <- detFun[[bestModelIdx]]$fitted[1]"
+"0","visDetProbFigure <- paste0(outDir,SP,'sightwTrunc_GU.png')"

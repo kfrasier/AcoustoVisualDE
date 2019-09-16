@@ -1,0 +1,3 @@
+"0","png(paste(outDir,SP,'_caseWeights_NN.png',sep=''), width = 4, height = 4, units = 'in',res = 300)"
+"0","#  par(mar = c(5.1, 4.1, 4.1, 3.1))"
+"0","plot(joint_train_weightsG0,ylim =c(0,1 ),ylab='Case Weight',xlab = 'Case Index',cex = 1)"

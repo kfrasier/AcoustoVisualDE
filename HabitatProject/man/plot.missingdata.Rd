@@ -6,7 +6,7 @@
 RETURNS:
   percFilled<- A table of percentage data available by year for each covariate in covarList}
 \usage{
-plot.missingdata(mySegments, covarList, fNamePrefix)
+\method{plot}{missingdata}(mySegments, covarList, fNamePrefix, varUnits)
 }
 \description{
 Function generates set of histograms showing data gaps by year.  

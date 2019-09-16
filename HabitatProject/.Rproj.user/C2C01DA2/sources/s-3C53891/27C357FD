@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568326029445.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "27C357FD",
+    "lastKnownWriteTime" : 1568329893,
+    "last_content_update" : 1568329893159,
+    "path" : "E:/NASData/AcoustoVisualDE/AcoustoVisualDE/knit_everything.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "14,8",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -45,7 +45,8 @@ source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R'
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
-
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Zc/setup_info_Zc.Rdata')
@@ -1350,42 +1351,8 @@ VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = ma
  
  dev.off()
 ```
-
-**Summer 2009 prediction uncertainty:**
-```{r leaflet summer uncert, message = FALSE, warning = FALSE, echo = FALSE}
-maxColorUncert <- ceiling(max(c(predSTD_july2009_AcOnly_crop@data@max,
-               predSTD_july2009_VisOnly_crop@data@max,
-               predSTD_july2009_Joint_crop@data@max,
-               predSTD_jan2009_AcOnly_crop@data@max,
-               predSTD_jan2009_VisOnly_crop@data@max,
-               predSTD_jan2009_Joint_crop@data@max))*100)/100
-palUncert <- colorNumeric(palette = matlab.like2(5),
-                    domain=c(0,maxColorUncert), 
-                    na.color = 'transparent')
-# Display summer (July 2009) map:
-
-map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
-  addProviderTiles(providers$Esri.OceanBasemap) %>%
-  addRasterImage(predSTD_july2009_AcOnly_crop, colors = palUncert,
-                 opacity = 0.8, group = 'Acoustic July 2009') %>%
-  addRasterImage(predSTD_july2009_VisOnly_crop, colors = palUncert,
-                 opacity = 0.8, group = 'Visual July 2009') %>%
-  addRasterImage(predSTD_july2009_Joint_crop, colors = palUncert,
-                 opacity = 0.8, group = 'Joint July 2009') %>%
-  addLegend(pal = palUncert, values = c(0,maxColorUncert),
-    title = 'STD(Estimated Density)',position = "bottomleft") %>%
-  addLayersControl(
-    baseGroups = c('Acoustic July 2009','Visual July 2009',
-                   'Joint July 2009'),
-    options = layersControlOptions(collapsed = FALSE)
-  )
-map
-```
-
 <br>  
 
-
-### 3.2.2 Winter 2009 predictions
 **Winter 2009 predicted distribution:**
 
 ```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}

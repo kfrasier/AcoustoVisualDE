@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568330857449.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "50B23D4B",
+    "lastKnownWriteTime" : 1568330989,
+    "last_content_update" : 1568330989,
+    "path" : "E:/NASData/AcoustoVisualDE/AcoustoVisualDE/Ssp_model_runs_NN.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "1901,0",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "1835"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -39,11 +39,14 @@ library(lmtest)
 library(zoo)
 library(pracma)
 library(grid)
+library(zoo)
+library(tmap)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
-
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Pm/setup_info_Pm.Rdata')
@@ -66,7 +69,7 @@ Note: Future work could use monthly climatologies (averages) so that older sight
 ```{r Missing data, echo = FALSE}
 plotCols1 <-c(7:10,14,16,19,22,23)
 covarList<-names(mergedSegments[c(plotCols1)])
-varUnits <- c("SST (C)","SSH (m)",expression("Chorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
+varUnits <- c("SST (C)","SSH (m)",expression("Chlorophyll A (mg/m"^3*")"),"MLD (m)", "Salinity (ppm)",
                  "Current Magnitude (m/sec)", "Upwelling (m/sec)", 
                  "Dist. to Anti-Cyclonic Eddy (km)","Dist. to Cyclonic Eddy (km)")
 
@@ -1313,6 +1316,43 @@ map
 ```
 <br>
 
+```{r plot best summer map}
+png(paste(outDir,SP,'_summer2009maps_GAM_density.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
+
+# plot best summer map for publication
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
+
+JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+ tmap_arrange(AcMapSummer,VisMapSummer,JointMapSummer,ncol = 1, nrow = 3, outer.margins = 0.05)
+ 
+ dev.off()
+```
+ 
+
 **Winter 2009 predicted distribution:**
 
 ```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}
@@ -1414,4 +1454,4 @@ map
 ```
 
 
-# References
+#References

@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568319794339.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "3D4BE080",
+    "lastKnownWriteTime" : 1568319843,
+    "last_content_update" : 1568319843062,
+    "path" : "E:/NASData/AcoustoVisualDE/AcoustoVisualDE/Pm_model_runs_NN_density.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "52,71",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "35"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

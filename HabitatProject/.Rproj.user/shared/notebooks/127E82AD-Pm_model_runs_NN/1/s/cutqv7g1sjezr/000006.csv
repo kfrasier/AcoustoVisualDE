@@ -1,0 +1,2 @@
+"0","pairs.panels(transformedCovars_AcOnly.train[,1:(length(covarList2)-2)], "
+"0","             ellipses=FALSE, method = ""spearman"",cex.cor=.75)"
