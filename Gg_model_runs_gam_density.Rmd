@@ -1260,7 +1260,7 @@ multiplot(p1, p2, p3, p4, p5, cols = 1)
 ## 4.2 Spatial predictions
 
 ```{r load raster bricks, echo = FALSE}
-load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters.Rdata') 
+load('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/2009_prediction_rasters_UNscaled.Rdata') 
 ```
 
 Models were evaluated for summer (July 2009) and winter(January 2009) across the entire Gulf of Mexico (US EEZ beyond the 200m contour).
@@ -1410,7 +1410,7 @@ jan2009mean_prediction_probSee <- jan2009mean_prediction_crop*visG0*visDetProb
 july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 ```
 
-
+### 4.2.1 Summer 2009 predictions
 **Summer 2009 predicted distribution and test sightings:**
 
 
@@ -1464,7 +1464,7 @@ map
 ```
 <br>
 
-```{r plot best summer map}
+```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
 png(paste(outDir,SP,'_summer2009maps_GAM_density.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
 
 # plot best summer map for publication
@@ -1473,22 +1473,32 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_prediction_crop@data@values,
+            na.rm = TRUE)/maxColor),
+            colorNA = NULL,style = "cont",
+            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_AcOnly_prediction_crop@data@values,
+            na.rm = TRUE)/maxColor),colorNA = NULL,style = "cont",
+            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_VisOnly_prediction_crop@data@values,
+            na.rm = TRUE)/maxColor),colorNA = NULL,style = "cont",
+            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
@@ -1502,7 +1512,7 @@ VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = ma
 <br>  
 
 
-### 3.2.2 Winter 2009 predictions
+### 4.2.2 Winter 2009 predictions
 **Winter 2009 predicted distribution:**
 
 ```{r leaflet winter, message = FALSE, warning = FALSE, echo = FALSE}

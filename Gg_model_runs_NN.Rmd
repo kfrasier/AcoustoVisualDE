@@ -686,7 +686,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -735,7 +735,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = TRUE, echo = FALSE} 
+```{r other models 1, eval = FALSE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -820,7 +820,7 @@ for (layerSize in layerSizeList){
 <br>  
 
 
-```{r save models, eval = TRUE, echo = FALSE}
+```{r save models, eval = FALSE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE,pr,
      file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))
@@ -1855,7 +1855,11 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_prediction_crop@data@values,
+            na.rm = TRUE)/maxColorSummer),
+            colorNA = NULL,style = "cont",
+            title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
@@ -1863,14 +1867,20 @@ JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matl
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_AcOnly_prediction_crop@data@values,
+            na.rm = TRUE)/maxColorSummer),colorNA = NULL,style = "cont",
+            title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+
+  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_VisOnly_prediction_crop@data@values,
+            na.rm = TRUE)/maxColorSummer),colorNA = NULL,style = "cont",
+            title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
