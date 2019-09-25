@@ -44,7 +44,8 @@ source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missing
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
-
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
+source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
 options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
@@ -1408,7 +1409,7 @@ jan2009mean_prediction_probSee <- jan2009mean_prediction_crop*visG0*visDetProb
 july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 ```
 
-
+### 4.2.1 Summer 2009 predictions
 **Summer 2009 predicted distribution and test sightings:**
 
 
@@ -1446,6 +1447,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
@@ -1458,8 +1461,9 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
 map
 
 ```
+<br>
 
-```{r plot best summer map}
+```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
 # plot best summer map for publication
 png(paste(outDir,SP,'_summer2009maps_GAM.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
 
@@ -1469,22 +1473,22 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009mean_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
-  tm_shape(harpShape)+tm_symbols(col = "white", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+

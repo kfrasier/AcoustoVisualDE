@@ -911,7 +911,7 @@ pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]]
                                                       na.action = na.omit)
 pr$nn_VisOnly_test_allData[[modelCounter]][pr$nn_VisOnly_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
                              pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
@@ -924,7 +924,7 @@ pr$nn_AcOnly_test_allData[[modelCounter]] <- predict(nn_AcOnly[[modelCounter]],
                                                   Joint_test_scaled[,model1.indices])
 pr$nn_AcOnly_test_allData[[modelCounter]][pr$nn_AcOnly_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
                              pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
@@ -937,7 +937,7 @@ pr$nn_Joint_test_allData[[modelCounter]] <- predict(nn_Joint[[modelCounter]],
                                                   Joint_test_scaled[,model1.indices])
 pr$nn_Joint_test_allData[[modelCounter]][pr$nn_Joint_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_Joint_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
 RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
@@ -987,13 +987,13 @@ print(MSEtable, digits = 2)
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-which.min(MSE$nn_AcOnly_test)
+best_AcOnly_ModelIndex <-which.min(MAE$nn_AcOnly_test_allData)
 print(paste(c('Best acoustic model has', layerSizeList[best_AcOnly_ModelIndex], 
               'nodes.'),collapse = " "))
-best_VisOnly_ModelIndex <-which.min(MSE$nn_VisOnly_test)
+best_VisOnly_ModelIndex <-which.min(MAE$nn_VisOnly_test_allData)
 print(paste(c('Best visual model has', layerSizeList[best_VisOnly_ModelIndex],
             'nodes.'),collapse = " "))
-best_Joint_ModelIndex <-which.min(MSE$nn_Joint_test)
+best_Joint_ModelIndex <-which.min(MAE$nn_Joint_test_allData)
 print(paste(c('Best joint model has', layerSizeList[best_Joint_ModelIndex], 
               'nodes.'),collapse = " "))
 ```
@@ -1997,11 +1997,7 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_prediction_crop@data@values,
-            na.rm = TRUE)/maxColorSummer),
-            colorNA = NULL,style = "cont",
-            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
@@ -2009,20 +2005,14 @@ JointMapSummer = tm_shape(july2009_prediction_crop)+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_AcOnly_prediction_crop@data@values,
-            na.rm = TRUE)/maxColorSummer),colorNA = NULL,style = "cont",
-            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_VisOnly_prediction_crop@data@values,
-            na.rm = TRUE)/maxColorSummer),colorNA = NULL,style = "cont",
-            title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+

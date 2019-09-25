@@ -42,6 +42,7 @@ library(grid)
 library(knitr)
 library(matrixStats)
 library(zoo)
+library(tmap)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
@@ -274,15 +275,15 @@ Test_VisOnly.set2<- Test_VisOnly.set[,covarList2]
 
 # without transform
 png(paste(outDir,SP,'_correlations_noTransform.png',sep=''), width = 2000, height = 1600)
-pairs.panels(Train_Joint.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
+pairs.panels(Train_Joint.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
 png(paste(outDir,SP,'_correlations_noTransform_AcOnly.png',sep=''), width = 2000, height = 1600)
 pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
-dev.off()
+pairs.panels(Train_AcOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 png(paste(outDir,SP,'_correlations_noTransform_visOnly.png',sep=''), width = 2000, height = 1600)
 pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-2)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 dev.off()
-covarPlot <-paste0(outDir,SP,'_correlations_noTransform.png')
+pairs.panels(Train_VisOnly.set2[,1:(length(covarList2)-3)], ellipses=FALSE, method = "spearman",cex.cor=.75)
 ```
 <br> 
 
@@ -1727,8 +1728,10 @@ map
 ```
 
 <br>
-## How does hidden layer size change spatial predictions?
-```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30}
+
+### 3.3.3 How does hidden layer size change spatial predictions?
+
+```{r look at effect of hidden layer on spatial prediction, width = 60, height = 30, message = FALSE, warning = FALSE, echo = FALSE}
 nModels = length(layerSizeList)
 
 july2009_prediction_hidden <- vector('list',length = nModels)
@@ -1747,22 +1750,22 @@ palSummer2 <- colorNumeric(palette = matlab.like2(5),
 map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
   addProviderTiles(providers$Esri.OceanBasemap) %>%
   addRasterImage(july2009_prediction_hidden[[1]], colors = palSummer2,
-                 opacity = 0.8, group = '4 nodes') %>%
+                  opacity = 0.8, group = '4 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[2]], colors = palSummer2,
                   opacity = 0.8, group = '6 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[3]], colors = palSummer2,
                   opacity = 0.8, group = '8 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
-  #               opacity = 0.8, group = '10 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
-  #                 opacity = 0.8, group = '12 nodes') %>%
-  # addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
-  #                 opacity = 0.8, group = '14 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[4]], colors = palSummer2,
+                  opacity = 0.8, group = '10 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[5]], colors = palSummer2,
+                  opacity = 0.8, group = '12 nodes') %>%
+  addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
+                  opacity = 0.8, group = '14 nodes') %>%
   addLegend(pal = palSummer2, values = c(0,maxVal),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
-    baseGroups = c('4 nodes','6 nodes','8 nodes'),
-                   #'10 nodes','12 nodes','14 nodes'),
+    baseGroups = c('4 nodes','6 nodes','8 nodes',
+                   '10 nodes','12 nodes','14 nodes'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map

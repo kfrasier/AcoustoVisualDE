@@ -40,6 +40,7 @@ library(zoo)
 library(pracma)
 library(grid)
 library(tmap)
+library(MLmetrics)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
@@ -664,11 +665,17 @@ Smooths of predictor variables:
 
 ```{r AcOnly model plots, echo = FALSE}
 nTerms <- size(AcOnly_model$smooth,2)
+
+png(paste(outDir,SP,'_AcOnly_smooths_pres_abs.png',sep=''), res = 300, units = "in", width = 6.5, height = ceil(nTerms/3)*2)
+
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(AcOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_AcOnly[i]], ylab = "")
 }
+
+dev.off()
+smoothFig <-paste0(outDir,SP,'_AcOnly_smooths_pres_abs.png')
 ```
 <br>
 
@@ -705,11 +712,16 @@ Smooths of predictor variables:
 
 ```{r VisOnly model plots, echo = FALSE}
 nTerms <- size(VisOnly_model$smooth,2)
+
+png(paste(outDir,SP,'_VisOnly_smooths_pres_abs.png',sep=''), res = 300, units = "in", width = 6.5, height = ceil(nTerms/3)*2)
+
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(VisOnly_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_VisOnly[i]], ylab = "")
 }
+dev.off()
+smoothFig <-paste0(outDir,SP,'_VisOnly_smooths_pres_abs.png')
 ```
 
 Plot of residuals:
@@ -745,11 +757,18 @@ Smooths of predictor variables:
 
 ```{r Joint model plots,echo = FALSE}
 nTerms <- size(Joint_model$smooth,2)
+
+png(paste(outDir,SP,'_Joint_smooths_pres_abs.png',sep=''), res = 300, units = "in", width = 6.5, height = ceil(nTerms/3)*2)
+
+
 par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
        cex.lab = 1.3,cex.axis = 1.1,scale=0,xlab = varUnits[significantPvals_Joint[i]], ylab = "")
 }
+
+dev.off()
+smoothFig <-paste0(outDir,SP,'_Joint_smooths_pres_abs.png')
 ```
 <br>
 
@@ -779,16 +798,15 @@ XEntropy <- NULL
 
 XEntropy$AcOnly_test_JointData <- weighted_logloss(round(pr$AcOnly_JointData$fit,
                                                          digits = 0),
-                                                   as.vector(transformedCovars.test$y_TF),
-                                                   as.vector(joint_test_weightsG0))
+                                 as.vector(transformedCovars.test$y_TF),
+                                 as.vector(ones(length(joint_test_weightsG0),1)))
 XEntropy$VisOnly_test_JointData <- weighted_logloss(round(pr$VisOnly_JointData$fit,
                                                           digits = 0),
-                                                   as.vector(transformedCovars.test$y_TF),
-                                                   as.vector(joint_test_weightsG0))
+                                 as.vector(transformedCovars.test$y_TF),
+                                 as.vector(ones(length(joint_test_weightsG0),1)))
 XEntropy$Joint_test <- weighted_logloss(round(pr$Joint_JointData$fit, digits = 0),
-                                                   as.vector(transformedCovars.test$y_TF),
-                                                   as.vector(joint_test_weightsG0))
-
+                                 as.vector(transformedCovars.test$y_TF),
+                                 as.vector(ones(length(joint_test_weightsG0),1)))
 
 XEntropyTable<- rbind(XEntropy$AcOnly_test_JointData,XEntropy$VisOnly_test_JointData,
                       XEntropy$Joint_test)
@@ -1300,6 +1318,14 @@ july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,
 july2009_AcOnly_prediction_IncludingOutsideObs <- raster::predict(july2009_rasters,
                                               AcOnly_model,
                                               type = 'response',na.action = na.pass)    
+
+# compute standard error raster. Have to convert to points and back to make this work.
+july2009_rastersAc_points = na.omit(rasterToPoints(july2009_rastersAc))
+july2009_Ac_se_predict_points = predict.gam(AcOnly_model,data.frame(july2009_rastersAc_points),
+            type = 'response', na.action = na.pass,se.fit = TRUE) 
+myXY = cbind(july2009_rastersAc_points[,1],july2009_rastersAc_points[,2])
+july2009_Ac_prediction_se = rasterize(myXY,july2009_AcOnly_prediction,july2009_Ac_se_predict_points$se.fit,na.rm = TRUE)
+
 ```
 
 
@@ -1330,11 +1356,18 @@ july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,VisOnly_model
             type = 'response',na.action = na.pass)
 july2009_VisOnly_prediction_IncludingOutsideObs <- raster::predict(july2009_rasters,VisOnly_model,
             type = 'response',na.action = na.pass)   
+
+# compute standard error raster. Have to convert to points and back to make this work.
+july2009_rastersVis_points = na.omit(rasterToPoints(july2009_rastersVis))
+july2009_Vis_se_predict_points = predict.gam(VisOnly_model,data.frame(july2009_rastersVis_points),
+            type = 'response', na.action = na.pass,se.fit = TRUE) 
+myXY = cbind(july2009_rastersVis_points[,1],july2009_rastersVis_points[,2])
+july2009_Vis_prediction_se = rasterize(myXY,july2009_VisOnly_prediction,july2009_Vis_se_predict_points$se.fit,na.rm = TRUE)
 ```
 
 
 
-```{r Combo Spatial Predict, message=FALSE, warning = FALSE, echo = FALSE}
+```{r Joint Spatial Predict, message=FALSE, warning = FALSE, echo = FALSE}
 ### Joint Visual and Acoustic spatial prediction
 
 jan2009_rastersJoint <- jan2009_rasters
@@ -1358,6 +1391,14 @@ jan2009_prediction <- raster::predict(jan2009_rastersJoint,Joint_model,
             
 july2009_prediction <- raster::predict(july2009_rastersJoint,Joint_model,
             type = 'response',na.action = na.pass,se.fit=TRUE)    
+
+# compute standard error raster. Have to convert to points and back to make this work.
+july2009_rastersJoint_points = na.omit(rasterToPoints(july2009_rastersJoint))
+july2009_joint_se_predict_points = predict.gam(Joint_model,data.frame(july2009_rastersJoint_points),
+            type = 'response', na.action = na.pass,se.fit = TRUE) 
+myXY = cbind(july2009_rastersJoint_points[,1],july2009_rastersJoint_points[,2])
+july2009_prediction_se = rasterize(myXY,july2009_prediction,july2009_joint_se_predict_points$se.fit,na.rm = TRUE)
+
 ```
 
 
@@ -1410,7 +1451,7 @@ jan2009mean_prediction_probSee <- jan2009mean_prediction_crop*visG0*visDetProb
 july2009mean_prediction_probSee <- july2009mean_prediction_crop*visG0*visDetProb
 ```
 
-
+### 4.2.1 Summer 2009 predictions
 **Summer 2009 predicted distribution and test sightings:**
 
 
@@ -1448,6 +1489,8 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                  color = "black",
                  stroke = TRUE, fillOpacity = 0.8,radius = 6,
                  group = 'Test Sightings (Summer 2009)') %>%
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
   addLegend(pal = pal, values = c(0,maxColor),
     title = 'P(encounter)',position = "bottomleft") %>%
   addLayersControl(
@@ -1460,6 +1503,7 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
 map
 
 ```
+<br>
 
 ```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
 # plot best summer map for publication
@@ -1471,11 +1515,7 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
                             crs(GU2009EffortLines))
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
-JointMapSummer = tm_shape(july2009_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_prediction_crop@data@values,
-            na.rm = TRUE)/maxColor),
-            colorNA = NULL,style = "cont",
-            title = expression("P(Encounter)"),legend.reverse = TRUE)+ 
+JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
@@ -1483,22 +1523,14 @@ JointMapSummer = tm_shape(july2009_prediction_crop)+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_AcOnly_prediction_crop@data@values,
-            na.rm = TRUE)/maxColor),
-            colorNA = NULL,style = "cont",
-            title = expression("P(Encounter)"),legend.reverse = TRUE)+ 
+AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
-VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+
-  tm_raster(palette = viridis(9, begin = 0,end = max(july2009_VisOnly_prediction_crop@data@values,
-            na.rm = TRUE)/maxColor),
-            colorNA = NULL,style = "cont",
-            title = expression("P(Encounter)"),legend.reverse = TRUE)+ 
+VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColor/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
   tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
