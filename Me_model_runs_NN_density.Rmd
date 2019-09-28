@@ -983,13 +983,13 @@ print(MSEtable, digits = 2)
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-which.min(MSE$nn_AcOnly_test)
+best_AcOnly_ModelIndex <-which.min(MAE$nn_AcOnly_test_allData)
 print(paste(c('Best acoustic model has', layerSizeList[best_AcOnly_ModelIndex], 
               'nodes.'),collapse = " "))
-best_VisOnly_ModelIndex <-which.min(MSE$nn_VisOnly_test)
+best_VisOnly_ModelIndex <-which.min(MAE$nn_VisOnly_test_allData)
 print(paste(c('Best visual model has', layerSizeList[best_VisOnly_ModelIndex],
             'nodes.'),collapse = " "))
-best_Joint_ModelIndex <-which.min(MSE$nn_Joint_test)
+best_Joint_ModelIndex <-which.min(MAE$nn_Joint_test_allData)
 print(paste(c('Best joint model has', layerSizeList[best_Joint_ModelIndex], 
               'nodes.'),collapse = " "))
 ```

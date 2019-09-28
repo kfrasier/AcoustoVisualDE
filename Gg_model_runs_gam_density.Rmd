@@ -227,8 +227,6 @@ Test_VisOnly.set$CHL[outlierList] <- NaN
 #Test_VisOnly.set$FrontDist_Cayula[outlierList] <- NaN 
 outlierList <-which(Test_VisOnly.set$Density>100000)
 Test_VisOnly.set$Density[outlierList] <- NaN 
-
-
 ```
 
 <br>
@@ -782,27 +780,46 @@ pr$Joint_JointData <- predict.gam(Joint_model,
                              transformedCovars.test,
                              type = 'response',na.action = na.pass,se.fit=TRUE)
 
-MSE <- NULL
+MAE <- NULL
 
-MSE$AcOnly_test_JointData <- mean(
+MAE$AcOnly_test_JointData <- mean(
                                     abs(as.vector(transformedCovars.test$y)-
                                     pr$AcOnly_JointData$fit),na.rm = TRUE)
-MSE$VisOnly_test_JointData <- mean(
+MAE$VisOnly_test_JointData <- mean(
                                     abs(as.vector(transformedCovars.test$y)-
                                     pr$VisOnly_JointData$fit),na.rm = TRUE)
-MSE$Joint_test <- mean(
+MAE$Joint_test <- mean(
                          abs(as.vector(transformedCovars.test$y)-
                          pr$Joint_JointData$fit),na.rm = TRUE)
 
-XEntropyTable<- rbind(MSE$AcOnly_test_JointData,MSE$VisOnly_test_JointData,
-                      MSE$Joint_test)
 
-colnames(XEntropyTable)<- 'Mean Absolute Error'
-rownames(XEntropyTable)<- c("Acoustic - Test Joint Data",
+RMSE <- NULL
+
+RMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
+                                    ((as.vector(transformedCovars.test$y)-
+                                    pr$AcOnly_JointData$fit)^2),na.rm = TRUE))
+RMSE$VisOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
+                                    ((as.vector(transformedCovars.test$y)-
+                                    pr$VisOnly_JointData$fit)^2),na.rm = TRUE))
+RMSE$Joint_test <- sqrt(mean(as.vector(joint_test_weightsG0)*
+                                    ((as.vector(transformedCovars.test$y)-
+                                    pr$Joint_JointData$fit)^2),na.rm = TRUE))
+
+
+
+RMSETable <- rbind(RMSE$AcOnly_test_JointData,RMSE$VisOnly_test_JointData,
+                      RMSE$Joint_test)
+
+
+MAETable<- rbind(MAE$AcOnly_test_JointData,MAE$VisOnly_test_JointData,
+                      MAE$Joint_test)
+
+colnames(RMSETable)<- 'RMSE'#'Mean Absolute Error'
+rownames(RMSETable)<- c("Acoustic - Test Joint Data",
                        "Visual - Test Joint Data",
                        "Joint - Test Joint Data")
 print('Mean absolute error scores (lower is better)')
-print(round(XEntropyTable, digits = 3))
+print(round(RMSETable, digits = 3))
 
 
 ```

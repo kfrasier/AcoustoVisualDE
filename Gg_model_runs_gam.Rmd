@@ -797,16 +797,16 @@ pr$Joint_JointData <- predict.gam(Joint_model,
 XEntropy <- NULL
 
 XEntropy$AcOnly_test_JointData <- weighted_logloss(round(pr$AcOnly_JointData$fit,
-                                                         digits = 0),
+                                                         digits = 4),
                                  as.vector(transformedCovars.test$y_TF),
-                                 as.vector(ones(length(joint_test_weightsG0),1)))
+                                 as.vector(joint_test_weightsG0))
 XEntropy$VisOnly_test_JointData <- weighted_logloss(round(pr$VisOnly_JointData$fit,
-                                                          digits = 0),
+                                                          digits = 4),
                                  as.vector(transformedCovars.test$y_TF),
-                                 as.vector(ones(length(joint_test_weightsG0),1)))
-XEntropy$Joint_test <- weighted_logloss(round(pr$Joint_JointData$fit, digits = 0),
+                                 as.vector(joint_test_weightsG0))
+XEntropy$Joint_test <- weighted_logloss(round(pr$Joint_JointData$fit, digits = 4),
                                  as.vector(transformedCovars.test$y_TF),
-                                 as.vector(ones(length(joint_test_weightsG0),1)))
+                                 as.vector(joint_test_weightsG0))
 
 XEntropyTable<- rbind(XEntropy$AcOnly_test_JointData,XEntropy$VisOnly_test_JointData,
                       XEntropy$Joint_test)
