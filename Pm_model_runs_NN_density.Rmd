@@ -954,15 +954,14 @@ pr$nn_Joint_test_allData[[modelCounter]][pr$nn_Joint_test_allData[[modelCounter]
 MAE$nn_Joint_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
-RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(
-                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
-                             pr$nn_Joint_test_allData[[modelCounter]]))^2),na.rm = TRUE)
+RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]]))^2,na.rm = TRUE))
 wMAE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
 wRMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
-                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
-                             pr$nn_Joint_test_allData[[modelCounter]]))^2),na.rm = TRUE))
+                             (covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]]))^2,na.rm = TRUE))
 }
 
 RMSEtable <- rbind(RMSE$nn_AcOnly_test_allData,RMSE$nn_VisOnly_test_allDat,RMSE$nn_Joint_test_allData)
