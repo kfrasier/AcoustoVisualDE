@@ -1517,7 +1517,7 @@ for (iR in model1.indices){
 }
 
 
-jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,
+jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,
                    nn_AcOnly[[best_AcOnly_ModelIndex]],
                    na.action = na.pass)*covars_Joint_max.train['y']/10
 jan2009_AcOnly_prediction[jan2009_AcOnly_prediction<0]=0
@@ -1528,7 +1528,7 @@ jan2009_AcOnly_prediction_IncludingOutsideObs <- raster::predict(jan2009_rasters
 jan2009_AcOnly_prediction_IncludingOutsideObs[jan2009_AcOnly_prediction_IncludingOutsideObs
                                               <0]=0
 
-july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,
+july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
                    nn_AcOnly[[best_AcOnly_ModelIndex]],
                    na.action = na.pass)*covars_Joint_max.train['y']/10
 july2009_AcOnly_prediction[july2009_AcOnly_prediction<0]=0
@@ -1578,7 +1578,7 @@ for (iR in model1.indices){
                               VisOnlyRangesMax[thisVarName]]<- NA
 }
 
-jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,
+jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,
          nn_VisOnly[[best_VisOnly_ModelIndex]],na.action = na.pass)*
          covars_Joint_max.train['y']/10
 jan2009_VisOnly_prediction[jan2009_VisOnly_prediction<0]=0
@@ -1589,7 +1589,7 @@ jan2009_VisOnly_prediction_IncludingOutsideObs <- raster::predict(jan2009_raster
 jan2009_VisOnly_prediction_IncludingOutsideObs[jan2009_VisOnly_prediction_IncludingOutsideObs
                                               <0]=0
 
-july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,
+july2009_VisOnly_prediction <- raster::predict(july2009_rasters,
          nn_VisOnly[[best_VisOnly_ModelIndex]],
          na.action = na.pass)*covars_Joint_max.train['y']/10 
 july2009_VisOnly_prediction[july2009_VisOnly_prediction<0]=0
@@ -1638,11 +1638,11 @@ for (iR in model1.indices){
                               JointRangesMax[thisVarName]]<- NA
 }
 
-jan2009_prediction <- raster::predict(jan2009_rastersJoint,
+jan2009_prediction <- raster::predict(jan2009_rasters,
          nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10
 jan2009_prediction[jan2009_prediction<0]<-0
 
-july2009_prediction <- raster::predict(july2009_rastersJoint,
+july2009_prediction <- raster::predict(july2009_rasters,
          nn_Joint[[best_Joint_ModelIndex]],na.action = na.pass)*covars_Joint_max.train['y']/10
 july2009_prediction[july2009_prediction<0]<-0
 

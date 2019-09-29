@@ -1201,13 +1201,13 @@ for (thisVarName in names(jan2009_rastersAc)){
                               AcOnlyRangesMax[thisVarName]]<- NA
 }
 
-jan2009_AcOnly_prediction <- raster::predict(jan2009_rastersAc,
+jan2009_AcOnly_prediction <- raster::predict(jan2009_rasters,
                                              AcOnly_model,
                                              type = 'response',na.action = na.pass)/10  
 jan2009_AcOnly_prediction_IncludingOutsideObs <- raster::predict(jan2009_rasters,
                                              AcOnly_model,
                                              type = 'response',na.action = na.pass)/10  
-july2009_AcOnly_prediction <- raster::predict(july2009_rastersAc,
+july2009_AcOnly_prediction <- raster::predict(july2009_rasters,
                                               AcOnly_model,
                                               type = 'response',na.action = na.pass)/10
 july2009_AcOnly_prediction_IncludingOutsideObs <- raster::predict(july2009_rasters,
@@ -1243,12 +1243,12 @@ for (thisVarName in names(jan2009_rastersVis)){
                               VisOnlyRangesMax[thisVarName]]<- NA
 }
 
-jan2009_VisOnly_prediction <- raster::predict(jan2009_rastersVis,VisOnly_model,
+jan2009_VisOnly_prediction <- raster::predict(jan2009_rasters,VisOnly_model,
             type = 'response',na.action = na.pass)/10
 jan2009_VisOnly_prediction_IncludingOutsideObs <- raster::predict(jan2009_rasters,VisOnly_model,
             type = 'response',na.action = na.pass)/10
 
-july2009_VisOnly_prediction <- raster::predict(july2009_rastersVis,VisOnly_model,
+july2009_VisOnly_prediction <- raster::predict(july2009_rasters,VisOnly_model,
             type = 'response',na.action = na.pass)/10
 july2009_VisOnly_prediction_IncludingOutsideObs <- raster::predict(july2009_rasters,VisOnly_model,
             type = 'response',na.action = na.pass)/10
@@ -1282,10 +1282,10 @@ for (thisVarName in names(jan2009_rastersJoint)){
 }
 
 
-jan2009_prediction <- raster::predict(jan2009_rastersJoint,Joint_model,
+jan2009_prediction <- raster::predict(jan2009_rasters,Joint_model,
             type = 'response',na.action = na.pass,se.fit=TRUE)/10  
 
-july2009_prediction <- raster::predict(july2009_rastersJoint,Joint_model,
+july2009_prediction <- raster::predict(july2009_rasters,Joint_model,
             type = 'response',na.action = na.pass,se.fit=TRUE)/10   
 
 # compute standard error raster. Have to convert to points and back to make this work.
