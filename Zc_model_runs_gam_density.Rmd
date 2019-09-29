@@ -794,14 +794,14 @@ wMAE$VisOnly_test_JointData <- mean(as.vector(joint_test_weightsG0)*abs(as.vecto
 wMAE$Joint_test <- mean(as.vector(joint_test_weightsG0)*abs(as.vector(transformedCovars.test$y)-
                          pr$Joint_JointData$fit),na.rm = TRUE)
 
-
 RMSE <- NULL
-RMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(transformedCovars.test$y)-
-                                    pr$AcOnly_JointData$fit)^2,na.rm = TRUE)
-RMSE$VisOnly_test_JointData <- sqrt(mean(as.vector(transformedCovars.test$y)-
-                                    pr$VisOnly_JointData$fit)^2,na.rm = TRUE)
-RMSE$Joint_test <- sqrt(mean(as.vector(transformedCovars.test$y)-
-                                    pr$Joint_JointData$fit)^2,na.rm = TRUE)
+RMSE$AcOnly_test_JointData <- sqrt(mean((as.vector(transformedCovars.test$y)-
+                                    pr$AcOnly_JointData$fit)^2,na.rm = TRUE))
+RMSE$VisOnly_test_JointData <- sqrt(mean((as.vector(transformedCovars.test$y)-
+                                    pr$VisOnly_JointData$fit)^2,na.rm = TRUE))
+RMSE$Joint_test <- sqrt(mean(as.vector((transformedCovars.test$y)-
+                                    pr$Joint_JointData$fit)^2,na.rm = TRUE))
+
 wRMSE <- NULL
 
 wRMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
