@@ -1,7 +1,7 @@
 setwd('E:/NASData/AcoustoVisualDE/AcoustoVisualDE')
 
-#myList =  c("Zc_model_runs_NN_density.Rmd","Pm_model_runs_gam_density.Rmd","Zc_model_runs_gam_density.Rmd","Gg_model_runs_NN_density.Rmd","Gg_model_runs_GAM_density.Rmd")
-myList =  c("Pm_model_runs_NN.Rmd","Gg_model_runs_NN.Rmd","Zc_model_runs_NN.Rmd")#"Pm_model_runs_GAM.Rmd","Gg_model_runs_GAM.Rmd","Zc_model_runs_GAM.Rmd")
+myList =  c("Zc_model_runs_NN_density.Rmd","Pm_model_runs_gam_density.Rmd","Zc_model_runs_gam_density.Rmd","Gg_model_runs_NN_density.Rmd","Gg_model_runs_GAM_density.Rmd")
+#myList =  c("Pm_model_runs_NN.Rmd","Gg_model_runs_NN.Rmd","Zc_model_runs_NN.Rmd")#"Pm_model_runs_GAM.Rmd","Gg_model_runs_GAM.Rmd","Zc_model_runs_GAM.Rmd")
 #
 # myList = c("Gg_model_runs_NN_density.Rmd","Pm_model_runs_NN_density.Rmd","Pm_model_runs_gam.Rmd", "Zc_model_runs_gam.Rmd", "Gg_model_runs_gam.Rmd")
 #            "Pm_model_runs_NN.Rmd","Gg_model_runs_NN.Rmd","Gmsp_model_runs_NN_density.Rmd")"Gg_model_runs_gam_density.Rmd",
