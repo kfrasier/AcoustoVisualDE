@@ -778,44 +778,72 @@ pr$Joint_JointData <- predict.gam(Joint_model,
 
 MAE <- NULL
 
-MAE$AcOnly_test_JointData <- mean(
-                                    abs(as.vector(transformedCovars.test$y)-
+MAE$AcOnly_test_JointData <- mean(abs(as.vector(transformedCovars.test$y)-
                                     pr$AcOnly_JointData$fit),na.rm = TRUE)
-MAE$VisOnly_test_JointData <- mean(
-                                    abs(as.vector(transformedCovars.test$y)-
+MAE$VisOnly_test_JointData <- mean(abs(as.vector(transformedCovars.test$y)-
                                     pr$VisOnly_JointData$fit),na.rm = TRUE)
-MAE$Joint_test <- mean(
-                         abs(as.vector(transformedCovars.test$y)-
+MAE$Joint_test <- mean(abs(as.vector(transformedCovars.test$y)-
+                         pr$Joint_JointData$fit),na.rm = TRUE)
+
+wMAE <- NULL
+
+wMAE$AcOnly_test_JointData <- mean(as.vector(joint_test_weightsG0)*abs(as.vector(transformedCovars.test$y)-
+                                    pr$AcOnly_JointData$fit),na.rm = TRUE)
+wMAE$VisOnly_test_JointData <- mean(as.vector(joint_test_weightsG0)*abs(as.vector(transformedCovars.test$y)-
+                                    pr$VisOnly_JointData$fit),na.rm = TRUE)
+wMAE$Joint_test <- mean(as.vector(joint_test_weightsG0)*abs(as.vector(transformedCovars.test$y)-
                          pr$Joint_JointData$fit),na.rm = TRUE)
 
 
 RMSE <- NULL
+RMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(transformedCovars.test$y)-
+                                    pr$AcOnly_JointData$fit)^2,na.rm = TRUE)
+RMSE$VisOnly_test_JointData <- sqrt(mean(as.vector(transformedCovars.test$y)-
+                                    pr$VisOnly_JointData$fit)^2,na.rm = TRUE)
+RMSE$Joint_test <- sqrt(mean(as.vector(transformedCovars.test$y)-
+                                    pr$Joint_JointData$fit)^2,na.rm = TRUE)
+wRMSE <- NULL
 
-RMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
+wRMSE$AcOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
                                     ((as.vector(transformedCovars.test$y)-
                                     pr$AcOnly_JointData$fit)^2),na.rm = TRUE))
-RMSE$VisOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
+wRMSE$VisOnly_test_JointData <- sqrt(mean(as.vector(joint_test_weightsG0)*
                                     ((as.vector(transformedCovars.test$y)-
                                     pr$VisOnly_JointData$fit)^2),na.rm = TRUE))
-RMSE$Joint_test <- sqrt(mean(as.vector(joint_test_weightsG0)*
+wRMSE$Joint_test <- sqrt(mean(as.vector(joint_test_weightsG0)*
                                     ((as.vector(transformedCovars.test$y)-
                                     pr$Joint_JointData$fit)^2),na.rm = TRUE))
 
+RMSETable <- rbind(RMSE$AcOnly_test_JointData,RMSE$VisOnly_test_JointData,RMSE$Joint_test)
+wRMSETable <- rbind(wRMSE$AcOnly_test_JointData,wRMSE$VisOnly_test_JointData,wRMSE$Joint_test)
+MAETable<- rbind(MAE$AcOnly_test_JointData,MAE$VisOnly_test_JointData,MAE$Joint_test)
+wMAETable<- rbind(wMAE$AcOnly_test_JointData,wMAE$VisOnly_test_JointData,wMAE$Joint_test)
 
-
-RMSETable <- rbind(RMSE$AcOnly_test_JointData,RMSE$VisOnly_test_JointData,
-                      RMSE$Joint_test)
-
-
-MAETable<- rbind(MAE$AcOnly_test_JointData,MAE$VisOnly_test_JointData,
-                      MAE$Joint_test)
-
-colnames(RMSETable)<- 'RMSE'#'Mean Absolute Error'
+colnames(MAETable)<- 'MAE'#'Mean Absolute Error'
+rownames(wRMSETable)<- c("Acoustic - Test Joint Data",
+                       "Visual - Test Joint Data",
+                       "Joint - Test Joint Data")
+colnames(wMAETable)<- 'wMAE'
+rownames(wMAETable)<- c("Acoustic - Test Joint Data",
+                       "Visual - Test Joint Data",
+                       "Joint - Test Joint Data")
+colnames(RMSETable)<- 'RMSE'
 rownames(RMSETable)<- c("Acoustic - Test Joint Data",
                        "Visual - Test Joint Data",
                        "Joint - Test Joint Data")
+colnames(wRMSETable)<- 'wRMSE'
+rownames(wRMSETable)<- c("Acoustic - Test Joint Data",
+                       "Visual - Test Joint Data",
+                       "Joint - Test Joint Data")
+
 print('Mean absolute error scores (lower is better)')
+print(round(MAETable, digits = 3))
+print('Weighted mean absolute error scores (lower is better)')
+print(round(wMAETable, digits = 3))
+print('RMSE scores (lower is better)')
 print(round(RMSETable, digits = 3))
+print('Weighted RMSE scores (lower is better)')
+print(round(wRMSETable, digits = 3))
 
 
 ```

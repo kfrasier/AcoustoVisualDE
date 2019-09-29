@@ -900,6 +900,8 @@ for (iM in 1: length(nn_AcOnly)){
 
 RMSE <- NULL
 MAE <- NULL
+wRMSE <- NULL
+wMAE <- NULL
 modelCounter <-1
 for (modelCounter in 1:length(nn_AcOnly)){
 pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
@@ -907,11 +909,19 @@ pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]]
                                                       na.action = na.omit)
 pr$nn_VisOnly_test_allData[[modelCounter]][pr$nn_VisOnly_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
                              pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
-RMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+RMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(
+                             (covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_VisOnly_test_allData[[modelCounter]])^2),na.rm = TRUE))
+
+wMAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                             pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+wRMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
                              ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_VisOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
 
@@ -920,11 +930,19 @@ pr$nn_AcOnly_test_allData[[modelCounter]] <- predict(nn_AcOnly[[modelCounter]],
                                                   Joint_test_scaled[,model1.indices])
 pr$nn_AcOnly_test_allData[[modelCounter]][pr$nn_AcOnly_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
                              pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
-RMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+RMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(
+                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_AcOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
+
+wMAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
+                             pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+wRMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
                              ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_AcOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
 
@@ -933,49 +951,46 @@ pr$nn_Joint_test_allData[[modelCounter]] <- predict(nn_Joint[[modelCounter]],
                                                   Joint_test_scaled[,model1.indices])
 pr$nn_Joint_test_allData[[modelCounter]][pr$nn_Joint_test_allData[[modelCounter]]<0]<-0
 
-MAE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+MAE$nn_Joint_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
-RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(
+                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]]))^2),na.rm = TRUE)
+wMAE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
+wRMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
                              ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]]))^2),na.rm = TRUE))
 }
 
-
 RMSEtable <- rbind(RMSE$nn_AcOnly_test_allData,RMSE$nn_VisOnly_test_allDat,RMSE$nn_Joint_test_allData)
+wRMSEtable <- rbind(wRMSE$nn_AcOnly_test_allData,wRMSE$nn_VisOnly_test_allDat,wRMSE$nn_Joint_test_allData)
 
 MAEtable <- rbind(MAE$nn_AcOnly_test_allData,MAE$nn_VisOnly_test_allDat,MAE$nn_Joint_test_allData)
+wMAEtable <- rbind(wMAE$nn_AcOnly_test_allData,wMAE$nn_VisOnly_test_allDat,wMAE$nn_Joint_test_allData)
 colnames(RMSEtable)<- layerSizeList
-rownames(RMSEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")#"Acoustic - Train","Acoustic - Test",
-#                       "Visual - Train","Visual - Test",
-#                       "Joint - Train",
+rownames(RMSEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(wRMSEtable)<- layerSizeList
+rownames(wRMSEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(MAEtable)<- layerSizeList
+rownames(MAEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(wMAEtable)<- layerSizeList
+rownames(wMAEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
 
-
-print('mean absolute error scores (lower is better)')
+print('RMSE (lower is better)')
 print(RMSEtable, digits = 3)
 
+print('wRMSE (lower is better)')
+print(wRMSEtable, digits = 3)
 
+print('MAE (lower is better)')
+print(MAEtable, digits = 3)
 
-# XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
-#                  XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
-# 
-# colnames(XEntropyTable)<- layerSizeList
-# rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
-#                        "Visual - Train","Visual - Test",
-#                        "Joint - Train","Joint - Test")
-# print('cross entropy scores (lower is better)')
-# print(round(XEntropyTable, digits = 3))
+print('wMAE (lower is better)')
+print(wMAEtable, digits = 3)
 
-
-# KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
-#                  KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
-# 
-# colnames(KSStatTable)<- layerSizeList
-# rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
-#                        "Visual - Train","Visual - Test",
-#                        "Joint - Train","Joint - Test")
-# print('KS statistic (higher is better)')
-# print(KSStatTable, digits = 2)
 ```
 
 
