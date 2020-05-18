@@ -915,6 +915,8 @@ for (iM in 1: length(nn_AcOnly)){
 
 RMSE <- NULL
 MAE <- NULL
+wRMSE <- NULL
+wMAE <- NULL
 modelCounter <-1
 for (modelCounter in 1:length(nn_AcOnly)){
 pr$nn_VisOnly_test_allData[[modelCounter]] <- predict(nn_VisOnly[[modelCounter]],
@@ -926,9 +928,17 @@ MAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
                              pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
-RMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+RMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(
                              (covars_Joint_max.train['y']*(Joint_test_scaled$y -
-                             pr$nn_VisOnly_test_allData[[modelCounter]]))^2,na.rm = TRUE))
+                             pr$nn_VisOnly_test_allData[[modelCounter]])^2),na.rm = TRUE))
+
+wMAE$nn_VisOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y - 
+                             pr$nn_VisOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+wRMSE$nn_VisOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_VisOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
 
 ## how well does the Acoustic only model predict joint test data?
 pr$nn_AcOnly_test_allData[[modelCounter]] <- predict(nn_AcOnly[[modelCounter]],
@@ -939,9 +949,17 @@ MAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
                              pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
 
-RMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
-                             (covars_Joint_max.train['y']*(Joint_test_scaled$y -
-                             pr$nn_AcOnly_test_allData[[modelCounter]]))^2,na.rm = TRUE))
+RMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(
+                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_AcOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
+
+wMAE$nn_AcOnly_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -   
+                             pr$nn_AcOnly_test_allData[[modelCounter]])),na.rm = TRUE)
+
+wRMSE$nn_AcOnly_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+                             ((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_AcOnly_test_allData[[modelCounter]]))^2),na.rm = TRUE))
 
 ## how well does the Joint only model predict joint test data?
 pr$nn_Joint_test_allData[[modelCounter]] <- predict(nn_Joint[[modelCounter]],
@@ -951,60 +969,53 @@ pr$nn_Joint_test_allData[[modelCounter]][pr$nn_Joint_test_allData[[modelCounter]
 MAE$nn_Joint_test_allData[[modelCounter]] <- mean(
                              abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
-RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
+RMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean((covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]]))^2,na.rm = TRUE))
+wMAE$nn_Joint_test_allData[[modelCounter]] <- mean(Joint_test_scaled$weightsG0*
+                             abs(covars_Joint_max.train['y']*(Joint_test_scaled$y -
+                             pr$nn_Joint_test_allData[[modelCounter]])),na.rm = TRUE)
+wRMSE$nn_Joint_test_allData[[modelCounter]] <- sqrt(mean(Joint_test_scaled$weightsG0*
                              (covars_Joint_max.train['y']*(Joint_test_scaled$y -
                              pr$nn_Joint_test_allData[[modelCounter]]))^2,na.rm = TRUE))
 }
 
+RMSEtable <- rbind(RMSE$nn_AcOnly_test_allData,RMSE$nn_VisOnly_test_allDat,RMSE$nn_Joint_test_allData)
+wRMSEtable <- rbind(wRMSE$nn_AcOnly_test_allData,wRMSE$nn_VisOnly_test_allDat,wRMSE$nn_Joint_test_allData)
 
-  
+MAEtable <- rbind(MAE$nn_AcOnly_test_allData,MAE$nn_VisOnly_test_allDat,MAE$nn_Joint_test_allData)
+wMAEtable <- rbind(wMAE$nn_AcOnly_test_allData,wMAE$nn_VisOnly_test_allDat,wMAE$nn_Joint_test_allData)
+colnames(RMSEtable)<- layerSizeList
+rownames(RMSEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(wRMSEtable)<- layerSizeList
+rownames(wRMSEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(MAEtable)<- layerSizeList
+rownames(MAEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
+colnames(wMAEtable)<- layerSizeList
+rownames(wMAEtable)<- c("Acoustic - Joint test data","Visual - Joint test data","Joint - Test")
 
-MSEtable<- rbind(MSE$nn_AcOnly_train,MSE$nn_AcOnly_test,MSE$nn_VisOnly_train,
-                 MSE$nn_VisOnly_test,MSE$nn_Joint_train,MAE$nn_Joint_test_allData,
-                 MAE$nn_AcOnly_test_allData,MAE$nn_VisOnly_test_allData)
-colnames(MSEtable)<- layerSizeList
-rownames(MSEtable)<- c("Acoustic - Train","Acoustic - Test",
-                       "Visual - Train","Visual - Test",
-                       "Joint - Train","Joint - Test",
-                       "Acoustic - Joint test data","Visual - Joint test data")
+print('RMSE (lower is better)')
+print(RMSEtable, digits = 3)
 
+print('wRMSE (lower is better)')
+print(wRMSEtable, digits = 3)
 
-print('mean absolute error scores (lower is better)')
-print(MSEtable, digits = 2)
+print('MAE (lower is better)')
+print(MAEtable, digits = 3)
 
+print('wMAE (lower is better)')
+print(wMAEtable, digits = 3)
 
-
-# XEntropyTable<- rbind(XEntropy.AcOnly_train,XEntropy.AcOnly_test,XEntropy.VisOnly_train,
-#                  XEntropy.VisOnly_test,XEntropy.Joint_train,XEntropy.Joint_test)
-# 
-# colnames(XEntropyTable)<- layerSizeList
-# rownames(XEntropyTable)<- c("Acoustic - Train","Acoustic - Test",
-#                        "Visual - Train","Visual - Test",
-#                        "Joint - Train","Joint - Test")
-# print('cross entropy scores (lower is better)')
-# print(round(XEntropyTable, digits = 3))
-
-
-# KSStatTable<- rbind(KSStat.AcOnly_train,KSStat.AcOnly_test,KSStat.VisOnly_train,
-#                  KSStat.VisOnly_test,KSStat.Joint_train,KSStat.Joint_test)
-# 
-# colnames(KSStatTable)<- layerSizeList
-# rownames(KSStatTable)<- c("Acoustic - Train","Acoustic - Test",
-#                        "Visual - Train","Visual - Test",
-#                        "Joint - Train","Joint - Test")
-# print('KS statistic (higher is better)')
-# print(KSStatTable, digits = 2)
 ```
 
 
 ```{r best model index, echo = FALSE}
-best_AcOnly_ModelIndex <-which.min(MAE$nn_AcOnly_test_allData)
+best_AcOnly_ModelIndex <-which.min(wRMSE$nn_AcOnly_test_allData)
 print(paste(c('Best acoustic model has', layerSizeList[best_AcOnly_ModelIndex], 
               'nodes.'),collapse = " "))
-best_VisOnly_ModelIndex <-which.min(MAE$nn_VisOnly_test_allData)
+best_VisOnly_ModelIndex <-which.min(wRMSE$nn_VisOnly_test_allData)
 print(paste(c('Best visual model has', layerSizeList[best_VisOnly_ModelIndex],
             'nodes.'),collapse = " "))
-best_Joint_ModelIndex <-which.min(MAE$nn_Joint_test_allData)
+best_Joint_ModelIndex <-which.min(wRMSE$nn_Joint_test_allData)
 print(paste(c('Best joint model has', layerSizeList[best_Joint_ModelIndex], 
               'nodes.'),collapse = " "))
 ```
@@ -1683,8 +1694,8 @@ for (iMod in c(1:trainRepeats)){
   perModel_july2009_AcOnly_crop[[iMod]]  <- mask(perModel_july2009_AcOnly[[iMod]],crop_limits_proj)
 }
 
-predSTD_jan2009_AcOnly_crop <- calc(stack(perModel_jan2009_AcOnly_crop),fun=sd)/100
-predSTD_july2009_AcOnly_crop <- calc(stack(perModel_july2009_AcOnly_crop),fun=sd)/100
+predSTD_jan2009_AcOnly_crop <- calc(stack(perModel_jan2009_AcOnly_crop),fun=sd)/sqrt(trainRepeats)/10
+predSTD_july2009_AcOnly_crop <- calc(stack(perModel_july2009_AcOnly_crop),fun=sd)/sqrt(trainRepeats)/10
 
 # Visual
 jan2009_VisOnly_prediction_crop <- 
@@ -1699,9 +1710,9 @@ for (iMod in c(1:trainRepeats)){
   perModel_jan2009_VisOnly_crop[[iMod]]  <- mask(perModel_jan2009_VisOnly[[iMod]], crop_limits_proj)
   perModel_july2009_VisOnly_crop[[iMod]]  <- mask(perModel_july2009_VisOnly[[iMod]], crop_limits_proj)
 }
-predSTD_jan2009_VisOnly_crop <- calc(stack(perModel_jan2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+predSTD_jan2009_VisOnly_crop <- calc(stack(perModel_jan2009_VisOnly_crop),fun=sd,na.rm=TRUE)/sqrt(trainRepeats)/10
 
-predSTD_july2009_VisOnly_crop <- calc(stack(perModel_july2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+predSTD_july2009_VisOnly_crop <- calc(stack(perModel_july2009_VisOnly_crop),fun=sd,na.rm=TRUE)/sqrt(trainRepeats)/10
 
 # Joint
 jan2009_prediction_crop <- mask(jan2009_prediction,crop_limits_proj)
@@ -1715,8 +1726,8 @@ for (iMod in c(1:trainRepeats)){
   perModel_jan2009_Joint_crop[[iMod]]  <- mask(perModel_jan2009_Joint[[iMod]], crop_limits_proj)
   perModel_july2009_Joint_crop[[iMod]]  <- mask(perModel_july2009_Joint[[iMod]], crop_limits_proj)
 }
-predSTD_jan2009_Joint_crop <- calc(stack(perModel_jan2009_Joint_crop),fun=sd,na.rm=TRUE)/100
-predSTD_july2009_Joint_crop <- calc(stack(perModel_july2009_Joint_crop),fun=sd,na.rm=TRUE)/100
+predSTD_jan2009_Joint_crop <- calc(stack(perModel_jan2009_Joint_crop),fun=sd,na.rm=TRUE)/sqrt(trainRepeats)/10
+predSTD_july2009_Joint_crop <- calc(stack(perModel_july2009_Joint_crop),fun=sd,na.rm=TRUE)/sqrt(trainRepeats)/10
 ```
 Note: As an alternative to training joint models, an average surface was computed across the acoustic and visual-only predictions.
 
@@ -1806,7 +1817,7 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
 JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
@@ -1814,14 +1825,14 @@ JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.l
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = expression("Animals/100"~km^{2}),legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+

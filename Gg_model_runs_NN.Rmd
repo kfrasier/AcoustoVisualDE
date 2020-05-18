@@ -849,9 +849,9 @@ Models were compared using a Kolmogorov-Smirnov test to compare predicted and ob
 XEntropy <- NULL
 XEntropy_unweighted <- NULL
 for (iM in 1: length(nn_AcOnly)){
-  XEntropy$AcOnly_train[[iM]] <- LogLoss(round(pr$nn_AcOnly_train[[iM]],digits = 0),
+  XEntropy$AcOnly_train[[iM]] <- LogLoss(round(pr$nn_AcOnly_train[[iM]],digits = 4),
                                          AcOnly_train_scaled$yAcOnly_TF)
-  XEntropy$AcOnly_test[[iM]] <- LogLoss(round(pr$nn_AcOnly_test[[iM]],digits = 0),
+  XEntropy$AcOnly_test[[iM]] <- LogLoss(round(pr$nn_AcOnly_test[[iM]],digits = 4),
                                         AcOnly_test_scaled$yAcOnly_TF)
   XEntropy$AcOnly_test_JointData[[iM]] <- weighted_logloss(round(pr$nn_AcOnly_test_JointData[[iM]],digits = 4),
                                         Joint_test_scaled$y_TF,
@@ -860,14 +860,14 @@ for (iM in 1: length(nn_AcOnly)){
   XEntropy$VisOnly_train[[iM]] <- weighted_logloss(round(pr$nn_VisOnly_train[[iM]],
                                          digits = 0),VisOnly_train_scaled$yVisOnly_TF,
                                          VisOnly_train_scaled$weightsG0)
-  XEntropy$VisOnly_test[[iM]] <- weighted_logloss(round(pr$nn_VisOnly_test[[iM]],digits = 0),
+  XEntropy$VisOnly_test[[iM]] <- weighted_logloss(round(pr$nn_VisOnly_test[[iM]],digits = 4),
                                          VisOnly_test_scaled$yVisOnly_TF,
                                          VisOnly_test_scaled$weightsG0)
   XEntropy$VisOnly_test_JointData[[iM]] <- weighted_logloss(round(pr$nn_VisOnly_test_JointData[[iM]],digits = 4),
                                         Joint_test_scaled$y_TF,
                                         Joint_test_scaled$weightsG0)
   
-  XEntropy$Joint_train[[iM]] <- weighted_logloss(round(pr$nn_Joint_train[[iM]], digits = 0),
+  XEntropy$Joint_train[[iM]] <- weighted_logloss(round(pr$nn_Joint_train[[iM]], digits = 4),
                                          Joint_train_scaled$y_TF,
                                          Joint_train_scaled$weightsG0)
   XEntropy$Joint_test[[iM]] <- weighted_logloss(round(pr$nn_Joint_test[[iM]], digits = 4),
@@ -875,14 +875,14 @@ for (iM in 1: length(nn_AcOnly)){
                                          Joint_test_scaled$weightsG0)
   
   XEntropy_unweighted$AcOnly_test_JointData[[iM]] <- LogLoss(round(pr$nn_AcOnly_test_JointData[[iM]],
-                                                                 digits = 0),
+                                                                 digits = 4),
                                         Joint_test_scaled$y_TF)
 
   XEntropy_unweighted$VisOnly_test_JointData[[iM]] <- LogLoss(round(pr$nn_VisOnly_test_JointData[[iM]],
-                                                                  digits = 0),
+                                                                  digits = 4),
                                         Joint_test_scaled$y_TF)
   
-  XEntropy_unweighted$Joint_test[[iM]] <- LogLoss(round(pr$nn_Joint_test[[iM]], digits = 0),
+  XEntropy_unweighted$Joint_test[[iM]] <- LogLoss(round(pr$nn_Joint_test[[iM]], digits = 4),
                                          Joint_test_scaled$y_TF)
   
   
@@ -890,17 +890,17 @@ for (iM in 1: length(nn_AcOnly)){
 
 KSStat <- NULL
 for (iM in 1: length(nn_AcOnly)){
-  KSStat$AcOnly_train[[iM]] <- KS_Stat(round(pr$nn_AcOnly_train[[iM]],digits = 0),
+  KSStat$AcOnly_train[[iM]] <- KS_Stat(round(pr$nn_AcOnly_train[[iM]],digits = 4),
                                        AcOnly_train_scaled$yAcOnly_TF)
-  KSStat$AcOnly_test[[iM]] <- KS_Stat(round(pr$nn_AcOnly_test[[iM]],digits = 0),
+  KSStat$AcOnly_test[[iM]] <- KS_Stat(round(pr$nn_AcOnly_test[[iM]],digits = 4),
                                       AcOnly_test_scaled$yAcOnly_TF)
-  KSStat$VisOnly_train[[iM]] <- KS_Stat(round(pr$nn_VisOnly_train[[iM]],digits = 0),
+  KSStat$VisOnly_train[[iM]] <- KS_Stat(round(pr$nn_VisOnly_train[[iM]],digits = 4),
                                         VisOnly_train_scaled$yVisOnly_TF)
-  KSStat$VisOnly_test[[iM]] <- KS_Stat(round(pr$nn_VisOnly_test[[iM]],digits = 0),
+  KSStat$VisOnly_test[[iM]] <- KS_Stat(round(pr$nn_VisOnly_test[[iM]],digits = 4),
                                        VisOnly_test_scaled$yVisOnly_TF)
-  KSStat$Joint_train[[iM]] <- KS_Stat(round(pr$nn_Joint_train[[iM]],digits = 0),
+  KSStat$Joint_train[[iM]] <- KS_Stat(round(pr$nn_Joint_train[[iM]],digits = 4),
                                       Joint_train_scaled$y_TF)
-  KSStat$Joint_test[[iM]] <- KS_Stat(round(pr$nn_Joint_test[[iM]],digits = 0),
+  KSStat$Joint_test[[iM]] <- KS_Stat(round(pr$nn_Joint_test[[iM]],digits = 4),
                                      Joint_test_scaled$y_TF)
 }
 
@@ -989,8 +989,11 @@ for (iNode in 1:length(model1.indices)) {
 }
 mean_var_importance<-NULL
 mean_var_importance$AcOnly <- AcOnly_node_mean
+mean_var_importance$AcOnly_CV <- AcOnly_node_cv
 mean_var_importance$VisOnly <- VisOnly_node_mean
+mean_var_importance$VisOnly_CV <- VisOnly_node_cv
 mean_var_importance$Joint <- Joint_node_mean
+mean_var_importance$Joint_CV <- Joint_node_cv
 mean_var_importance<-as.data.frame(mean_var_importance)
 row.names(mean_var_importance)<-n[model1.indices]
 
@@ -1003,19 +1006,38 @@ kable(mean_var_importance,'markdown',digits = 1)
 n2 = varUnits[n[model1.indices]]
 png(paste(outDir,SP,'_exampleNetwork_AcOnly_PresAbs.png',sep=''), width = 1200, height = 600)
 par(mar = c(5.1, 4.1, 4.1, 3.1))
-plot.nnet(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
+plot.nnet(nn_AcOnly[[best_AcOnly_ModelIndex]]$model[[1]],x.lab = n2, 
+          y.lab = "P(encounter)",bias = F,cex.val=1, neg.col = 'red', circle.col = 'gray')
 dev.off()
 
 png(paste(outDir,SP,'_exampleNetwork_VisOnly_PresAbs.png',sep=''), width = 1200, height = 600)
 par(mar = c(5.1, 4.1, 4.1, 3.1))
-plot.nnet(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
+plot.nnet(nn_VisOnly[[best_VisOnly_ModelIndex]]$model[[1]],x.lab = n2, 
+          y.lab = "P(encounter)",bias = F,cex.val=1,neg.col = 'red', circle.col = 'gray')
 dev.off()
 
 png(paste(outDir,SP,'_exampleNetwork_Joint_PresAbs.png',sep=''), width = 1200, height = 600)
 par(mar = c(5.1, 4.1, 4.1, 3.1))
-plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, y.lab = "P(encounter)",bias = F,cex.val=1)
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[1]],x.lab = n2, 
+          y.lab = "P(encounter)",bias = F,cex.val=1, neg.col = 'red', circle.col = 'gray')
 dev.off()
 egNetFig <-paste0(outDir,SP,'_exampleNetwork_Joint_PresAbs.png')
+
+
+n2 = varUnits[n[model1.indices]]
+n3 = c("SST","SSH","CHL","MLD","SAL","CUR","Upwell","-Eddy","+Eddy")
+tiff(paste(outDir,SP,'_exampleNetwork_Joint_presAbs.tiff',sep=''), res = 300,width = 4.75, height = 4, units = "in")
+par(mar=c(1,0,1,0),family = 'serif')
+NNFitVals <- NULL
+for (iN in c(1:trainRepeats)){
+  NNFitVals[iN] <- nn_Joint[[best_Joint_ModelIndex]]$model[[iN]]$value
+}
+bestNetwork <- which.min(NNFitVals)
+plot.nnet(nn_Joint[[best_Joint_ModelIndex]]$model[[bestNetwork]],x.lab = n3, 
+          y.lab = "P(E)",bias = F,cex=1.3,circle.col='gray',bord.col = 'darkgray', 
+          neg.col = 'red',node.labs = FALSE,circle.cex = 3, alpha.val =.8, max.sp = TRUE)
+dev.off()
+egNetFig <-paste0(outDir,SP,'_exampleNetwork_Joint_presAbs.tiff')
 ```
 ***Example network:***
 
@@ -1736,8 +1758,8 @@ for (iMod in c(1:trainRepeats)){
   perModel_july2009_AcOnly_crop[[iMod]]  <- mask(perModel_july2009_AcOnly[[iMod]],crop_limits_proj)
 }
 
-predSTD_jan2009_AcOnly_crop <- calc(stack(perModel_jan2009_AcOnly_crop),fun=sd)/100
-predSTD_july2009_AcOnly_crop <- calc(stack(perModel_july2009_AcOnly_crop),fun=sd)/100
+predSTD_jan2009_AcOnly_crop <- calc(stack(perModel_jan2009_AcOnly_crop),fun=std_err)
+predSTD_july2009_AcOnly_crop <- calc(stack(perModel_july2009_AcOnly_crop),fun=std_err)
 
 # Visual
 jan2009_VisOnly_prediction_crop <- 
@@ -1752,9 +1774,9 @@ for (iMod in c(1:trainRepeats)){
   perModel_jan2009_VisOnly_crop[[iMod]]  <- mask(perModel_jan2009_VisOnly[[iMod]], crop_limits_proj)
   perModel_july2009_VisOnly_crop[[iMod]]  <- mask(perModel_july2009_VisOnly[[iMod]], crop_limits_proj)
 }
-predSTD_jan2009_VisOnly_crop <- calc(stack(perModel_jan2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+predSTD_jan2009_VisOnly_crop <- calc(stack(perModel_jan2009_VisOnly_crop),fun=std_err)
 
-predSTD_july2009_VisOnly_crop <- calc(stack(perModel_july2009_VisOnly_crop),fun=sd,na.rm=TRUE)/100
+predSTD_july2009_VisOnly_crop <- calc(stack(perModel_july2009_VisOnly_crop),fun=std_err)
 
 # Joint
 jan2009_prediction_crop <- mask(jan2009_prediction,crop_limits_proj)
@@ -1768,8 +1790,8 @@ for (iMod in c(1:trainRepeats)){
   perModel_jan2009_Joint_crop[[iMod]]  <- mask(perModel_jan2009_Joint[[iMod]], crop_limits_proj)
   perModel_july2009_Joint_crop[[iMod]]  <- mask(perModel_july2009_Joint[[iMod]], crop_limits_proj)
 }
-predSTD_jan2009_Joint_crop <- calc(stack(perModel_jan2009_Joint_crop),fun=sd,na.rm=TRUE)/100
-predSTD_july2009_Joint_crop <- calc(stack(perModel_july2009_Joint_crop),fun=sd,na.rm=TRUE)/100
+predSTD_jan2009_Joint_crop <- calc(stack(perModel_jan2009_Joint_crop),fun=std_err)
+predSTD_july2009_Joint_crop <- calc(stack(perModel_july2009_Joint_crop),fun=std_err)
 ```
 Note: As an alternative to training joint models, an average surface was computed across the acoustic and visual-only predictions.
 
@@ -1846,7 +1868,7 @@ map
 
 ```
 
-```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
+```{r plot best summer map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE, eval = TRUE}
 # plot best summer map for publication
 png(paste(outDir,SP,'_summer2009maps_NN.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
 
@@ -1857,7 +1879,7 @@ harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =
 crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
 
 JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.43))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+
   tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
@@ -1865,14 +1887,14 @@ JointMapSummer = tm_shape(july2009_prediction_crop)+tm_raster(palette = matlab.l
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 AcMapSummer = tm_shape(july2009_AcOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
   tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
 
 VisMapSummer = tm_shape(july2009_VisOnly_prediction_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ 
-  tm_layout(legend.title.size = .9,legend.position = c(.8,.50))+
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
   tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
   tm_shape(GU2009EffortLines)+tm_lines()+
   tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
@@ -1915,7 +1937,45 @@ map
 ```
 
 <br>  
+```{r plot best summer uncert map, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE, eval = TRUE}
+# plot best summer map for publication
+png(paste(outDir,SP,'_summer2009maps_NN_uncert.png',sep=''), width = 6, height = 7, units = 'in',res = 600)
 
+# plot best summer map for publication
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
+maxColor2 <- ceiling(max(c(predSTD_july2009_AcOnly_crop@data@max,
+               predSTD_july2009_VisOnly_crop@data@max,
+               predSTD_july2009_Joint_crop@data@max))*100)/100
+
+JointMapSummerUncert = tm_shape(predSTD_july2009_Joint_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "SE(P. Encounter)",legend.reverse = TRUE)+ 
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+AcMapSummerUncert = tm_shape(predSTD_july2009_AcOnly_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "SE(P. Encounter)",legend.reverse = TRUE)+ 
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+VisMapSummerUncert = tm_shape(predSTD_july2009_VisOnly_crop)+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "SE(P. Encounter)",legend.reverse = TRUE)+ 
+  tm_legend(legend.title.size = .9,legend.position = c("RIGHT","TOP"))+
+  tm_shape(crop_limits_Reproj)+tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = .5, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = .4, alpha = .75)
+
+ tmap_arrange(AcMapSummerUncert,VisMapSummerUncert,JointMapSummerUncert,ncol = 1, nrow = 3, outer.margins = 0.05)
+ 
+ dev.off()
+```
 
 ### 3.2.2 Winter 2009 predictions
 
@@ -2009,16 +2069,91 @@ map <- leaflet(width="100%") %>%  setView(lng = -88.8, lat = 27.0, zoom = 6)%>%
                   opacity = 0.8, group = '12 nodes') %>%
   addRasterImage(july2009_prediction_hidden[[6]], colors = palSummer2,
                   opacity = 0.8, group = '14 nodes') %>%
-  addLegend(pal = palSummer2, values = c(0,maxVal),
+  addPolylines(data = GU2009EffortLines,
+               group ='Visual Effort (Summer 2009)', 
+               opacity = 1,
+               color = "black", weight = 2)%>%
+  addCircleMarkers(data = sightingsTest, lng = ~ long, lat = ~ lat,
+                 color = "black",
+                 stroke = TRUE, fillOpacity = 0.8,radius = 6,
+                 group = 'Test Sightings (Summer 2009)') %>%
+  
+  addMarkers(data = HARPsites, lng = ~ long, lat = ~ lat) %>%
+
+  addLegend(pal = palSummer2, values = c(0,.7),
     title = 'P(encounter)',position = "bottomleft") %>%
+
+
   addLayersControl(
     baseGroups = c('4 nodes','6 nodes','8 nodes',
                    '10 nodes','12 nodes','14 nodes'),
+    overlayGroups = c('Test Sightings (Summer 2009)',
+                      'Visual Effort (Summer 2009)'),
     options = layersControlOptions(collapsed = FALSE)
   )
 map
 
 ```
+
+```{r plot best summer map hidden layer, echo = FALSE, message = FALSE, results = 'hide',warning = FALSE}
+# plot best summer map for publication
+png(paste(outDir,SP,'_summer2009maps_NN_HiddenLayerEffect.png',sep=''), width = 6, height = 4, units = 'in',res = 600)
+
+# plot best summer map for publication
+sightShape = SpatialPoints(sightingsTest[c(2,1)],proj4string =  crs(GU2009EffortLines))
+harpShape = SpatialPoints(HARPsites[c(1,8,14),c(2,1)],proj4string =  
+                            crs(GU2009EffortLines))
+crop_limits_Reproj = spTransform(crop_limits_proj,crs(GU2009EffortLines))
+maxColorSummer = .7
+JointMap1 = tm_shape(july2009_prediction_hidden[[1]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,title = "P(Encounter)",legend.reverse = TRUE)+ tm_layout(panel.labels="4 Nodes",panel.label.size=.6)+
+  tm_legend(legend.title.size = .9,scale = .8,legend.position = c("RIGHT","TOP"))+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.3, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.3, alpha = .75)
+
+JointMap2 = tm_shape(july2009_prediction_hidden[[2]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,legend.show = FALSE)+ tm_layout(panel.labels="6 Nodes",panel.label.size=.6)+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.2, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.2, alpha = .75)
+
+JointMap3 = tm_shape(july2009_prediction_hidden[[3]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,legend.show = FALSE)+ tm_layout(panel.labels="8 Nodes",panel.label.size=.6)+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.2, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.2, alpha = .75)
+
+JointMap4 = tm_shape(july2009_prediction_hidden[[4]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,legend.show = FALSE)+ tm_layout(panel.labels="10 Nodes",panel.label.size=.6)+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.2, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.2, alpha = .75)
+
+JointMap5 = tm_shape(july2009_prediction_hidden[[5]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,legend.show = FALSE)+ tm_layout(panel.labels="12 Nodes",panel.label.size=.6)+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.2, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.2, alpha = .75)
+
+JointMap6 = tm_shape(july2009_prediction_hidden[[6]])+tm_raster(palette = matlab.like2(5),colorNA = NULL,style = "cont",midpoint = maxColorSummer/2,legend.show = FALSE)+ tm_layout(panel.labels="14 Nodes",panel.label.size=.6)+
+  tm_shape(crop_limits_Reproj)+
+  tm_borders(lty = 1)+
+  tm_shape(GU2009EffortLines)+tm_lines()+
+  tm_shape(harpShape)+tm_symbols(col = "orange", border.col = "black",size = 0.2, alpha = 1,shape = 24)+
+  tm_shape(sightShape)+tm_symbols(col = "black", border.col = "white",shape=21,size = 0.2, alpha = .75)
+
+tmap_arrange(JointMap1, JointMap2, JointMap3, JointMap4, JointMap5, JointMap6,ncol = 2, nrow = 3)
+ 
+ dev.off()
+```
+
+
 
 # 4. Monthly model predictions
 
