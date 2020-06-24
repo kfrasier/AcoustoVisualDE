@@ -43,6 +43,7 @@ library(knitr)
 library(matrixStats)
 library(zoo)
 library(tmap)
+library(scales)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
@@ -55,7 +56,8 @@ options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
 load('E:/NASData/ModelData/Gg/GgMergedData.Rdata')
-outDir <- file.path('E:/NASData/ModelData',SP,'/')
+outDir <- file.path('E:/NASData/ModelData',SP,'10000_predAbs//')
+inDir <- file.path('E:/NASData/ModelData',SP,'//')
 
 ```
 <br>
@@ -414,10 +416,10 @@ visKernels <- paste0(savePath,'/VisualOnly_',SP,'_density_pres_abs.png')
 ### 1.2.4 Estimation of relative weights
 
 ```{r load detection prob, echo = FALSE} 
-visDetProbData<-paste0(outDir,SP,'sightwTrunc_GU.Rdata')
+visDetProbData<-paste0(inDir,SP,'sightwTrunc_GU.Rdata')
 load(visDetProbData)
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
-visDetProbFigure <- paste0(outDir,SP,'sightwTrunc_GU.png')
+visDetProbFigure <- paste0(inDir,SP,'sightwTrunc_GU.png')
 ```
 To train the model, we need to know how much power the various data points have relative to one another. This is important because the duration, spatial coverage, and detection probabilities are quite different between the visual and acoustic data sets. If an animal is seen or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. 
 
@@ -686,7 +688,7 @@ pr <- NULL
 ```
 
 
-```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = FALSE, echo = FALSE}
+```{r Ac. only Model 1, results = 'hide', message = FALSE, eval = TRUE, echo = FALSE}
 ## ACOUSTIC ONLY
 AcCounter <- 0
 f.AcOnly_NN1 <- as.formula(paste("yAcOnly_TF ~", paste(n[model1.indices], collapse = " + ")))
@@ -702,7 +704,7 @@ for (layerSize in layerSizeList){
                                  na.action = na.omit,
                                  rang = 0.7, 
                                  decay = 0.0001, 
-                                 maxit = 500,
+                                 maxit = 10000,
                                  trace = FALSE)
   
   # predict on train data and estimate Mean Squared Error (MSE)
@@ -735,7 +737,7 @@ for (layerSize in layerSizeList){
 
 
 
-```{r other models 1, eval = FALSE, echo = FALSE} 
+```{r other models 1, eval = TRUE, echo = FALSE} 
 ## VISUAL ONLY
 modelCounter <- 0
 # put together the formula
@@ -751,7 +753,7 @@ for (layerSize in layerSizeList){
                                        na.action = na.omit,
                                        rang = 0.7,  
                                        decay = 0.0001, 
-                                       maxit = 500,
+                                       maxit = 10000,
                                        trace = FALSE)
                                        # weights = 
   
@@ -791,7 +793,7 @@ for (layerSize in layerSizeList){
                                       na.action = na.omit,
                                       rang = 0.7,  
                                       decay = 0.0001, 
-                                      maxit = 500,
+                                      maxit = 10000,
                                       trace = FALSE)                                     
 
   
@@ -820,7 +822,7 @@ for (layerSize in layerSizeList){
 <br>  
 
 
-```{r save models, eval = FALSE, echo = FALSE}
+```{r save models, eval = TRUE, echo = FALSE}
 # Save models if re-calculating everything
 save(nn_AcOnly,MSE,pr,
      file = paste(outDir,SP,'_AcOnly_NN.Rdata',sep=''))

@@ -52,7 +52,7 @@ options(stringsAsFactors = FALSE)
 load('E:/NASData/ModelData/Gmsp/setup_info_Gmsp.Rdata')
 load('E:/NASData/ModelData/Gmsp/GmspMergedData.Rdata')
 outDir <- file.path('E:/NASData/ModelData',SP,'/')
-
+inDir <- file.path('E:/NASData/ModelData',SP,'//')
 ```
 <br>
 

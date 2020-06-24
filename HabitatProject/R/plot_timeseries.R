@@ -44,19 +44,20 @@ plot.timeseries <-function(siteList,outDir,AcOnlySegments){
     plot(AcOnlySegments$date[AcOnlySegments$siteNum==iSite],
          AcOnlySegments$Density[AcOnlySegments$siteNum==iSite],
          ylab = expression(atop(Estimated ~ Density,(animals/1000 ~ km^{2}))),
-         xlab = xlabStr, pch = 8,
-         xlim = c(min(AcOnlySegments$date,na.rm = TRUE),max(AcOnlySegments$date,na.rm = TRUE)))
+         xlab = xlabStr, pch = 1,col = alpha("black", 0.4),cex=.6,
+         xlim = c(min(AcOnlySegments$date,na.rm = TRUE),max(AcOnlySegments$date,na.rm = TRUE)),
+         ylim= c(0,max(AcOnlySegments$Density)))
     for (iRect in 1:length(deplGapsStart[[iSite]])){
-        rect(deplGapsStart[[iSite]][iRect],-1,deplGapsEnd[[iSite]][iRect],
-             ceil(max(AcOnlySegments$Density[AcOnlySegments$siteNum==iSite], na.rm=TRUE)),
+        rect(deplGapsStart[[iSite]][iRect],0,deplGapsEnd[[iSite]][iRect],
+             ceil(max(AcOnlySegments$Density, na.rm=TRUE)),
              border = "gray",col='gray')
     }
     points(AcOnlySegments$date[AcOnlySegments$siteNum==iSite],
-         AcOnlySegments$Density[AcOnlySegments$siteNum==iSite],pch = 8)
+         AcOnlySegments$Density[AcOnlySegments$siteNum==iSite],pch = 1,cex=.6,col = alpha("black", 0.4))
 
     text(x=max(AcOnlySegments$date,na.rm = TRUE),
-         y = max(AcOnlySegments$Density[AcOnlySegments$siteNum==iSite]*.95,na.rm = TRUE,
-                 cex=1.2, adj = c(0,0)), labels = siteList[iSite])
+         y = max(AcOnlySegments$Density*.95,na.rm = TRUE,
+                 cex=1, adj = c(0,0)), labels = siteList[iSite])
     dev.off()
   }
 }

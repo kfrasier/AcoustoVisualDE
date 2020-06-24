@@ -41,6 +41,7 @@ library(pracma)
 library(grid)
 library(zoo)
 library(tmap)
+library(scales)
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
 source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
@@ -51,8 +52,8 @@ options(stringsAsFactors = FALSE)
 # load some preferences
 load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
 load('E:/NASData/ModelData/Gg/GgMergedData.Rdata')
-outDir <- file.path('E:/NASData/ModelData',SP,'/')
-
+outDir <- file.path('E:/NASData/ModelData',SP,'newGAM_density//')
+inDir <- file.path('E:/NASData/ModelData',SP,'//')
 ```
 <br>
 
@@ -81,7 +82,7 @@ percFilled <- plot.missingdata(AcOnlySegments,covarList,
                                paste0(outDir,'AcousticOnly_',SP),varUnits) 
 percFilled <- plot.missingdata(VisOnlySegments,covarList,
                                paste0(outDir,'VisualOnly_',SP),varUnits) 
-visDataAvailPlot <- paste0(savePath,'/VisualOnly_',SP,'_missingData.png')
+visDataAvailPlot <- paste0(outDir,'/VisualOnly_',SP,'_missingData.png')
 ```
 
 **Visual data predictor variable availability:** 
@@ -362,7 +363,7 @@ plot.cleveland(transformedCovars_AcOnly.train,
                plotCols,TRUE,paste0(outDir,'AcousticOnly_',SP),varUnits)
 plot.cleveland(transformedCovars_VisOnly.train,
                plotCols,TRUE,paste0(outDir,'VisualOnly_',SP),varUnits)
-clevlandJointTransformed<-paste0(savePath,
+clevlandJointTransformed<-paste0(outDir,
                                  '/AcousticAndVisual_',SP,'_clevelandDots_withTransform.png')
 ```
 
@@ -388,8 +389,8 @@ plot.covarDensity(transformedCovars_AcOnly.train[,2:10],
 plot.covarDensity(transformedCovars_VisOnly.train[,2:10],
                   colnames(transformedCovars_VisOnly.train[,2:10]),
                   transformedCovars_VisOnly.train$Density,paste0(outDir,'VisualOnly_',SP),varUnits)
-acKernels <-paste0(savePath,'/AcousticOnly_',SP,'_density_pres_abs.png')
-visKernels <- paste0(savePath,'/VisualOnly_',SP,'_density_pres_abs.png')
+acKernels <-paste0(outDir,'/AcousticOnly_',SP,'_density_pres_abs.png')
+visKernels <- paste0(outDir,'/VisualOnly_',SP,'_density_pres_abs.png')
 ```
 
 <br> 
@@ -408,10 +409,10 @@ visKernels <- paste0(savePath,'/VisualOnly_',SP,'_density_pres_abs.png')
 ### 1.2.4 Estimation of relative weights
 
 ```{r load detection prob, echo = FALSE} 
-visDetProbData<-paste0(outDir,SP,'sightwTrunc_GU.Rdata')
+visDetProbData<-paste0(inDir,SP,'sightwTrunc_GU.Rdata')
 load(visDetProbData)
 visDetProb <- detFun[[bestModelIdx]]$fitted[1]
-visDetProbFigure <- paste0(outDir,SP,'sightwTrunc_GU.png')
+visDetProbFigure <- paste0(inDir,SP,'sightwTrunc_GU.png')
 ```
 To train the model, we need to know how much power the various data points have relative to one another. This is important because the duration, spatial coverage, and detection probabilities are quite different between the visual and acoustic data sets. If an animal is seen or heard, we know for certain that the species was present. However, if it was not heard, then it either wasn't present, or it was present but missed. 
 
@@ -515,7 +516,7 @@ VisOnly.train_weightsG0 <- VisOnly.train_weightsG0*
                   (transformedCovars_VisOnly.train$EffectiveArea/maxEffectiveAreaVis)
 
 for (iFac in 1:length(transformedCovars_VisOnly.test$fac1)) {
-  if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) & 
+  if (!is.na(transformedCovars_VisOnly.test$Density[iFac]) &
       transformedCovars_VisOnly.test$Density[iFac]==0){
     # if it's visual data and it's a zero, adjust by g0 ie, only a X% chance it was a true zero.
     VisOnly.test_weightsG0[iFac,1] <- visG0*visDetProb
@@ -747,13 +748,13 @@ Smooths of predictor variables:
 nTerms <- size(Joint_model$smooth,2)
 windowsFonts(A = windowsFont("Times New Roman"))
 
-png(paste(outDir,SP,'_Joint_smooths_density.png',sep=''), res = 300, units = "in", width = 6.5, height = ceil(nTerms/5)*1.5)
+png(paste(outDir,SP,'_Joint_smooths_density.png',sep=''), res = 300, units = "in", width =5, height = ceil(nTerms/4)*1.5)
 n3 = c("SST","SSH","CHL","MLD","SAL","CUR","Upwell","-Eddy","+Eddy")
 
-par(mfrow = c(ceil(nTerms/5),5),mar = c(4,2,1,1))
+par(mfrow = c(ceil(nTerms/3),3),mar = c(4,2,1,1))
 for  (i in 1:nTerms) {
   plot(Joint_model,select = i,
-       cex.lab = 1.5,cex.axis = 1.3,scale=0,xlab = n3[i], ylab = "", family = "A")
+       cex.lab = 1.5,cex.axis = 1.3,scale=0,xlab = n3[significantPvals_Joint[i]], ylab = "", family = "A")
 }
 
 dev.off()
@@ -868,95 +869,102 @@ Predictions were made on the acoustic test dataset, and compared with actual obs
 ### 4.1.1 Acoustic-only prediction
 ```{r Ac Temporal Predict, echo = FALSE, warning = FALSE, message = FALSE}
 # Predict on acoustic test data, using acoustic only model for comparison...
-compAcSet_MC <- which((AcOnly.test.NoNa$fac2)==5)
-compAcSet_GC <- which((AcOnly.test.NoNa$fac2)==10)
-compAcSet_DT <- which((AcOnly.test.NoNa$fac2)==15 |
-                        (AcOnly.test.NoNa$fac2)==16)
-compAcSet_DC <- which((AcOnly.test.NoNa$fac2)==21 |
-                        (AcOnly.test.NoNa$fac2)==22)
-compAcSet_MP <- which((AcOnly.test.NoNa$fac2)==26)
+allCovars <- NA
+allCovars <- rbind(transformedCovars_AcOnly.train,
+                               transformedCovars_AcOnly.test)
+allCovars$date <- c(Train_AcOnly.set$date,Test_AcOnly.set$date)
+
+
+compAcSet_MC_all <- which((allCovars$fac2)<=5)
+compAcSet_GC_all <- which((allCovars$fac2)>5 & (allCovars$fac2)<=10)
+compAcSet_DT_all <- which((allCovars$fac2)>10 &
+                        (allCovars$fac2)<=16)
+compAcSet_DC_all <- which((allCovars$fac2)>16 &
+                        (allCovars$fac2)<=22)
+compAcSet_MP_all <- which((allCovars$fac2)>22)
+allObservations<-c(Train_AcOnly.set$Density,
+                       Test_AcOnly.set$Density)
+allTheDays = seq(min(Train_AcOnly.set$date),max(Test_AcOnly.set$date), by="days")
 
 # Predict in time
 dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
                          '2013-07-01 GMT','2013-10-01 GMT',
                          '2014-01-01 GMT'))
 dateLabels = c('Jan. 2013','Apr. 2013','Jul. 2013','Oct 2013','Jan. 2014')
-predAcOnly_MC <- predict.gam(AcOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_MC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predAcOnly_GC <- predict.gam(AcOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_GC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predAcOnly_DT <- predict.gam(AcOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_DT,],
-                            type = 'response',na.action = na.pass,se.fit=TRUE)
-predAcOnly_DC <- predict.gam(AcOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_DC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predAcOnly_MP <- predict.gam(AcOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_MP,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-# occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
 
+predAc<- (predict.gam(AcOnly_model,
+                             allCovars,
+                             type = 'response',na.action = na.pass,se.fit=TRUE))
 
-AcOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date[goodData_Ac_test]))
-AcOnlyGoodTimes <-  Test_AcOnly.set$date[goodData_Ac_test]
-colnames(AcOnly_predictionSet) <-"date"
-AcOnly_predictionSet$MC <- NA
-AcOnly_predictionSet$predSd_MC <- NA
-AcOnly_predictionSet$testObs_MC <-NA
-AcOnly_predictionSet$testObs_MC_smooth <- NA
-MC_times <- AcOnlyGoodTimes[compAcSet_MC]
-m1 <- match(MC_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$MC[m1] <-predAcOnly_MC$fit
-AcOnly_predictionSet$predSd_MC[m1] <- predAcOnly_MC$se.fit
-AcOnly_predictionSet$testObs_MC[m1] <- Test_AcOnly.set$Density[compAcSet_MC]
-AcOnly_predictionSet$testObs_MC_smooth <- rollmean(AcOnly_predictionSet$testObs_MC,k = 7,fill=NA)
+allCovars$A_pred <- predAc$fit
+allCovars$A_predSd <- predAc$se.fit
+allCovars$observations <- allObservations
+allCovars$observations_smooth <- rollmean(allObservations,k = 7,fill=NA)
 
-AcOnly_predictionSet$GC <- NA
-AcOnly_predictionSet$predSd_GC <- NA
-AcOnly_predictionSet$testObs_GC <-NA
-GC_times <- AcOnlyGoodTimes[compAcSet_GC]
-m2 <- match(GC_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$GC[m2] <-predAcOnly_GC$fit
-AcOnly_predictionSet$predSd_GC[m2] <- predAcOnly_GC$se.fit
-AcOnly_predictionSet$testObs_GC[m2] <- Test_AcOnly.set$Density[compAcSet_GC]
-AcOnly_predictionSet$testObs_GC_smooth <- rollmean(AcOnly_predictionSet$testObs_GC,k=7,fill=NA)
+Ac_predictionSet <- NA
+Ac_predictionSet<- data.frame(allTheDays)
+MC_times <- allCovars$date[compAcSet_MC_all]
+m1 <- match(MC_times,allTheDays)
+Ac_predictionSet$MC<- NA
+Ac_predictionSet$MC[m1] <- allCovars$A_pred[compAcSet_MC_all]
+Ac_predictionSet$predSd_MC<- NA
+Ac_predictionSet$predSd_MC[m1] <- allCovars$A_predSd[compAcSet_MC_all]
+Ac_predictionSet$MC_data_smooth <- NA
+Ac_predictionSet$MC_data_smooth[m1] <- rollmean(allCovars$observations[compAcSet_MC_all],k = 7,fill=NA)
+Ac_predictionSet$MC_data <- NA
+Ac_predictionSet$MC_data[m1] <- allCovars$observations[compAcSet_MC_all]
 
-AcOnly_predictionSet$DT <- NA
-AcOnly_predictionSet$predSd_DT <- NA
-AcOnly_predictionSet$testObs_DT <-NA
-DT_times <- AcOnlyGoodTimes[compAcSet_DT]
-m3 <- match(DT_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$DT[m3] <- predAcOnly_DT$fit
-AcOnly_predictionSet$predSd_DT[m3] <- predAcOnly_DT$se.fit
-AcOnly_predictionSet$testObs_DT[m3] <- Test_AcOnly.set$Density[compAcSet_DT]
-AcOnly_predictionSet$testObs_DT_smooth <- rollmean(AcOnly_predictionSet$testObs_DT,k=7,fill=NA)
+GC_times <- allCovars$date[compAcSet_GC_all]
+m2 <- match(GC_times,allTheDays)
+Ac_predictionSet$GC<- NA
+Ac_predictionSet$GC[m2] <- allCovars$A_pred[compAcSet_GC_all]
+Ac_predictionSet$predSd_GC<- NA
+Ac_predictionSet$predSd_GC[m2] <- allCovars$A_predSd[compAcSet_GC_all]
+Ac_predictionSet$GC_data_smooth <- NA
+Ac_predictionSet$GC_data_smooth[m2] <- rollmean(allCovars$observations[compAcSet_GC_all],k = 7,fill=NA)
+Ac_predictionSet$GC_data <- NA
+Ac_predictionSet$GC_data[m2] <- allCovars$observations[compAcSet_GC_all]
 
-AcOnly_predictionSet$DC <- NA
-AcOnly_predictionSet$predSd_DC <- NA
-AcOnly_predictionSet$testObs_DC <-NA
-DC_times <- AcOnlyGoodTimes[compAcSet_DC]
-m4 <- match(DC_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$DC[m4] <- predAcOnly_DC$fit
-AcOnly_predictionSet$predSd_DC[m4] <- predAcOnly_DC$se.fit
-AcOnly_predictionSet$testObs_DC[m4] <- Test_AcOnly.set$Density[compAcSet_DC]
-AcOnly_predictionSet$testObs_DC_smooth <- rollmean(AcOnly_predictionSet$testObs_DC,k=7,fill=NA)
+DT_times <- allCovars$date[compAcSet_DT_all]
+m3 <- match(DT_times,allTheDays)
+Ac_predictionSet$DT<- NA
+Ac_predictionSet$DT[m3] <- allCovars$A_pred[compAcSet_DT_all]
+Ac_predictionSet$predSd_DT<- NA
+Ac_predictionSet$predSd_DT[m3] <- allCovars$A_predSd[compAcSet_DT_all]
+Ac_predictionSet$DT_data_smooth <- NA
+Ac_predictionSet$DT_data_smooth[m3] <- rollmean(allCovars$observations[compAcSet_DT_all],k = 7,fill=NA)
+Ac_predictionSet$DT_data <- NA
+Ac_predictionSet$DT_data[m3] <- allCovars$observations[compAcSet_DT_all]
 
-AcOnly_predictionSet$MP <- NA
-AcOnly_predictionSet$predSd_MP <- NA
-AcOnly_predictionSet$testObs_MP <-NA
-MP_times <- AcOnlyGoodTimes[compAcSet_MP]
-m5 <- match(MP_times,AcOnly_predictionSet$date)
-AcOnly_predictionSet$MP[m5] <- predAcOnly_MP$fit
-AcOnly_predictionSet$predSd_MP[m5] <- predAcOnly_MP$se.fit
-AcOnly_predictionSet$testObs_MP[m5] <- Test_AcOnly.set$Density[compAcSet_MP]
-AcOnly_predictionSet$testObs_MP_smooth <- rollmean(AcOnly_predictionSet$testObs_MP,k=7,fill=NA)
+DC_times <- allCovars$date[compAcSet_DC_all]
+m4 <- match(DC_times,allTheDays)
+Ac_predictionSet$DC <- NA
+Ac_predictionSet$DC[m4] <- allCovars$A_pred[compAcSet_DC_all]
+Ac_predictionSet$predSd_DC <- NA
+Ac_predictionSet$predSd_DC[m4] <- allCovars$A_predSd[compAcSet_DC_all]
+Ac_predictionSet$DC_data_smooth <- NA
+Ac_predictionSet$DC_data_smooth[m4] <- rollmean(allCovars$observations[compAcSet_DC_all],k = 7,fill=NA)
+Ac_predictionSet$DC_data <- NA
+Ac_predictionSet$DC_data[m4] <- allCovars$observations[compAcSet_DC_all]
 
-AcOnly_predictionSet$Legend1 <- "Observations"
-AcOnly_predictionSet$StDev <- "Std. Error"
-AcOnly_predictionSet$Legend <- "Predictions"
+MP_times <- allCovars$date[compAcSet_MP_all]
+m5 <- match(DC_times,allTheDays)
+Ac_predictionSet$MP<- NA
+Ac_predictionSet$MP[m5] <- allCovars$A_pred[compAcSet_MP_all]
+Ac_predictionSet$predSd_MP <- NA
+Ac_predictionSet$predSd_MP[m5] <- allCovars$A_predSd[compAcSet_MP_all]
+Ac_predictionSet$MP_data_smooth <- NA
+Ac_predictionSet$MP_data_smooth[m5] <- rollmean(allCovars$observations[compAcSet_MP_all],k = 7,fill=NA)
+Ac_predictionSet$MP_data <- NA
+Ac_predictionSet$MP_data[m5] <- allCovars$observations[compAcSet_MP_all]
 
+Ac_predictionSet$Legend1 <- "Observations"
+Ac_predictionSet$StDev <- "Std. Error"
+Ac_predictionSet$Legend <- "Predictions - Train"
+allCovars$Legend <- "Predictions"
+allCovars$DataGroup <- "Observations"
+allCovars$DE <- "Density"
+Ac_predictionSet$LegendTest <- "Predictions - Test"
 ```
 
 **Predicted and observed densities at passive acoustic monitoring sites using the acoustic-only model:**
@@ -974,75 +982,88 @@ dcLabel <- grobTree(textGrob("DC", x=0.01,  y=0.90, hjust=0,
 mpLabel <- grobTree(textGrob("MP", x=0.01,  y=0.90, hjust=0,
   gp=gpar(col="black", fontsize=13, fontface="bold")))
 
+myYmax =  30
+
 p1_Ac <- ggplot() +
-  geom_ribbon(data = AcOnly_predictionSet,
-            aes(x = date, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
-  geom_area(data = AcOnly_predictionSet, 
-            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y = MC, color = Legend))+
-  labs(y = "Density (/1000km^2)", x = "")+
-  scale_color_manual("",values= c("gray48","#009999"))+
-  theme_bw()+theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
-                   legend.margin=margin(c(1,5,5,5)))+
-  annotation_custom(mcLabel)#+ylim(c(0,.6))
+  # geom_ribbon(data = Ac_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MC_data, color = Legend1),alpha = .5) +
+  geom_path(data = Ac_predictionSet,
+            aes(x= allTheDays, y = MC, color = Legend),ymax = myYmax) +
+  geom_path(data = Ac_predictionSet[Ac_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = MC, color = LegendTest,
+            ymax = myYmax)) +
+  labs(y = "", x = NULL)+
+    scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))
+  # theme(legend.position = c(0.85, 0.8),legend.title = element_blank(),
+  #                  legend.margin=margin(c(1,3,3,3)))+
+  annotation_custom(mcLabel)
 
 p2_Ac <- ggplot() +
-  geom_ribbon(data = AcOnly_predictionSet, 
-            aes(x = date, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
-  geom_area(data = AcOnly_predictionSet, 
-            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend))+
-  scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+annotation_custom(gcLabel)
+  # geom_ribbon(data = Ac_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = GC_data, color = Legend1),alpha = .5) +
+  geom_path(data = Ac_predictionSet,
+            aes(x= allTheDays, y = GC, color = Legend, ymax = myYmax)) +
+  geom_path(data = Ac_predictionSet[Ac_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = GC, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "Density (/1000km^2)", x = NULL)+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  annotation_custom(gcLabel)
 
 p3_Ac <- ggplot() +
-  geom_ribbon(data = AcOnly_predictionSet, 
-            aes(x = date, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
-  geom_area(data = AcOnly_predictionSet, 
-            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+annotation_custom(dtLabel)
+  # geom_ribbon(data = Ac_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DT_data, color = Legend1),alpha = .5) + 
+  geom_path(data = Ac_predictionSet,
+            aes(x= allTheDays, y=DT, color = Legend, ymax = myYmax)) +
+  geom_path(data = Ac_predictionSet[Ac_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = DT, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = NULL)+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  annotation_custom(dtLabel)
 
 p4_Ac <- ggplot() +
-  geom_ribbon(data = AcOnly_predictionSet,
-            aes(x = date, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
-  geom_area(data = AcOnly_predictionSet,
-            aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DC_smooth, color = Legend1))+
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=DC, color = Legend)) +
-  scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+annotation_custom(dcLabel)
+  # geom_ribbon(data = Ac_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_DC + DC, ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DC_data, color = Legend1),alpha = .5) + 
+  geom_path(data = Ac_predictionSet,
+            aes(x= allTheDays, y=DC, color = Legend, ymax = myYmax)) +
+  geom_path(data = Ac_predictionSet[Ac_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = DC, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = NULL)+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  annotation_custom(dcLabel)
 
 p5_Ac <- ggplot() +
-  geom_ribbon(data = AcOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
-  geom_area(data = AcOnly_predictionSet, 
-            aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MP_smooth,color = Legend1))+
-  geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend)) +
-  scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
-  theme(legend.position="none")+annotation_custom(mpLabel)
+  # geom_ribbon(data = Ac_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_MP + MP, ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MP_data, color = Legend1),alpha = .5) + 
+  geom_path(data = Ac_predictionSet,
+            aes(x= allTheDays, y=MP, color = Legend, ymax = myYmax)) +
+  geom_path(data = Ac_predictionSet[Ac_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = MP, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = NULL)+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  annotation_custom(dtLabel)
 
-multiplot(p1_Ac, p2_Ac, p3_Ac, p4_Ac, p5_Ac, cols=1)
-
+png(paste(outDir,SP,'_AcOnly_Timeseries_Prediction_gam_Density.png',sep=''), width = 6.5, height = 4, units = "in", res=300)
+multiplot(p1_Ac, p2_Ac, p3_Ac, cols=1)
+dev.off()
 ```
 <br>
 
@@ -1053,138 +1074,161 @@ multiplot(p1_Ac, p2_Ac, p3_Ac, p4_Ac, p5_Ac, cols=1)
 # we're predicting on the acoustic timeseries.
 # Predict in time
 
-predVisOnly_MC <- predict.gam(VisOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_MC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predVisOnly_GC <- predict.gam(VisOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_GC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predVisOnly_DT <- predict.gam(VisOnly_model,
-                             transformedCovars_AcOnly.test[compAcSet_DT,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predVisOnly_DC <- predict.gam(VisOnly_model,
-                              transformedCovars_AcOnly.test[compAcSet_DC,],
-                              type = 'response',na.action = na.pass,se.fit=TRUE)
-predVisOnly_MP <- predict.gam(VisOnly_model,
-                              transformedCovars_AcOnly.test[compAcSet_MP,],
-                              type = 'response',na.action = na.pass,se.fit=TRUE)
+dateTicks = as.POSIXct(c('2013-01-01 GMT','2013-04-01 GMT',
+                         '2013-07-01 GMT','2013-10-01 GMT',
+                         '2014-01-01 GMT'))
+dateLabels = c('Jan. 2013','Apr. 2013','Jul. 2013','Oct 2013','Jan. 2014')
 
-occurIdx = which(as.POSIXct(pOccur[,1])>='2013-01-01' & as.POSIXct(pOccur[,1])<'2014-01-01')
+predVis<- (predict.gam(VisOnly_model,
+                             allCovars,
+                             type = 'response',na.action = na.pass,se.fit=TRUE))
+
+allCovars$V_pred <- predVis$fit
+allCovars$V_predSd <- predVis$se.fit
+
+Vis_predictionSet <- NA
+Vis_predictionSet<- data.frame(allTheDays)
+MC_times <- allCovars$date[compAcSet_MC_all]
+m1 <- match(MC_times,allTheDays)
+Vis_predictionSet$MC<- NA
+Vis_predictionSet$MC[m1] <- allCovars$V_pred[compAcSet_MC_all]
+Vis_predictionSet$predSd_MC<- NA
+Vis_predictionSet$predSd_MC[m1] <- allCovars$V_predSd[compAcSet_MC_all]
+Vis_predictionSet$MC_data_smooth <- NA
+Vis_predictionSet$MC_data_smooth[m1] <- rollmean(allCovars$observations[compAcSet_MC_all],k = 7,fill=NA)
+
+GC_times <- allCovars$date[compAcSet_GC_all]
+m2 <- match(GC_times,allTheDays)
+Vis_predictionSet$GC<- NA
+Vis_predictionSet$GC[m2] <- allCovars$V_pred[compAcSet_GC_all]
+Vis_predictionSet$predSd_GC<- NA
+Vis_predictionSet$predSd_GC[m2] <- allCovars$V_predSd[compAcSet_GC_all]
+Vis_predictionSet$GC_data_smooth <- NA
+Vis_predictionSet$GC_data_smooth[m2] <- rollmean(allCovars$observations[compAcSet_GC_all],k = 7,fill=NA)
+
+DT_times <- allCovars$date[compAcSet_DT_all]
+m3 <- match(DT_times,allTheDays)
+Vis_predictionSet$DT<- NA
+Vis_predictionSet$DT[m3] <- allCovars$V_pred[compAcSet_DT_all]
+Vis_predictionSet$predSd_DT<- NA
+Vis_predictionSet$predSd_DT[m3] <- allCovars$V_predSd[compAcSet_DT_all]
+Vis_predictionSet$DT_data_smooth <- NA
+Vis_predictionSet$DT_data_smooth[m3] <- rollmean(allCovars$observations[compAcSet_DT_all],k = 7,fill=NA)
+
+DC_times <- allCovars$date[compAcSet_DC_all]
+m4 <- match(DC_times,allTheDays)
+Vis_predictionSet$DC<- NA
+Vis_predictionSet$DC[m4] <- allCovars$V_pred[compAcSet_DC_all]
+Vis_predictionSet$predSd_DC<- NA
+Vis_predictionSet$predSd_DC[m4] <- allCovars$V_predSd[compAcSet_DC_all]
+Vis_predictionSet$DC_data_smooth <- NA
+Vis_predictionSet$DC_data_smooth[m4] <- rollmean(allCovars$observations[compAcSet_DC_all],k = 7,fill=NA)
+
+MP_times <- allCovars$date[compAcSet_MP_all]
+m5 <- match(MP_times,allTheDays)
+Vis_predictionSet$MP<- NA
+Vis_predictionSet$MP[m5] <- allCovars$V_pred[compAcSet_MP_all]
+Vis_predictionSet$predSd_MP<- NA
+Vis_predictionSet$predSd_MP[m5] <- allCovars$V_predSd[compAcSet_MP_all]
+Vis_predictionSet$MP_data_smooth <- NA
+Vis_predictionSet$MP_data_smooth[m5] <- rollmean(allCovars$observations[compAcSet_MP_all],k = 7,fill=NA)
 
 
-VisOnly_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
-colnames(VisOnly_predictionSet) <-"date"
+Vis_predictionSet$Legend1 <- "Observations"
+Vis_predictionSet$StDev <- "Std. Error"
+Vis_predictionSet$Legend <- "Predictions - Train"
+Vis_predictionSet$LegendTest <- "Predictions - Test"
 
-VisOnly_predictionSet$MC <- NA
-VisOnly_predictionSet$predSd_MC <- NA
-m1 <- match(MC_times,VisOnly_predictionSet$date)
-VisOnly_predictionSet$MC[m1] <-predVisOnly_MC$fit
-VisOnly_predictionSet$predSd_MC[m1] <- predVisOnly_MC$se.fit
-
-VisOnly_predictionSet$GC <- NA
-VisOnly_predictionSet$predSd_GC <- NA
-m2 <- match(GC_times,VisOnly_predictionSet$date)
-VisOnly_predictionSet$GC[m2] <-predVisOnly_GC$fit
-VisOnly_predictionSet$predSd_GC[m2] <- predVisOnly_GC$se.fit
-
-VisOnly_predictionSet$DT <- NA
-VisOnly_predictionSet$predSd_DT <- NA
-m3 <- match(DT_times,VisOnly_predictionSet$date)
-VisOnly_predictionSet$DT[m3] <-predVisOnly_DT$fit
-VisOnly_predictionSet$predSd_DT[m3] <- predVisOnly_DT$se.fit
-
-VisOnly_predictionSet$DC <- NA
-VisOnly_predictionSet$predSd_DC <- NA
-m4 <- match(DC_times,VisOnly_predictionSet$date)
-VisOnly_predictionSet$DC[m4] <-predVisOnly_DC$se.fit
-VisOnly_predictionSet$predSd_DC[m4] <- predVisOnly_DC$se.fit
-
-VisOnly_predictionSet$MP <- NA
-VisOnly_predictionSet$predSd_MP <- NA
-m5 <- match(MP_times,VisOnly_predictionSet$date)
-VisOnly_predictionSet$MP[m5] <-predVisOnly_MP$se.fit
-VisOnly_predictionSet$predSd_MP[m5] <- predVisOnly_MP$se.fit
-
-VisOnly_predictionSet$Legend <- "Predictions"
 ```
 
 **Predicted and observed densities at passive acoustic monitoring sites using the visual-only model:**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
+
 p1_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet, 
-            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=MC, color = Legend)) +
-  labs(y = "Density (/1000km^2)", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
-  theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
-                   legend.margin=margin(c(1,5,5,5)))+
+  # geom_ribbon(data = Vis_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_MC + MC, ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MC_data, color = Legend1),alpha = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x= allTheDays, y = MC, color = Legend, 
+            ymax = myYmax)) +
+  geom_path(data = Vis_predictionSet[Vis_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = MC, color = LegendTest,
+            ymax = myYmax)) +
+  labs(y = "", x = "")+
+    scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  # theme(legend.position = c(0.85, 0.8),legend.title=element_blank(),
+  #                  legend.margin=margin(c(1,3,3,3)))+
   annotation_custom(mcLabel)
 
 p2_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet, 
-            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
+  # geom_ribbon(data =Vis_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_GC + GC, ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = GC_data, color = Legend1, 
+            ymax = myYmax),alpha = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x= allTheDays, y=GC, color = Legend)) +
+  geom_path(data = Vis_predictionSet[Vis_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = GC, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
   labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
   annotation_custom(gcLabel)
 
 p3_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet, 
-            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  # geom_ribbon(data = Vis_predictionSet,
+  #           aes(x = allTheDays, ymax = predSd_DT + DT, ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DT_data, color = Legend1),alpha = .5) +  
+  geom_path(data = Vis_predictionSet,
+            aes(x= allTheDays, y=DT, color = Legend, 
+            ymax = myYmax)) +
+  geom_path(data = Vis_predictionSet[Vis_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = DT, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = "")+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
   annotation_custom(dtLabel)
 
 p4_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_DC + DC,ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet,
-            aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DC_smooth,color = Legend1))+
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=DC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DC_data, color = Legend1),alpha = .5) +  
+  geom_path(data = Vis_predictionSet,
+            aes(x= allTheDays, y=DC, color = Legend, 
+            ymax = myYmax)) +
+  geom_path(data = Vis_predictionSet[Vis_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = DC, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = "")+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
   annotation_custom(dcLabel)
 
+
 p5_Vis <- ggplot() +
-  geom_ribbon(data = VisOnly_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
-  geom_area(data = VisOnly_predictionSet, 
-            aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MP_smooth,color = Legend1))+
-  geom_line(data = VisOnly_predictionSet,
-            aes(x=date, y=MP, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MP_data, color = Legend1),alpha = .5) +  
+  geom_path(data = Vis_predictionSet,
+            aes(x= allTheDays, y=MP, color = Legend, 
+            ymax = myYmax)) +
+  geom_path(data = Vis_predictionSet[Vis_predictionSet$allTheDays>="2013-1-1",],
+             aes(x = allTheDays, y = MP, color = LegendTest,
+            ymax = myYmax)) +
+  scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
+  labs(y = "", x = "")+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
   annotation_custom(mpLabel)
 
-multiplot(p1_Vis, p2_Vis, p3_Vis, p4_Vis, p5_Vis, cols=1)
 
+png(paste(outDir,SP,'_VisOnly_Timeseries_Prediction_gam_Density.png',sep=''), width = 6.5, height = 4, units = "in", res=300)
+multiplot(p1_Vis, p2_Vis, p3_Vis, p4_Vis, p5_Vis, cols=1)
+dev.off()
 ```
 
 <br>
@@ -1192,136 +1236,158 @@ multiplot(p1_Vis, p2_Vis, p3_Vis, p4_Vis, p5_Vis, cols=1)
 ### 4.1.3 Joint prediction
 
 ```{r Combo Temporal Predict,fig.height = 10, fig.width = 7, warning = FALSE, echo = FALSE}
-predJoint_MC <- predict.gam(Joint_model,
-                             transformedCovars_AcOnly.test[compAcSet_MC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predJoint_GC <- predict.gam(Joint_model,
-                             transformedCovars_AcOnly.test[compAcSet_GC,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predJoint_DT <- predict.gam(Joint_model,
-                             transformedCovars_AcOnly.test[compAcSet_DT,],
-                             type = 'response',na.action = na.pass,se.fit=TRUE)
-predJoint_DC <- predict.gam(Joint_model,
-                              transformedCovars_AcOnly.test[compAcSet_DC,],
-                              type = 'response',na.action = na.pass,se.fit=TRUE)
-predJoint_MP <- predict.gam(Joint_model,
-                              transformedCovars_AcOnly.test[compAcSet_MP,],
-                              type = 'response',na.action = na.pass,se.fit=TRUE)
 
+predJoint <- (predict.gam(Joint_model,
+                             allCovars,
+                             type = 'response',na.action = na.pass,se.fit=TRUE))
+allCovars$J_pred <- predJoint$fit
+allCovars$J_predSd <- predJoint$se.fit
 
-Joint_predictionSet <- data.frame(unique(Test_AcOnly.set$date))
-colnames(Joint_predictionSet) <-"date"
-Joint_predictionSet$MC <- NA
-Joint_predictionSet$predSd_MC <- NA
-m1 <- match(MC_times,Joint_predictionSet$date)
-Joint_predictionSet$MC[m1] <-predJoint_MC$fit
-Joint_predictionSet$predSd_MC[m1] <- predJoint_MC$se.fit
+Joint_predictionSet <- NA
+Joint_predictionSet<- data.frame(allTheDays)
+MC_times <- allCovars$date[compAcSet_MC_all]
+m1 <- match(MC_times,allTheDays)
+Joint_predictionSet$MC<- NA
+Joint_predictionSet$MC[m1] <- allCovars$J_pred[compAcSet_MC_all]
+Joint_predictionSet$predSd_MC<- NA
+Joint_predictionSet$predSd_MC[m1] <- allCovars$J_predSd[compAcSet_MC_all]
+Joint_predictionSet$MC_data_smooth <- NA
+Joint_predictionSet$MC_data_smooth[m1] <- rollmean(allCovars$observations[compAcSet_MC_all],k = 7,fill=NA)
 
-Joint_predictionSet$GC <- NA
-Joint_predictionSet$predSd_GC <- NA
-m2 <- match(GC_times,Joint_predictionSet$date)
-Joint_predictionSet$GC[m2] <-predJoint_GC$fit
-Joint_predictionSet$predSd_GC[m2] <- predJoint_GC$se.fit
+GC_times <- allCovars$date[compAcSet_GC_all]
+m2 <- match(GC_times,allTheDays)
+Joint_predictionSet$GC<- NA
+Joint_predictionSet$GC[m2] <- allCovars$J_pred[compAcSet_GC_all]
+Joint_predictionSet$predSd_GC<- NA
+Joint_predictionSet$predSd_GC[m2] <- allCovars$J_predSd[compAcSet_GC_all]
+Joint_predictionSet$GC_data_smooth <- NA
+Joint_predictionSet$GC_data_smooth[m2] <- rollmean(allCovars$observations[compAcSet_GC_all],k = 7,fill=NA)
 
-Joint_predictionSet$DT <- NA
-Joint_predictionSet$predSd_DT <- NA
-m3 <- match(DT_times,Joint_predictionSet$date)
-Joint_predictionSet$DT[m3] <-predJoint_DT$fit
-Joint_predictionSet$predSd_DT[m3] <- predJoint_DT$se.fit
+DT_times <- allCovars$date[compAcSet_DT_all]
+m3 <- match(DT_times,allTheDays)
+Joint_predictionSet$DT<- NA
+Joint_predictionSet$DT[m3] <- allCovars$J_pred[compAcSet_DT_all]
+Joint_predictionSet$predSd_DT<- NA
+Joint_predictionSet$predSd_DT[m3] <- allCovars$J_predSd[compAcSet_DT_all]
+Joint_predictionSet$DT_data_smooth <- NA
+Joint_predictionSet$DT_data_smooth[m3] <- rollmean(allCovars$observations[compAcSet_DT_all],k = 7,fill=NA)
 
-Joint_predictionSet$DC <- NA
-Joint_predictionSet$predSd_DC <- NA
-m4 <- match(DC_times,Joint_predictionSet$date)
-Joint_predictionSet$DC[m4] <-predJoint_DC$fit
-Joint_predictionSet$predSd_DC[m4] <- predJoint_DC$se.fit
+DC_times <- allCovars$date[compAcSet_DC_all]
+m4 <- match(DC_times,allTheDays)
+Joint_predictionSet$DC<- NA
+Joint_predictionSet$DC[m4] <- allCovars$J_pred[compAcSet_DC_all]
+Joint_predictionSet$predSd_DC<- NA
+Joint_predictionSet$predSd_DC[m4] <- allCovars$J_predSd[compAcSet_DC_all]
+Joint_predictionSet$DC_data_smooth <- NA
+Joint_predictionSet$DC_data_smooth[m4] <- rollmean(allCovars$observations[compAcSet_DC_all],k = 7,fill=NA)
 
-Joint_predictionSet$MP <- NA
-Joint_predictionSet$predSd_MP <- NA
-m5 <- match(MP_times,Joint_predictionSet$date)
-Joint_predictionSet$MP[m5] <-predJoint_MP$fit
-Joint_predictionSet$predSd_MP[m5] <- predJoint_MP$se.fit
+MP_times <- allCovars$date[compAcSet_MP_all]
+m5 <- match(MP_times,allTheDays)
+Joint_predictionSet$MP<- NA
+Joint_predictionSet$MP[m5] <- allCovars$J_pred[compAcSet_MP_all]
+Joint_predictionSet$predSd_MP<- NA
+Joint_predictionSet$predSd_MP[m5] <- allCovars$J_predSd[compAcSet_MP_all]
+Joint_predictionSet$MP_data_smooth <- NA
+Joint_predictionSet$MP_data_smooth[m5] <- rollmean(allCovars$observations[compAcSet_MP_all],k = 7,fill=NA)
 
 Joint_predictionSet$Legend1 <- "Observations"
 Joint_predictionSet$StDev <- "Std. Error"
-Joint_predictionSet$Legend <- "Predictions"
+Joint_predictionSet$Legend <- "Predictions - Train"
+Joint_predictionSet$LegendTest <- "Predictions - Test"
+
 ```
 
 **Predicted and observed encounter probabilities at passive acoustic monitoring sites using the joint model:**
 
 ```{r,fig.height = 10, fig.width = 7, message = FALSE, warning = FALSE, echo = FALSE}
 # par(mfrow = c(5,1),oma=c(3,0,5,0)),colour="#000099",colour="#CC0000"
+
+
 p1 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_MC + MC,ymin = pmax(MC - predSd_MC,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
-            aes(x = date, y = pmax(MC - predSd_MC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MC_smooth,color = Legend1))+
-  geom_line(data = Joint_predictionSet,
-            aes(x=date, y=MC, color = Legend)) +
-  labs(y = "Density (/1000km^2)", x = "")+
-  scale_color_manual(values= c("gray48","#009999"))+theme_bw()+
-  theme(legend.position = c(0.9, 0.8),legend.title=element_blank(),
-                   legend.margin=margin(c(1,5,5,5)))+
+  geom_rect(data =Vis_predictionSet, aes(xmin=allTheDays[731], xmax=allTheDays[1095], ymin=0, ymax=25), fill="gray85")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MC_data, color = Legend1), alpha = 1,width = .1,size = .25)+
+  geom_line(data = Ac_predictionSet,
+            aes(x=allTheDays, y=MC, color = Legend), size = .5) +
+  geom_path(data = Joint_predictionSet,
+            aes(x=allTheDays, y=MC),color = "red2", size = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x=allTheDays, y=MC, color = LegendTest),size = .5) +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,25))+
+  scale_color_manual(values= c("grey35","green3","deepskyblue"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,12), "pt"),
+        axis.text.x = element_blank())+
   annotation_custom(mcLabel)
 
 p2 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_GC + GC,ymin = pmax(GC - predSd_GC,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
-            aes(x = date, y = pmax(GC - predSd_GC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_GC_smooth,color = Legend1))+
-  geom_line(data = Joint_predictionSet,
-            aes(x=date, y=GC, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  geom_rect(data =Vis_predictionSet, aes(xmin=allTheDays[731], xmax=allTheDays[1095], ymin=0, ymax=25), fill="gray85")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = GC_data, color = Legend1), alpha = 1,width = .1,size = .25)+
+  geom_line(data = Ac_predictionSet,
+            aes(x=allTheDays, y=GC, color = Legend), size = .5) +
+  geom_path(data = Joint_predictionSet,
+            aes(x=allTheDays, y=GC),color = "red2", size = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x=allTheDays, y=GC, color = LegendTest),size = .5) +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,25))+
+  scale_color_manual(values= c("grey35","green3","deepskyblue"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,12), "pt"),
+        axis.text.x = element_blank())+
   annotation_custom(gcLabel)
 
+
 p3 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_DT + DT,ymin = pmax(DT - predSd_DT,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
-            aes(x = date, y = pmax(DT - predSd_DT,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DT_smooth,color = Legend1))+
-  geom_line(data = Joint_predictionSet,
-            aes(x=date, y=DT, color = Legend)) +
-  scale_color_manual(values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position="none")+
+  geom_rect(data =Vis_predictionSet, aes(xmin=allTheDays[731], xmax=allTheDays[1095], ymin=0, ymax=25), fill="gray85")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DT_data, color = Legend1), alpha = 1,width = .1,size = .25)+
+  geom_line(data = Ac_predictionSet,
+            aes(x=allTheDays, y=DT, color = Legend), size = .5) +
+  geom_path(data = Joint_predictionSet,
+            aes(x=allTheDays, y=DT),color = "red2", size = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x=allTheDays, y=DT, color = LegendTest),size = .5) +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,25))+
+  scale_color_manual(values= c("grey35","green3","deepskyblue"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,12), "pt"),
+        axis.text.x = element_blank())+
   annotation_custom(dtLabel)
 
 p4 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_DC + DC,ymin = pmax(DC - predSd_DC,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
-            aes(x = date, y = pmax(DC - predSd_DC,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_DC_smooth,color = Legend1))+
-  geom_line(data = Joint_predictionSet,
-            aes(x = date, y = DC, color = Legend)) +
-  scale_color_manual("",values= c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "")+theme_bw()+
-  theme(legend.position = "none")+
+  geom_rect(data =Vis_predictionSet, aes(xmin=allTheDays[731], xmax=allTheDays[1095], ymin=0, ymax=25), fill="gray85")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = DC_data, color = Legend1), alpha = 1,width = .1,size = .25)+
+  geom_line(data = Ac_predictionSet,
+            aes(x=allTheDays, y=DC, color = Legend), size = .5) +
+  geom_path(data = Joint_predictionSet,
+            aes(x=allTheDays, y=DC),color = "red2", size = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x=allTheDays, y=DC, color = LegendTest),size = .5) +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,25))+
+  scale_color_manual(values= c("grey35","green3","deepskyblue"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,12), "pt"),
+        axis.text.x = element_blank())+
   annotation_custom(dcLabel)
 
 p5 <- ggplot() +
-  geom_ribbon(data = Joint_predictionSet, 
-            aes(x = date, ymax = predSd_MP + MP,ymin = pmax(MP - predSd_MP,0)), fill = "lightgray") +
-  geom_area(data = Joint_predictionSet, 
-            aes(x = date, y = pmax(MP - predSd_MP,0)), fill = "white") +
-  geom_line(data = AcOnly_predictionSet,
-             aes(x = date, y = testObs_MP_smooth, color = Legend1))+
-  geom_line(data = Joint_predictionSet,
-            aes(x = date, y = MP, color = Legend))+
-  scale_color_manual("",values = c("gray48","#009999"))+
-  labs(y = "Density (/1000km^2)", x = "Date")+theme_bw()+
-  theme(legend.position = "none")+
+  geom_rect(data =Vis_predictionSet, aes(xmin=allTheDays[731], xmax=allTheDays[1095], ymin=0, ymax=25), fill="gray85")+
+  geom_col(data = Ac_predictionSet,
+             aes(x = allTheDays, y = MP_data, color = Legend1), alpha = 1,width = .1,size = .25)+
+  geom_line(data = Ac_predictionSet,
+            aes(x=allTheDays, y=MP, color = Legend), size = .5) +
+  geom_path(data = Joint_predictionSet,
+            aes(x=allTheDays, y=MP),color = "red2", size = .5) +
+  geom_path(data = Vis_predictionSet,
+            aes(x=allTheDays, y=MP, color = LegendTest),size = .5) +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,25))+
+  scale_color_manual(values= c("grey35","green3","deepskyblue"))+theme_bw()+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,12), "pt"),
+        axis.text.x = element_blank())+
   annotation_custom(mpLabel)
 
+
+png(paste(outDir,SP,'_Joint_Timeseries_Prediction_gam_Density.png',sep=''), width = 6.5, height = 4, units = "in", res=300)
 multiplot(p1, p2, p3, p4, p5, cols = 1)
+dev.off()
 
 ```
 <br>
@@ -1674,7 +1740,7 @@ map
 Spatial model predictions were generated using climatological means of oceanographic variables, averaged by month between 2003 and 2015.
 
 
-```{r evaluate climatology-based models, eval = TRUE, echo = FALSE, message = FALSE, warning = FALSE}
+```{r evaluate climatology-based models, eval = FALSE, echo = FALSE, message = FALSE, warning = FALSE}
 # to recalculate the climatology raster stack:
 # source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/scaled_climate_raster_stack.R', echo=TRUE)
 # scaled_climate_raster_stack(covars_Joint_max.train,covars_Joint_min.train) 
@@ -1691,17 +1757,17 @@ for (iM in 1:length(monthStr)){
             type = 'response',na.action = na.pass)/10
   mapClimatePrediction[[iM]] <- mask(climatePrediction[[iM]], crop_limits_proj)  
   # output raster to geotiff
-  rasterImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'GAM_mean_density.tif')
+  rasterImageFileName = paste0(outDir,'/climatology_predictions/', SP,'_',monthStr[iM],'GAM_mean_density.tif')
   writeRaster(mapClimatePrediction[[iM]],filename = rasterImageFileName, format="GTiff",overwrite = TRUE)
   
   # #ouput raster to kml
-  # kmlImageFileName = paste0(savePath,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.kml')
+  # kmlImageFileName = paste0(outDir,'/climatology_predictions/', SP,'_',monthStr[iM],'NN_mean_encounter_probability.kml')
   # KML(mapClimatePrediction[[iM]],file = kmlImageFileName, col=matlab.like2(32),overwrite = TRUE)
 }
   
 ```
 
-```{r plot climatologies, eval = TRUE, message = FALSE, warning = FALSE, echo = FALSE}
+```{r plot climatologies, eval = FALSE, message = FALSE, warning = FALSE, echo = FALSE}
 maxColor <- ceiling(max(c(mapClimatePrediction[[1]]@data@max,
                 mapClimatePrediction[[3]]@data@max,
                 mapClimatePrediction[[5]]@data@max,
