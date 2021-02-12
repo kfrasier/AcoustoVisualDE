@@ -4,7 +4,7 @@
 SP <- "Me" 
 
 # Set file path with species name
-savePath <-(file.path('E:/NASData/ModelData',SP))
+savePath <-(file.path('F:/NASData/ModelData',SP))
 # if directory doen't exist, make it.
 if (!file.exists(savePath)){
   dir.create(savePath)
@@ -15,17 +15,17 @@ setwd(savePath)
 siteList= c("MC","GC","DT")
 
 #File paths 
-acousticSegFile <- "E:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
-acousticDensityFile <-"E:/NASData/ModelData/Me/MC_GC_DT_binsize011000_Group_density3_Gervais.csv" # acoustic input file"E:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
+acousticSegFile <- "F:/NASData/ALLSITES_segments_daily_20170918.csv" # acoustic input file
+acousticDensityFile <-"F:/NASData/ModelData/Me/MC_GC_DT_binsize011000_Group_density3_Gervais.csv" # acoustic input file"F:/NASData/ALLSITES_binsize000800_Gg_density_jahStart.csv"# 
 # The name of the acoustic density file with matched segments
 acDensityFile <- paste0('ACDensity_Segments_',SP,'.Rdata')
-pOccurenceFile <- 'E:/NASData/ModelData/Me/ALLSITES_weeklyPOccurrence_Me_jahStart.csv' # percent ofdays/week they were present 
+# pOccurenceFile <- 'F:/NASData/ModelData/Me/ALLSITES_weeklyPOccurrence_Me_jahStart.csv' # percent ofdays/week they were present 
 
-visDataFile <- "E:/NASData/Sightings_merged.Rdata" # visual sightings
-visSegmentsFile <- "E:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
+visDataFile <- "F:/NASData/Sightings_merged.Rdata" # visual sightings
+visSegmentsFile <- "F:/NASData/Visual_Segments_v2_20170918.csv" # visual segments
 
 # Mapping data
-surveyAreaFile <- "E:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
+# surveyAreaFile <- "F:/NASData/AcoustoVisualDE/surveyAreaOutline.shp"
 SPC_vis <- c("unid. Mesoplodont","Gervais' beaked whale")
 
 # Platform Codes (visual only)

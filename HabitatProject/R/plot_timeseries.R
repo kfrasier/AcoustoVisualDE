@@ -46,7 +46,7 @@ plot.timeseries <-function(siteList,outDir,AcOnlySegments){
          ylab = expression(atop(Estimated ~ Density,(animals/1000 ~ km^{2}))),
          xlab = xlabStr, pch = 1,col = alpha("black", 0.4),cex=.6,
          xlim = c(min(AcOnlySegments$date,na.rm = TRUE),max(AcOnlySegments$date,na.rm = TRUE)),
-         ylim= c(0,max(AcOnlySegments$Density)))
+         ylim= c(0,max(AcOnlySegments$Density,na.rm=TRUE)))
     for (iRect in 1:length(deplGapsStart[[iSite]])){
         rect(deplGapsStart[[iSite]][iRect],0,deplGapsEnd[[iSite]][iRect],
              ceil(max(AcOnlySegments$Density, na.rm=TRUE)),

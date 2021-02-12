@@ -14,10 +14,10 @@ library(raster)
 
 ## Read set up file for species of choice.
 # NOTE: if you have changed the setup info, re-run "setup_info_[your species here].R" before running this
-load('E:/NASData/ModelData/Ssp/setup_info_Ssp.Rdata')
+load('F:/NASData/ModelData/Kspp/setup_info_Kspp.Rdata')
 
 # Set up directories
-outDir <- file.path("E:/NASData/ModelData",SP,"/")
+outDir <- file.path("F:/NASData/ModelData",SP,"/")
 setwd(outDir)
 
 
@@ -34,11 +34,11 @@ if (matchACSegs){
   acSegmentsAll$XLSDATE <- as.POSIXct(acSegmentsAll$XLSDATE,"%Y-%m-%d",tz = "GMT")
   acDensityAll$xlsDate <- as.POSIXct(strptime(acDensityAll$xlsDate,"%m/%d/%Y"),tz = "GMT")#"%m/%d/%Y %H:%M"
   nCol <- length(colnames(acDensityAll))
-  
+   
   keepPoints <- which(acDensityAll$xlsDate >= "2011-01-01" & acDensityAll$xlsDate < "2014-01-01")
-
-  acDensityAll <- acDensityAll[keepPoints,]
   
+  acDensityAll <- acDensityAll[keepPoints,]
+  # 
   acSegLatFloor <- floor(acSegmentsAll$LAT *100)/100
   acDensLatFloor <- floor(acDensityAll$Lat *100)/100
   acSegLonFloor <- floor(acSegmentsAll$LONG *100)/100
@@ -86,7 +86,7 @@ cat("Loading visual data\n")
 load(visDataFile)
 # Truncate visual data to exclude sightings outside the 200m contour polygon
 visDataDF <- data.frame(visData)
-pred_polygon <- readOGR('E:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
+pred_polygon <- readOGR('F:/NASData/AcoustoVisualDE/Prediction_template/prediction_polygon.shp')
 coordinates(visDataDF) <- ~boatlon + boatlat
 crs(visDataDF) <- crs("+proj=longlat +datum=WGS84")
 pred_polygon_proj <- spTransform(pred_polygon,crs(visDataDF))

@@ -44,20 +44,20 @@ library(matrixStats)
 library(zoo)
 library(tmap)
 library(scales)
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
-source('E:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_covarDensity.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/weighted_logloss.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/multiplot.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_missingdata.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_cleveland.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/plot_timeseries.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/HabitatProject/R/transform_covars.R')
+source('F:/NASData/AcoustoVisualDE/AcoustoVisualDE/nnet_plot_update.r')
 options(stringsAsFactors = FALSE)
 # load some preferences
-load('E:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
-load('E:/NASData/ModelData/Gg/GgMergedData.Rdata')
-outDir <- file.path('E:/NASData/ModelData',SP,'10000//')
-inDir <- file.path('E:/NASData/ModelData',SP,'//')
+load('F:/NASData/ModelData/Gg/setup_info_Gg.Rdata')
+load('F:/NASData/ModelData/Gg/GgMergedData.Rdata')
+outDir <- file.path('F:/NASData/ModelData',SP,'10000//')
+inDir <- file.path('F:/NASData/ModelData',SP,'//')
 
 ```
 <br>
@@ -1238,7 +1238,7 @@ m2 <- match(GC_times,allTheDays)
 AcOnly_predictionSet$GC[m2] <-predAcOnly_GC
 AcOnly_predictionSet$predSd_GC[m2] <- rowSds(data.matrix(predVar_GC_DF),na.rm=TRUE)#/sqrt(trainRepeats)
 AcOnly_predictionSet$obs_GC_smooth <- NA
-AcOnly_predictionSet$obs_GC_smooth[m2]<- allCovars$observations_smooth[compAcSet_GC_all]
+AcOnly_predictionSet$obs_GC_smooth[m2]<- rollmean(allCovars$observations[compAcSet_GC_all],k = 7,fill=NA)
 AcOnly_predictionSet$obs_GC <- NA
 AcOnly_predictionSet$obs_GC[m2]<- allCovars$observations[compAcSet_GC_all]
 
@@ -1250,7 +1250,7 @@ m3 <- match(DT_times,allTheDays)
 AcOnly_predictionSet$DT[m3] <-predAcOnly_DT
 AcOnly_predictionSet$predSd_DT[m3] <- rowSds(data.matrix(predVar_DT_DF),na.rm=TRUE)#/sqrt(trainRepeats)
 AcOnly_predictionSet$obs_DT_smooth <- NA
-AcOnly_predictionSet$obs_DT_smooth[m3]<- allCovars$observations_smooth[compAcSet_DT_all]
+AcOnly_predictionSet$obs_DT_smooth[m3]<- rollmean(allCovars$observations[compAcSet_DT_all],k = 7,fill=NA)
 AcOnly_predictionSet$obs_DT <- NA
 AcOnly_predictionSet$obs_DT[m3]<- allCovars$observations[compAcSet_DT_all]
 
@@ -1262,7 +1262,7 @@ m4 <- match(DC_times,allTheDays)
 AcOnly_predictionSet$DC[m4] <-predAcOnly_DC
 AcOnly_predictionSet$predSd_DC[m4] <- rowSds(data.matrix(predVar_DC_DF),na.rm=TRUE)#/sqrt(trainRepeats)
 AcOnly_predictionSet$obs_DC_smooth <- NA
-AcOnly_predictionSet$obs_DC_smooth[m4]<- allCovars$observations_smooth[compAcSet_DC_all]
+AcOnly_predictionSet$obs_DC_smooth[m4]<- rollmean(allCovars$observations[compAcSet_DC_all],k = 7,fill=NA)
 AcOnly_predictionSet$obs_DC <- NA
 AcOnly_predictionSet$obs_DC[m4]<- allCovars$observations[compAcSet_DC_all]
 
@@ -1274,14 +1274,14 @@ m5 <- match(MP_times,allTheDays)
 AcOnly_predictionSet$MP[m5] <-predAcOnly_MP
 AcOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)#/sqrt(trainRepeats)
 AcOnly_predictionSet$obs_MP_smooth <- NA
-AcOnly_predictionSet$obs_MP_smooth[m5]<- allCovars$observations_smooth[compAcSet_MP_all]
+AcOnly_predictionSet$obs_MP_smooth[m5]<- rollmean(allCovars$observations[compAcSet_MP_all],k = 7,fill=NA)
 AcOnly_predictionSet$obs_MP <- NA
 AcOnly_predictionSet$obs_MP[m5]<- allCovars$observations[compAcSet_MP_all]
 
-AcOnly_predictionSet$Legend1 <- "Observations"
+AcOnly_predictionSet$Legend1 <- "1 Observations"
 AcOnly_predictionSet$StDev <- "Std. Error"
-AcOnly_predictionSet$Legend <- "Predictions - Train"
-AcOnly_predictionSet$LegendTest <- "Predictions - Test"
+AcOnly_predictionSet$Legend <- "2 Observations (mean)"
+AcOnly_predictionSet$LegendTest <- "3 Acoustic"
 mcLabel <- grobTree(textGrob("MC", x=0.01,  y=0.90, hjust=0,
   gp=gpar(col="black", fontsize=13, fontface="bold")))
 gcLabel <- grobTree(textGrob("GC", x=0.01,  y=0.90, hjust=0,
@@ -1313,7 +1313,7 @@ p1_Ac <- ggplot() +
             aes(x=date, y=MC, color = LegendTest, ymax = myYmax)) +
   labs(y = "", x = NULL)+
   scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+theme_bw()+
-  theme(legend.position="none",axis.title.y = element_text(size = 8,))+
+  theme(legend.position="right",axis.title.y = element_text(size = 8,))+
   # theme(legend.position = c(0.85, 0.85),legend.title=element_blank(),
   #                  legend.margin=margin(c(1,3,3,3)))+
   annotation_custom(mcLabel)#+ylim(c(0,.6))
@@ -1493,7 +1493,7 @@ VisOnly_predictionSet$MP[m5] <-predVisOnly_MP
 VisOnly_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF),na.rm=TRUE)#/sqrt(trainRepeats)
 
 VisOnly_predictionSet$Legend <- "Predictions - Train"
-VisOnly_predictionSet$LegendTest <- "Predictions - Test"
+VisOnly_predictionSet$LegendTest <- "4 Predictions - Test"
 ```
 
 **Predicted and observed densities at passive acoustic monitoring sites using the visual-only model:**
@@ -1530,7 +1530,7 @@ p2_Vis <- ggplot() +
   geom_line(data = VisOnly_predictionSet[VisOnly_predictionSet$date>="2013-1-1",],
             aes(x=date, y=GC, color = LegendTest, ymax = myYmax)) +
   scale_color_manual(values= c("#A0A0A0","#009900","#0000FF"))+
-  labs(y = "Density (/1000km^2)", x = NULL)+theme_bw()+
+  labs(y =bquote("Density (per 1000 k"~m^2~")"), x = NULL)+theme_bw()+
   theme(legend.position="none",axis.title.y = element_text(size = 8,))+
   annotation_custom(gcLabel)
 
@@ -1690,7 +1690,7 @@ Joint_predictionSet$MP[m5] <-pred_MP
 Joint_predictionSet$predSd_MP[m5] <- rowSds(data.matrix(predVar_MP_DF))#/sqrt(trainRepeats)
 
 Joint_predictionSet$Legend <- "Predictions - Train"
-Joint_predictionSet$LegendTest <- "Predictions - Test"
+Joint_predictionSet$LegendTest <- "5 Joint"
 
 ```
 
@@ -1701,17 +1701,25 @@ Joint_predictionSet$LegendTest <- "Predictions - Test"
 p1 <- ggplot() +
   geom_rect(data =VisOnly_predictionSet, aes(xmin=date[731], xmax=date[1095], ymin=0, ymax=45), fill="gray85")+
   geom_col(data = AcOnly_predictionSet,
-             aes(x = date, y = obs_MC,color = Legend1),alpha = 1,width = .1,size = .25)+
+             aes(x = date, y = obs_MC,color = Legend1),alpha = 1,width = .1,size = .25,key_glyph = "rect")+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=MC, color = Legend), size = .5) +
-  geom_path(data = Joint_predictionSet,
-            aes(x=date, y=MC),color = "red2", size = .5) +
-  geom_path(data = VisOnly_predictionSet,
-            aes(x=date, y=MC, color = LegendTest),size = .5) +
-  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,45))+
-  scale_color_manual(values= c("grey36","green3","deepskyblue"))+theme_bw()+
-  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,9), "pt"),
-        axis.text.x = element_blank())+
+             aes(x = date, y = obs_MC_smooth,color = Legend),size = .5,key_glyph = "rect")+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=MC, color = LegendTest), size = .5,key_glyph = "rect") +
+  geom_line(data = Joint_predictionSet,
+            aes(x=date, y=MC,color = LegendTest), size = .5,key_glyph = "rect") +
+  geom_line(data = VisOnly_predictionSet,
+            aes(x=date, y=MC, color = LegendTest),size = .5,key_glyph = "rect") +
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,45))+  theme_bw()+
+  theme(legend.position=c(.90,.7),legend.title=element_blank(),
+        legend.text = element_text(size = 6),axis.title.y = element_text(size = 8,),
+        plot.margin = unit(c(0,0,10,9), "pt"),
+        axis.text.x = element_blank(),
+        legend.key=element_rect(fill=NA),
+        legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))+  
+  scale_color_manual(labels = c("Observations","Obs. (7-day smooth)","Model - Acoustic","Model - Visual","Model - Joint"),
+                     values= c("grey46","gray34","green3","deepskyblue","red2"),
+                     guide = guide_legend(keyheight = unit(1, units = "mm") , keywidth = unit(2, units = "mm")))+
   annotation_custom(mcLabel)
 
 p2 <- ggplot() +
@@ -1719,14 +1727,16 @@ p2 <- ggplot() +
   geom_col(data = AcOnly_predictionSet,
              aes(x = date, y = obs_GC,color = Legend1),alpha = 1,width = .01,size = .25)+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=GC, color = Legend), size = .5) +
+             aes(x = date, y = obs_GC_smooth,color = Legend),size = .5)+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=GC, color = LegendTest), size = .5) +
   geom_path(data = Joint_predictionSet,
             aes(x=date, y=GC),color = "red2", size = .5) +
   geom_path(data = VisOnly_predictionSet,
             aes(x=date, y=GC, color = LegendTest),size = .5) +
-  coord_cartesian(ylim = c(0,20)) +
-  labs(y = "", x = NULL)+
-  scale_color_manual(values= c("grey36","green3","deepskyblue"))+theme_bw()+
+  labs(y = "", x = NULL)+coord_cartesian(ylim = c(0,20))+
+  scale_color_manual(labels = c("Observations","Obs. (7-day mean)","Model - Acoustic","Model - Visual","Model - Joint"),
+                     values= c("grey46","gray34","green3","deepskyblue","red2"))+theme_bw()+
   theme(legend.position="none", axis.title.y = element_text(size = 8,),panel.spacing.y=unit(0, "lines"),plot.margin = unit(c(0,0,10,9), "pt"),axis.text.x = element_blank())+
   annotation_custom(gcLabel)
 
@@ -1739,15 +1749,17 @@ p3 <- ggplot() +
   geom_col(data = AcOnly_predictionSet,
              aes(x = date, y = obs_DT, color = Legend1),alpha = 1, width = .1,size = .25)+
   geom_line(data = AcOnly_predictionSet,
-            aes(x=date, y=DT, color = Legend), size = .5) +
+             aes(x = date, y = obs_DT_smooth,color = Legend),size = .5)+
+  geom_line(data = AcOnly_predictionSet,
+            aes(x=date, y=DT, color = LegendTest), size = .5) +
   geom_path(data = Joint_predictionSet,
             aes(x=date, y=DT),color = "red2", size = .5) +
   geom_path(data = VisOnly_predictionSet,
             aes(x=date, y=DT, color = LegendTest), size = .5) +
-  scale_color_manual(values= c("grey36","green3","deepskyblue"))+
-  labs(y =bquote("Density (per 1000"~km^2~")"), x = NULL)+theme_bw()+
-coord_cartesian(ylim = c(0,120))+
-  theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,0), "pt"),axis.text.x = element_blank())+
+  scale_color_manual(labels = c("Observations","Obs. (7-day smooth)","Model - Acoustic","Model - Visual","Model - Joint"),
+                     values= c("grey46","gray34","green3","deepskyblue","red2"))+theme_bw()+
+  labs(y =" ", x = NULL)+theme_bw()+coord_cartesian(ylim = c(0,120))+
+  theme(legend.position="none",axis.title.y = element_text(size = 8,),panel.spacing.y=unit(0, "lines"),plot.margin = unit(c(0,0,10,0), "pt"),axis.text.x = element_blank())+labs(y =bquote("Density (per 1000"~km^2~")"), x = NULL)+
   annotation_custom(dtLabel)
 
 p4 <- ggplot() +
@@ -1761,7 +1773,8 @@ p4 <- ggplot() +
   geom_path(data = VisOnly_predictionSet,
             aes(x=date, y=DC, color = LegendTest),size = .5) +
   labs(y = " ", x = NULL)+
-  scale_color_manual(values= c("grey36","green3","deepskyblue"))+theme_bw()+
+  scale_color_manual(labels = c("Observations","Obs. (7-day smooth)","Model - Acoustic","Model - Visual","Model - Joint"),
+                     values= c("grey46","gray34","green3","deepskyblue","red2"))+theme_bw()+
   theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,10,9),"pt"),axis.text.x = element_blank())+coord_cartesian(ylim = c(0,40))+
   annotation_custom(dcLabel)
 
@@ -1776,7 +1789,8 @@ p5 <- ggplot() +
   geom_path(data = VisOnly_predictionSet,
             aes(x=date, y=MP, color = LegendTest),size = .5) +
   labs(y = " ", x = NULL)+
-  scale_color_manual(values= c("grey36","green3","deepskyblue"))+theme_bw()+
+  scale_color_manual(labels = c("Observations","Obs. (7-day smooth)","Model - Acoustic","Model - Visual","Model - Joint"),
+                     values= c("grey46","gray34","green3","deepskyblue","red2"))+theme_bw()+
   theme(legend.position="none",axis.title.y = element_text(size = 8,),plot.margin = unit(c(0,0,0,9),"pt"))+coord_cartesian(ylim = c(0,35))+
   annotation_custom(mpLabel)
 
